@@ -1,5 +1,6 @@
-import { app, BrowserWindow, Menu, ipcMain, shell, dialog } from 'electron';
+import { app, BrowserWindow, Menu, ipcMain, dialog, shell } from 'electron';
 import * as path from 'path';
+import { autoUpdater } from 'electron-updater';
 
 class KhojBrowser {
     private mainWindow: BrowserWindow | null = null;
@@ -10,6 +11,9 @@ class KhojBrowser {
     }
 
     private initializeApp(): void {
+        // Configure auto updater
+        this.configureAutoUpdater();
+        
         // Set app user model ID for Windows
         if (process.platform === 'win32') {
             app.setAppUserModelId('com.khoj.browser');
@@ -20,6 +24,7 @@ class KhojBrowser {
             this.createMainWindow();
             this.setupMenu();
             this.setupEventHandlers();
+            this.setupAutoUpdaterEvents();
         });
 
         // Handle window all closed
@@ -97,8 +102,89 @@ class KhojBrowser {
             this.mainWindow?.webContents.send('window-focused');
         });
 
+        // Handle new window requests - intercept them and open in new tab instead
+        this.mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+            // Send message to renderer to open URL in new tab
+            this.mainWindow?.webContents.send('open-url-in-new-tab', url);
+            return { action: 'deny' }; // Prevent opening in external browser
+        });
+
         this.mainWindow.on('blur', () => {
             this.mainWindow?.webContents.send('window-blurred');
+        });
+    }
+
+    private configureAutoUpdater(): void {
+        // Configure auto updater settings
+        autoUpdater.checkForUpdatesAndNotify();
+        autoUpdater.setFeedURL({
+            provider: 'github',
+            owner: 'yourusername',
+            repo: 'khoj-browser'
+        });
+    }
+
+    private setupAutoUpdaterEvents(): void {
+        // Check for updates when app starts
+        if (!this.isDevelopment) {
+            autoUpdater.checkForUpdatesAndNotify();
+        }
+
+        // Auto updater events
+        autoUpdater.on('checking-for-update', () => {
+            console.log('Checking for update...');
+            this.mainWindow?.webContents.send('auto-updater', { type: 'checking' });
+        });
+
+        autoUpdater.on('update-available', (info) => {
+            console.log('Update available:', info);
+            this.mainWindow?.webContents.send('auto-updater', { 
+                type: 'available', 
+                version: info.version,
+                releaseNotes: info.releaseNotes
+            });
+        });
+
+        autoUpdater.on('update-not-available', (info) => {
+            console.log('Update not available:', info);
+            this.mainWindow?.webContents.send('auto-updater', { type: 'not-available' });
+        });
+
+        autoUpdater.on('error', (err) => {
+            console.error('Auto updater error:', err);
+            this.mainWindow?.webContents.send('auto-updater', { type: 'error', error: err.message });
+        });
+
+        autoUpdater.on('download-progress', (progressObj) => {
+            const { percent, transferred, total } = progressObj;
+            console.log(`Download progress: ${percent}%`);
+            this.mainWindow?.webContents.send('auto-updater', { 
+                type: 'progress',
+                percent: Math.round(percent),
+                transferred: Math.round(transferred / 1024 / 1024),
+                total: Math.round(total / 1024 / 1024)
+            });
+        });
+
+        autoUpdater.on('update-downloaded', (info) => {
+            console.log('Update downloaded:', info);
+            this.mainWindow?.webContents.send('auto-updater', { 
+                type: 'downloaded',
+                version: info.version
+            });
+            
+            // Show dialog to restart app
+            dialog.showMessageBox(this.mainWindow!, {
+                type: 'info',
+                title: 'Update Ready',
+                message: 'A new version of Khoj is ready to install.',
+                detail: 'The application will restart to complete the update.',
+                buttons: ['Restart Now', 'Later']
+            }).then((result) => {
+                if (result.response === 0) {
+                    autoUpdater.quitAndInstall();
+                }
+            });
         });
     }
 

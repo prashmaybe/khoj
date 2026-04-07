@@ -35,6 +35,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     onShowBookmarks: (callback: () => void) => ipcRenderer.on('show-bookmarks', callback),
     onImportBookmarks: (callback: (filePath: string) => void) => ipcRenderer.on('import-bookmarks', (_, filePath) => callback(filePath)),
     onExportBookmarks: (callback: (filePath: string) => void) => ipcRenderer.on('export-bookmarks', (_, filePath) => callback(filePath)),
+    onOpenUrlInNewTab: (callback: (url: string) => void) => ipcRenderer.on('open-url-in-new-tab', (_, url) => callback(url)),
     
     // Window state events
     onWindowMaximized: (callback: () => void) => ipcRenderer.on('window-maximized', callback),
@@ -76,6 +77,7 @@ declare global {
             onShowBookmarks: (callback: () => void) => void;
             onImportBookmarks: (callback: (filePath: string) => void) => void;
             onExportBookmarks: (callback: (filePath: string) => void) => void;
+            onOpenUrlInNewTab: (callback: (url: string) => void) => void;
             onWindowMaximized: (callback: () => void) => void;
             onWindowUnmaximized: (callback: () => void) => void;
             onWindowFocused: (callback: () => void) => void;

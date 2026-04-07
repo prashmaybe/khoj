@@ -203,7 +203,10 @@ class AdvancedBrowser {
             isLoading: false,
             zoomLevel: 1.0,
             isPrivate: this.isPrivateMode,
-            element: webview
+            isPinned: false,
+            element: webview,
+            loadProgress: 0,
+            securityLevel: 'unknown'
         };
 
         this.tabs.push(tab);

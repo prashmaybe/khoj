@@ -26,17 +26,26 @@
     "postinstall": "electron-builder install-app-deps",
     "clean": "rimraf dist"
   },
-  "keywords": ["browser", "typescript", "electron", "web", "chrome"],
+  "keywords": [
+    "browser",
+    "typescript",
+    "electron",
+    "web",
+    "chrome"
+  ],
   "devDependencies": {
     "@types/node": "^20.0.0",
-    "typescript": "^5.0.0",
-    "http-server": "^14.0.0",
+    "concurrently": "^8.0.0",
     "electron": "^28.0.0",
     "electron-builder": "^24.0.0",
-    "concurrently": "^8.0.0",
-    "rimraf": "^5.0.0"
+    "http-server": "^14.0.0",
+    "rimraf": "^5.0.0",
+    "typescript": "^5.0.0"
   },
-  "dependencies": {},
+  "dependencies": {
+    "electron-updater": "^6.8.3",
+    "ionicons": "^8.0.13"
+  },
   "build": {
     "appId": "com.khoj.browser",
     "productName": "Khoj",
@@ -53,11 +62,18 @@
         "to": "assets"
       }
     ],
+    "publish": {
+      "provider": "github",
+      "owner": "yourusername",
+      "repo": "khoj-browser"
+    },
     "win": {
       "target": [
         {
-          "target": "portable",
-          "arch": ["x64"]
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
         }
       ]
     },
@@ -65,8 +81,10 @@
       "category": "public.app-category.productivity",
       "target": [
         {
-          "target": "zip",
-          "arch": ["x64"]
+          "target": "dmg",
+          "arch": [
+            "x64"
+          ]
         }
       ]
     },
@@ -74,7 +92,9 @@
       "target": [
         {
           "target": "AppImage",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "category": "Network"
