@@ -1445,7 +1445,7 @@ Performance Report (Last ${count} samples):
 <body>
     <div class="error-container">
         <div class="error-header">
-            <div class="error-icon">â ï¸</div>
+            <div class="error-icon">⚠️</div>
             <h1 class="error-title">Unable to Load Page</h1>
             <p class="error-subtitle">Khoj couldn't load this page</p>
         </div>
@@ -1465,7 +1465,7 @@ Performance Report (Last ${count} samples):
                 </ul>
             </div>
             
-            <button class="toggle-details" onclick="document.getElementById('technical-details').style.display = document.getElementById('technical-details').style.display === 'none' ? 'block' : 'none'">
+            <button class="toggle-details" onclick="var details = document.getElementById('technical-details'); details.style.display = details.style.display === 'none' ? 'block' : 'none'">
                 Show Technical Details
             </button>
             
@@ -1485,13 +1485,13 @@ Performance Report (Last ${count} samples):
         
         <div class="actions">
             <button class="btn btn-primary" onclick="window.location.reload()">
-                â Try Again
+                🔄 Try Again
             </button>
             <button class="btn btn-secondary" onclick="window.history.back()">
-                â Go Back
+                ← Go Back
             </button>
             <button class="btn btn-secondary" onclick="window.open('${pageError.url}', '_blank')">
-                â Open in External Browser
+                🌐 Open in External Browser
             </button>
         </div>
     </div>
