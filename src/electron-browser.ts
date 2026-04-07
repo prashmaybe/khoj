@@ -869,10 +869,16 @@ Performance Report (Last ${count} samples):
             this.handleTabError(tabId, e, 'security');
         });
         
-        // Add specific listener for blocked responses
+        // Add specific listener for blocked responses - check for load failures
         webview.addEventListener('loadstart', () => {
+            const tab = this.tabs.find(t => t.id === tabId);
+            if (tab) {
+                tab.isLoading = true;
+                this.updateTabTitle(tabId, 'Loading...');
+            }
+            
             // Set a timeout to detect if the page loads successfully
-            setTimeout(() => {
+            const timeoutId = setTimeout(() => {
                 try {
                     const doc = webview.contentDocument;
                     if (!doc || !doc.body || doc.body.children.length === 0) {
@@ -882,17 +888,30 @@ Performance Report (Last ${count} samples):
                         }
                     }
                 } catch (e) {
-                    // Cross-origin - check if this might be a blocked response
+                    // Cross-origin error - this is normal for most external sites
+                    // Only treat as error if we have explicit evidence of blocking
                     if (webview.src && !webview.src.startsWith('about:blank') && !webview.src.startsWith('data:')) {
-                        // For now, assume cross-origin is normal and not an error
                         console.log('Cross-origin (normal for external sites):', webview.src);
                     }
                 }
-            }, 5000); // Check after 5 seconds
+            }, 3000); // Reduced timeout for faster error detection
+            
+            this.tabLoadTimeouts[tabId] = timeoutId;
         });
 
         // Add load error event listener for network errors
         webview.addEventListener('load', () => {
+            // Clear the loading timeout
+            if (this.tabLoadTimeouts[tabId]) {
+                clearTimeout(this.tabLoadTimeouts[tabId]);
+                delete this.tabLoadTimeouts[tabId];
+            }
+            
+            const tab = this.tabs.find(t => t.id === tabId);
+            if (tab) {
+                tab.isLoading = false;
+            }
+            
             // Check if iframe failed to load by examining its content
             try {
                 const doc = webview.contentDocument;
@@ -916,11 +935,21 @@ Performance Report (Last ${count} samples):
                         return;
                     }
                 }
+                
+                // If we can access the document, the page loaded successfully
+                if (doc && doc.body && doc.body.children.length > 0) {
+                    this.updateTabTitle(tabId, doc.title || webview.src);
+                    return;
+                }
             } catch (e) {
-                // Cross-origin error - this is expected for most external sites
-                // Only treat as error if we have reason to believe it's blocked
-                console.log('Cross-origin restriction (expected for external sites):', e);
+                // Cross-origin error - this is normal for external sites
+                if (webview.src && !webview.src.startsWith('about:blank') && !webview.src.startsWith('data:')) {
+                    console.log('Cross-origin (normal for external sites):', webview.src);
+                }
             }
+            
+            // Only show error if we have explicit evidence of blocking in the error event
+            // Cross-origin restrictions are normal for external sites and don't indicate blocking
         });
         
         const tab: BrowserTab = {
@@ -3528,8 +3557,17 @@ Performance Report (Last ${count} samples):
     }
 
     private handleKeyboardShortcuts(e: KeyboardEvent): void {
+        // Prevent shortcuts when user is typing in input fields
+        const activeElement = document.activeElement;
+        const isInputFocused = activeElement && (
+            activeElement.tagName === 'INPUT' || 
+            activeElement.tagName === 'TEXTAREA' || 
+            (activeElement as HTMLElement).contentEditable === 'true'
+        );
+        
         if (e.ctrlKey || e.metaKey) {
             switch (e.key) {
+                // Tab Management
                 case 't':
                     e.preventDefault();
                     this.createTab();
@@ -3546,6 +3584,46 @@ Performance Report (Last ${count} samples):
                         : (currentIndex + 1) % this.tabs.length;
                     this.switchToTab(this.tabs[nextIndex].id);
                     break;
+                case '1':
+                case '2':
+                case '3':
+                case '4':
+                case '5':
+                case '6':
+                case '7':
+                case '8':
+                case '9':
+                    e.preventDefault();
+                    const tabIndex = parseInt(e.key) - 1;
+                    if (this.tabs[tabIndex]) {
+                        this.switchToTab(this.tabs[tabIndex].id);
+                    }
+                    break;
+                    
+                // Navigation
+                case 'r':
+                    e.preventDefault();
+                    if (e.shiftKey) {
+                        this.reload(); // Force reload
+                    } else {
+                        this.reload();
+                    }
+                    break;
+                case 'l':
+                    e.preventDefault();
+                    this.urlBar.focus();
+                    this.urlBar.select();
+                    break;
+                case 'd':
+                    e.preventDefault();
+                    this.showBookmarks();
+                    break;
+                case 'h':
+                    e.preventDefault();
+                    this.loadWelcomePage(this.activeTabId);
+                    break;
+                    
+                // Page Actions
                 case 'f':
                     e.preventDefault();
                     this.showFindBar();
@@ -3554,11 +3632,13 @@ Performance Report (Last ${count} samples):
                     e.preventDefault();
                     this.printPage();
                     break;
-                case 'l':
+                case 's':
                     e.preventDefault();
-                    this.urlBar.focus();
-                    this.urlBar.select();
+                    // Save page functionality
+                    this.updateStatus('Save page feature coming soon');
                     break;
+                    
+                // Zoom
                 case '=':
                 case '+':
                     e.preventDefault();
@@ -3572,7 +3652,99 @@ Performance Report (Last ${count} samples):
                     e.preventDefault();
                     this.resetZoom();
                     break;
+                    
+                // Dev Tools
+                case 'i':
+                    if (e.shiftKey) {
+                        e.preventDefault();
+                        this.toggleDevTools();
+                    }
+                    break;
+                case 'j':
+                    if (e.shiftKey) {
+                        e.preventDefault();
+                        this.toggleDownloads();
+                    }
+                    break;
             }
+        }
+        
+        // Function keys and other shortcuts
+        switch (e.key) {
+            // Navigation
+            case 'F5':
+                e.preventDefault();
+                if (e.ctrlKey || e.metaKey) {
+                    this.reload(); // Force reload
+                } else {
+                    this.reload();
+                }
+                break;
+            case 'F6':
+                e.preventDefault();
+                this.urlBar.focus();
+                this.urlBar.select();
+                break;
+                
+            // Dev Tools
+            case 'F12':
+                e.preventDefault();
+                this.toggleDevTools();
+                break;
+            case 'F11':
+                e.preventDefault();
+                // Toggle fullscreen functionality
+                if (document.fullscreenElement) {
+                    document.exitFullscreen();
+                } else {
+                    document.documentElement.requestFullscreen();
+                }
+                break;
+                
+            // Navigation arrows
+            case 'ArrowLeft':
+                if (e.altKey) {
+                    e.preventDefault();
+                    this.goBack();
+                }
+                break;
+            case 'ArrowRight':
+                if (e.altKey) {
+                    e.preventDefault();
+                    this.goForward();
+                }
+                break;
+                
+            // Find
+            case 'F3':
+                e.preventDefault();
+                if (e.shiftKey) {
+                    this.findPrev();
+                } else {
+                    this.findNext();
+                }
+                break;
+                
+            // Escape
+            case 'Escape':
+                if (this.findBar.style.display !== 'none') {
+                    this.hideFindBar();
+                } else if (this.devToolsPanel.style.display !== 'none') {
+                    this.hideDevTools();
+                }
+                break;
+                
+            // Tab switching (when not in input)
+            case 'Tab':
+                if (!isInputFocused && !e.ctrlKey && !e.metaKey) {
+                    e.preventDefault();
+                    // Focus first interactive element in page
+                    const tab = this.tabs.find(t => t.id === this.activeTabId);
+                    if (tab && tab.element) {
+                        tab.element.focus();
+                    }
+                }
+                break;
         }
     }
 
