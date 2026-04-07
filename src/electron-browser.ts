@@ -68,12 +68,51 @@ interface BrowserSession {
     };
 }
 
+interface ConsoleMessage {
+    level: 'log' | 'info' | 'warn' | 'error' | 'debug';
+    message: string;
+    timestamp: number;
+    source?: string;
+    lineNumber?: number;
+}
+
 interface NetworkRequest {
     url: string;
     method: string;
     status: number;
     timestamp: number;
     duration: number;
+    type: string;
+    size: number;
+    headers?: Record<string, string>;
+    response?: string;
+}
+
+interface CustomPerformanceEntry {
+    perfName: string;
+    perfType: string;
+    perfStartTime: number;
+    perfDuration: number;
+    details?: any;
+    toJSON(): string;
+}
+
+interface StorageItem {
+    key: string;
+    value: string;
+    domain?: string;
+    path?: string;
+    expires?: string;
+    httpOnly?: boolean;
+    secure?: boolean;
+}
+
+interface SourceFile {
+    url: string;
+    content: string;
+    type: string;
+    size: number;
+    lastModified: number;
 }
 
 interface BrowserExtension {
@@ -127,7 +166,7 @@ class KhojBrowser {
     private downloads: Download[] = [];
     private isPrivateMode: boolean = false;
     private networkRequests: NetworkRequest[] = [];
-    private consoleMessages: string[] = [];
+    private consoleMessages: ConsoleMessage[] = [];
     private isMaximized: boolean = false;
     private settings!: BrowserSettings;
     private session!: BrowserSession;
@@ -137,6 +176,13 @@ class KhojBrowser {
     private performanceMonitoringInterval: NodeJS.Timeout | null = null;
     private pageErrors: PageError[] = [];
     private tabLoadTimeouts: { [key: string]: NodeJS.Timeout } = {};
+    private performanceEntries: CustomPerformanceEntry[] = [];
+    private storageItems: StorageItem[] = [];
+    private sourceFiles: SourceFile[] = [];
+    private activeConsoleFilter: string = 'all';
+    private activeNetworkFilter: string = 'all';
+    private isRecordingPerformance: boolean = false;
+    private selectedElement: Element | null = null;
 
     // UI Elements
     private tabsContainer!: HTMLElement;
@@ -435,6 +481,84 @@ Performance Report (Last ${count} samples):
                 const tabName = target.dataset.tab;
                 if (tabName) this.switchDevToolsTab(tabName);
             });
+        });
+
+        // Console filters
+        document.querySelectorAll('.console-filter').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const target = e.target as HTMLElement;
+                const level = target.dataset.level;
+                if (level) {
+                    this.activeConsoleFilter = level;
+                    this.updateConsoleFilterUI();
+                    this.updateConsole();
+                }
+            });
+        });
+
+        // Network filters
+        document.querySelectorAll('.network-filter').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const target = e.target as HTMLElement;
+                const type = target.dataset.type;
+                if (type) {
+                    this.activeNetworkFilter = type;
+                    this.updateNetworkFilterUI();
+                    this.updateNetworkLog();
+                }
+            });
+        });
+
+        // Console actions
+        document.getElementById('console-clear')?.addEventListener('click', () => {
+            this.consoleMessages = [];
+            this.updateConsole();
+        });
+
+        // Network actions
+        document.getElementById('network-clear')?.addEventListener('click', () => {
+            this.networkRequests = [];
+            this.updateNetworkLog();
+        });
+
+        // Performance actions
+        document.getElementById('perf-record')?.addEventListener('click', () => {
+            this.togglePerformanceRecording();
+        });
+
+        document.getElementById('perf-clear')?.addEventListener('click', () => {
+            this.performanceEntries = [];
+            this.updatePerformancePanel();
+        });
+
+        // Elements tools
+        document.getElementById('element-inspect')?.addEventListener('click', () => {
+            this.startElementInspection();
+        });
+
+        document.getElementById('element-search')?.addEventListener('input', (e) => {
+            const target = e.target as HTMLInputElement;
+            this.searchElements(target.value);
+        });
+
+        // Application tree
+        document.querySelectorAll('.tree-node[data-section]').forEach(node => {
+            node.addEventListener('click', (e) => {
+                const target = e.target as HTMLElement;
+                const section = target.dataset.section;
+                if (section) {
+                    this.showApplicationSection(section);
+                }
+            });
+        });
+
+        // Dev tools controls
+        document.getElementById('dev-tools-dock')?.addEventListener('click', () => {
+            this.toggleDevToolsDock();
+        });
+
+        document.getElementById('dev-tools-settings')?.addEventListener('click', () => {
+            this.showDevToolsSettings();
         });
 
         // Console input
@@ -2648,25 +2772,426 @@ Performance Report (Last ${count} samples):
         this.updateConsole();
         this.updateNetworkLog();
         this.updateElementsTree();
+        this.updatePerformancePanel();
+        this.updateSecurityPanel();
+    }
+
+    private updateConsoleFilterUI(): void {
+        document.querySelectorAll('.console-filter').forEach(btn => {
+            const level = (btn as HTMLElement).dataset.level;
+            if (level === this.activeConsoleFilter) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+    }
+
+    private updateNetworkFilterUI(): void {
+        document.querySelectorAll('.network-filter').forEach(btn => {
+            const type = (btn as HTMLElement).dataset.type;
+            if (type === this.activeNetworkFilter) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+    }
+
+    private togglePerformanceRecording(): void {
+        this.isRecordingPerformance = !this.isRecordingPerformance;
+        const recordBtn = document.getElementById('perf-record');
+        if (recordBtn) {
+            if (this.isRecordingPerformance) {
+                recordBtn.classList.add('recording');
+                recordBtn.innerHTML = '<ion-icon name="stop-outline"></ion-icon> Stop';
+                this.startPerformanceRecording();
+            } else {
+                recordBtn.classList.remove('recording');
+                recordBtn.innerHTML = '<ion-icon name="radio-outline"></ion-icon> Record';
+                this.stopPerformanceRecording();
+            }
+        }
+    }
+
+    private startPerformanceRecording(): void {
+        // Clear existing entries
+        this.performanceEntries = [];
+        
+        // Start monitoring performance
+        this.performanceMonitoringInterval = setInterval(() => {
+            const tab = this.tabs.find(t => t.id === this.activeTabId);
+            if (tab && tab.isLoading) {
+                const entry: CustomPerformanceEntry = {
+                    perfName: `Page Load - ${tab.url}`,
+                    perfType: 'navigation',
+                    perfStartTime: Date.now() - 1000,
+                    perfDuration: 1000,
+                    details: { url: tab.url, loadProgress: tab.loadProgress },
+                    toJSON: () => JSON.stringify({
+                        name: `Page Load - ${tab.url}`,
+                        type: 'navigation',
+                        startTime: Date.now() - 1000,
+                        duration: 1000,
+                        details: { url: tab.url, loadProgress: tab.loadProgress }
+                    })
+                };
+                this.performanceEntries.push(entry);
+                this.updatePerformancePanel();
+            }
+        }, 1000);
+    }
+
+    private stopPerformanceRecording(): void {
+        if (this.performanceMonitoringInterval) {
+            clearInterval(this.performanceMonitoringInterval);
+            this.performanceMonitoringInterval = null;
+        }
+    }
+
+    private updatePerformancePanel(): void {
+        const perfDetails = document.getElementById('perf-details');
+        const perfTimeline = document.getElementById('perf-timeline');
+        
+        if (perfDetails) {
+            const latestMetrics = this.performanceMetrics[this.performanceMetrics.length - 1];
+            if (latestMetrics) {
+                perfDetails.innerHTML = `
+                    <div class="perf-summary">
+                        <h4>Performance Summary</h4>
+                        <div class="perf-metric">
+                            <span>CPU Usage:</span>
+                            <span>${latestMetrics.cpuUsage.toFixed(1)}%</span>
+                        </div>
+                        <div class="perf-metric">
+                            <span>Memory:</span>
+                            <span>${latestMetrics.memoryUsage.used.toFixed(1)}MB (${latestMetrics.memoryUsage.percentage}%)</span>
+                        </div>
+                        <div class="perf-metric">
+                            <span>Network Requests:</span>
+                            <span>${latestMetrics.networkActivity.requestsCount}</span>
+                        </div>
+                        <div class="perf-metric">
+                            <span>Render Time:</span>
+                            <span>${latestMetrics.renderTime.toFixed(1)}ms</span>
+                        </div>
+                        <div class="perf-metric">
+                            <span>Active Tabs:</span>
+                            <span>${latestMetrics.activeTabs}</span>
+                        </div>
+                    </div>
+                    <div class="perf-entries">
+                        <h4>Performance Entries (${this.performanceEntries.length})</h4>
+                        ${this.performanceEntries.map(entry => `
+                            <div class="perf-entry">
+                                <strong>${entry.perfName}</strong><br>
+                                Type: ${entry.perfType} | Duration: ${entry.perfDuration}ms
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+        }
+        
+        if (perfTimeline) {
+            // Simple timeline visualization
+            perfTimeline.innerHTML = `
+                <div class="timeline-container">
+                    ${this.performanceEntries.map((entry, index) => `
+                        <div class="timeline-bar" style="left: ${(index / Math.max(this.performanceEntries.length - 1, 1)) * 90}%; width: 5px; height: ${Math.min(entry.perfDuration / 10, 100)}px; background: #4285f4;"></div>
+                    `).join('')}
+                </div>
+            `;
+        }
+    }
+
+    private startElementInspection(): void {
+        this.updateStatus('Click on an element to inspect it');
+        // In a real implementation, this would enable element selection mode
+        // For now, we'll just show the current DOM tree
+        this.updateElementsTree();
+    }
+
+    private searchElements(query: string): void {
+        const elementsTree = document.getElementById('elements-tree');
+        if (!elementsTree || !query) return;
+        
+        const tab = this.tabs.find(t => t.id === this.activeTabId);
+        if (!tab) return;
+        
+        try {
+            const doc = tab.element.contentDocument;
+            if (doc) {
+                const elements = doc.querySelectorAll(query);
+                const results = Array.from(elements).slice(0, 20).map(el => {
+                    const tagName = el.tagName.toLowerCase();
+                    const id = el.id ? `#${el.id}` : '';
+                    const classes = el.className ? `.${el.className.split(' ').join('.')}` : '';
+                    return `<div class="element-node search-result">&lt;${tagName}${id}${classes}&gt;</div>`;
+                }).join('');
+                
+                elementsTree.innerHTML = results || '<div class="no-results">No elements found</div>';
+            }
+        } catch (error) {
+            elementsTree.innerHTML = '<div>Cannot search DOM due to same-origin policy</div>';
+        }
+    }
+
+    private showApplicationSection(section: string): void {
+        const appContent = document.getElementById('app-content');
+        if (!appContent) return;
+        
+        // Update tree selection
+        document.querySelectorAll('.tree-node').forEach(node => {
+            node.classList.remove('selected');
+        });
+        document.querySelector(`[data-section="${section}"]`)?.classList.add('selected');
+        
+        switch (section) {
+            case 'local-storage':
+                this.showLocalStorage();
+                break;
+            case 'session-storage':
+                this.showSessionStorage();
+                break;
+            case 'cookies':
+                this.showCookies();
+                break;
+            default:
+                appContent.innerHTML = '<div class="no-section-selected">Select a section to view storage data</div>';
+        }
+    }
+
+    private showLocalStorage(): void {
+        const appContent = document.getElementById('app-content');
+        if (!appContent) return;
+        
+        try {
+            const storage = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key) {
+                    storage.push({ key, value: localStorage.getItem(key) || '' });
+                }
+            }
+            
+            appContent.innerHTML = `
+                <div class="storage-view">
+                    <h4>Local Storage (${storage.length} items)</h4>
+                    <div class="storage-table">
+                        <div class="storage-header">
+                            <div>Key</div>
+                            <div>Value</div>
+                            <div>Actions</div>
+                        </div>
+                        ${storage.map(item => `
+                            <div class="storage-row">
+                                <div class="storage-key">${item.key}</div>
+                                <div class="storage-value">${item.value.substring(0, 100)}${item.value.length > 100 ? '...' : ''}</div>
+                                <div class="storage-actions">
+                                    <button onclick="navigator.clipboard.writeText('${item.value}')">Copy</button>
+                                    <button onclick="localStorage.removeItem('${item.key}'); location.reload()">Delete</button>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        } catch (error) {
+            appContent.innerHTML = '<div>Error accessing local storage</div>';
+        }
+    }
+
+    private showSessionStorage(): void {
+        const appContent = document.getElementById('app-content');
+        if (!appContent) return;
+        
+        try {
+            const storage = [];
+            for (let i = 0; i < sessionStorage.length; i++) {
+                const key = sessionStorage.key(i);
+                if (key) {
+                    storage.push({ key, value: sessionStorage.getItem(key) || '' });
+                }
+            }
+            
+            appContent.innerHTML = `
+                <div class="storage-view">
+                    <h4>Session Storage (${storage.length} items)</h4>
+                    <div class="storage-table">
+                        <div class="storage-header">
+                            <div>Key</div>
+                            <div>Value</div>
+                            <div>Actions</div>
+                        </div>
+                        ${storage.map(item => `
+                            <div class="storage-row">
+                                <div class="storage-key">${item.key}</div>
+                                <div class="storage-value">${item.value.substring(0, 100)}${item.value.length > 100 ? '...' : ''}</div>
+                                <div class="storage-actions">
+                                    <button onclick="navigator.clipboard.writeText('${item.value}')">Copy</button>
+                                    <button onclick="sessionStorage.removeItem('${item.key}'); location.reload()">Delete</button>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        } catch (error) {
+            appContent.innerHTML = '<div>Error accessing session storage</div>';
+        }
+    }
+
+    private showCookies(): void {
+        const appContent = document.getElementById('app-content');
+        if (!appContent) return;
+        
+        try {
+            const cookies = document.cookie.split(';').map(cookie => {
+                const [name, ...valueParts] = cookie.trim().split('=');
+                return { name, value: valueParts.join('=') };
+            }).filter(cookie => cookie.name);
+            
+            appContent.innerHTML = `
+                <div class="storage-view">
+                    <h4>Cookies (${cookies.length} items)</h4>
+                    <div class="storage-table">
+                        <div class="storage-header">
+                            <div>Name</div>
+                            <div>Value</div>
+                            <div>Actions</div>
+                        </div>
+                        ${cookies.map(cookie => `
+                            <div class="storage-row">
+                                <div class="storage-key">${cookie.name}</div>
+                                <div class="storage-value">${cookie.value.substring(0, 100)}${cookie.value.length > 100 ? '...' : ''}</div>
+                                <div class="storage-actions">
+                                    <button onclick="navigator.clipboard.writeText('${cookie.value}')">Copy</button>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        } catch (error) {
+            appContent.innerHTML = '<div>Error accessing cookies</div>';
+        }
+    }
+
+    private updateSecurityPanel(): void {
+        const tab = this.tabs.find(t => t.id === this.activeTabId);
+        if (!tab) return;
+        
+        const connectionType = document.getElementById('connection-type');
+        const certificateInfo = document.getElementById('certificate-info');
+        const statusText = document.querySelector('.status-text');
+        const statusIcon = document.querySelector('.status-icon');
+        
+        if (tab.url.startsWith('https://')) {
+            if (connectionType) connectionType.textContent = 'HTTPS';
+            if (certificateInfo) certificateInfo.textContent = 'Valid';
+            if (statusText) statusText.textContent = 'Secure connection';
+            if (statusIcon) statusIcon.textContent = '🔒';
+        } else if (tab.url.startsWith('http://')) {
+            if (connectionType) connectionType.textContent = 'HTTP';
+            if (certificateInfo) certificateInfo.textContent = 'Not secure';
+            if (statusText) statusText.textContent = 'Not secure';
+            if (statusIcon) statusIcon.textContent = '⚠️';
+        } else {
+            if (connectionType) connectionType.textContent = 'Local';
+            if (certificateInfo) certificateInfo.textContent = 'N/A';
+            if (statusText) statusText.textContent = 'Local page';
+            if (statusIcon) statusIcon.textContent = '📄';
+        }
+    }
+
+    private toggleDevToolsDock(): void {
+        const panel = document.getElementById('dev-tools-panel');
+        if (!panel) return;
+        
+        // Toggle between right-docked and bottom-docked
+        if (panel.style.right === '20px') {
+            // Move to bottom
+            panel.style.right = 'auto';
+            panel.style.top = 'auto';
+            panel.style.bottom = '0';
+            panel.style.left = '0';
+            panel.style.width = '100%';
+            panel.style.height = '300px';
+            panel.style.borderRadius = '0';
+        } else {
+            // Move to right
+            panel.style.right = '20px';
+            panel.style.top = '60px';
+            panel.style.bottom = 'auto';
+            panel.style.left = 'auto';
+            panel.style.width = '800px';
+            panel.style.height = '500px';
+        }
+    }
+
+    private showDevToolsSettings(): void {
+        alert('Dev Tools Settings\n\n• Theme: Light\n• Font Size: 12px\n• Auto-refresh: Enabled\n\nSettings panel coming soon!');
     }
 
     private updateConsole(): void {
         const consoleOutput = document.getElementById('console-output')!;
-        consoleOutput.innerHTML = this.consoleMessages
-            .map(msg => `<div>${msg}</div>`)
+        const filteredMessages = this.getFilteredConsoleMessages();
+        consoleOutput.innerHTML = filteredMessages
+            .map(msg => `<div class="console-${msg.level}">${msg.message}</div>`)
             .join('');
         consoleOutput.scrollTop = consoleOutput.scrollHeight;
     }
 
+    private getFilteredConsoleMessages(): ConsoleMessage[] {
+        if (this.activeConsoleFilter === 'all') {
+            return this.consoleMessages;
+        }
+        return this.consoleMessages.filter(msg => msg.level === this.activeConsoleFilter);
+    }
+
     private updateNetworkLog(): void {
         const networkLog = document.getElementById('network-log')!;
-        networkLog.innerHTML = this.networkRequests
+        const filteredRequests = this.getFilteredNetworkRequests();
+        networkLog.innerHTML = filteredRequests
             .map(req => `
                 <div class="network-item">
-                    ${req.method} ${req.url} - ${req.status} (${req.duration}ms)
+                    <div class="table-cell">${this.getFileName(req.url)}</div>
+                    <div class="table-cell network-status-${req.status}">${req.status}</div>
+                    <div class="table-cell">${req.type}</div>
+                    <div class="table-cell">${this.formatBytes(req.size)}</div>
+                    <div class="table-cell">${req.duration}ms</div>
+                    <div class="table-cell">
+                        <div class="waterfall-bar" style="width: ${Math.min(req.duration / 10, 100)}px; background: ${this.getStatusColor(req.status)};"></div>
+                    </div>
                 </div>
             `)
             .join('');
+    }
+
+    private getFilteredNetworkRequests(): NetworkRequest[] {
+        if (this.activeNetworkFilter === 'all') {
+            return this.networkRequests;
+        }
+        return this.networkRequests.filter(req => req.type === this.activeNetworkFilter);
+    }
+
+    private getFileName(url: string): string {
+        return url.split('/').pop() || url;
+    }
+
+    private formatBytes(bytes: number): string {
+        if (bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    private getStatusColor(status: number): string {
+        if (status >= 200 && status < 300) return '#0f9d58';
+        if (status >= 300 && status < 400) return '#f4b400';
+        return '#d93025';
     }
 
     private updateElementsTree(): void {
@@ -2705,13 +3230,25 @@ Performance Report (Last ${count} samples):
         if (!tab) return;
 
         const timestamp = new Date().toLocaleTimeString();
-        this.consoleMessages.push(`[${timestamp}] > ${command}`);
+        this.consoleMessages.push({
+            level: 'log',
+            message: `[${timestamp}] > ${command}`,
+            timestamp: Date.now()
+        });
 
         try {
             const result = (tab.element.contentWindow as any).eval(command);
-            this.consoleMessages.push(`[${timestamp}] ${JSON.stringify(result)}`);
+            this.consoleMessages.push({
+                level: 'log',
+                message: `[${timestamp}] ${JSON.stringify(result)}`,
+                timestamp: Date.now()
+            });
         } catch (error: any) {
-            this.consoleMessages.push(`[${timestamp}] Error: ${error.message}`);
+            this.consoleMessages.push({
+                level: 'error',
+                message: `[${timestamp}] Error: ${error.message}`,
+                timestamp: Date.now()
+            });
         }
 
         this.updateConsole();

@@ -678,123 +678,733 @@
         }
 
         .panel-header {
-            padding: 12px 16px;
             background: #f8f9fa;
-            border-bottom: 1px solid #dadce0;
-            font-size: 14px;
+            padding: 8px 12px;
+            border-bottom: 1px solid #e8eaed;
             font-weight: 500;
             color: #202124;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+        }
+
+        .panel-close {
+            background: none;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+            color: #5f6368;
+            padding: 4px;
+            border-radius: 4px;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .panel-close:hover {
+            background: #f1f3f4;
         }
 
         .panel-content {
             flex: 1;
+            padding: 16px;
             overflow-y: auto;
-            padding: 8px;
         }
 
-        .panel-close {
-            position: absolute;
-            top: 8px;
-            right: 8px;
+        /* Dev Tools Chrome-like Styling */
+        .dev-tools-header {
+            background: #f3f3f3;
+            border-bottom: 1px solid #d3d3d3;
+            padding: 0 12px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .dev-tools-title {
+            font-size: 12px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .dev-tools-controls {
+            display: flex;
+            gap: 4px;
+        }
+
+        .dev-tools-control-btn {
             background: none;
             border: none;
-            padding: 4px;
+            width: 24px;
+            height: 24px;
             cursor: pointer;
-            border-radius: 4px;
-            color: #5f6368;
-            font-size: 12px;
+            color: #666;
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
         }
 
-        .panel-close:hover {
-            background: #dadce0;
-        }
-
-        .download-item {
-            padding: 8px;
-            border-bottom: 1px solid #f1f3f4;
-            font-size: 12px;
-        }
-
-        .download-item:last-child {
-            border-bottom: none;
+        .dev-tools-control-btn:hover {
+            background: #e8e8e8;
         }
 
         .dev-tools-tabs {
             display: flex;
-            background: #f8f9fa;
-            border-bottom: 1px solid #dadce0;
+            background: #f3f3f3;
+            border-bottom: 1px solid #d3d3d3;
+            height: 30px;
+            align-items: stretch;
         }
 
         .dev-tab-btn {
             background: none;
             border: none;
-            padding: 8px 16px;
+            padding: 0 12px;
             cursor: pointer;
+            color: #333;
             font-size: 12px;
-            border-bottom: 2px solid transparent;
-            color: #5f6368;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            border-right: 1px solid #d3d3d3;
+            min-width: 0;
+            flex: 0 0 auto;
+            position: relative;
+        }
+
+        .dev-tab-btn:last-child {
+            border-right: none;
         }
 
         .dev-tab-btn.active {
-            border-bottom-color: #1a73e8;
-            color: #1a73e8;
             background: #fff;
+            color: #000;
+            box-shadow: inset 0 1px 0 #fff;
+        }
+
+        .dev-tab-btn:hover:not(.active) {
+            background: #e8e8e8;
+        }
+
+        .dev-tab-btn ion-icon {
+            font-size: 14px;
+        }
+
+        .dev-tab-btn span {
+            font-size: 11px;
         }
 
         .dev-tools-content {
             flex: 1;
             position: relative;
+            background: #fff;
             overflow: hidden;
         }
 
         .dev-panel {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
             display: none;
-            background: #fff;
+            height: 100%;
+            flex-direction: column;
+            font-size: 12px;
         }
 
         .dev-panel.active {
-            display: block;
+            display: flex;
         }
 
-        #console-output {
-            height: calc(100% - 40px);
-            overflow-y: auto;
-            padding: 8px;
-            font-family: 'Consolas', 'Monaco', monospace;
-            font-size: 12px;
-            background: #1e1e1e;
-            color: #d4d4d4;
+        /* Elements Panel */
+        .panel-toolbar {
+            background: #f8f8f8;
+            border-bottom: 1px solid #e8e8e8;
+            padding: 4px 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            height: 28px;
         }
 
-        #console-input {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            padding: 8px;
-            border: none;
-            border-top: 1px solid #dadce0;
-            font-family: 'Consolas', 'Monaco', monospace;
-            font-size: 12px;
-            outline: none;
+        .toolbar-section {
+            display: flex;
+            gap: 4px;
+            align-items: center;
         }
 
-        #network-log, #elements-tree {
+        .toolbar-btn {
+            background: none;
+            border: 1px solid #d3d3d3;
+            padding: 2px 6px;
+            cursor: pointer;
+            color: #333;
+            font-size: 11px;
+            border-radius: 2px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .toolbar-btn:hover {
+            background: #f0f0f0;
+            border-color: #999;
+        }
+
+        .toolbar-input {
+            border: 1px solid #d3d3d3;
+            padding: 2px 6px;
+            font-size: 11px;
+            border-radius: 2px;
+            height: 20px;
+            width: 200px;
+        }
+
+        .panel-main {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .elements-container {
+            display: flex;
+            width: 100%;
             height: 100%;
+        }
+
+        .elements-tree {
+            flex: 1;
+            border-right: 1px solid #e8e8e8;
             overflow-y: auto;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 11px;
+            background: #fff;
+            padding: 4px;
+            white-space: pre-wrap;
+            line-height: 1.4;
+        }
+
+        .elements-styles {
+            width: 300px;
+            background: #fff;
+            overflow-y: auto;
+            border-left: 1px solid #e8e8e8;
+        }
+
+        .styles-section {
+            border-bottom: 1px solid #e8e8e8;
+        }
+
+        .styles-section h4 {
+            background: #f8f8f8;
+            padding: 4px 8px;
+            margin: 0;
+            font-size: 11px;
+            font-weight: 500;
+            color: #333;
+            border-bottom: 1px solid #e8e8e8;
+        }
+
+        .element-node {
+            cursor: pointer;
+            padding: 1px 0;
+            color: #000;
+        }
+
+        .element-node:hover {
+            background: #e8f0fe;
+        }
+
+        /* Console Panel */
+        .console-toolbar {
+            background: #f8f8f8;
+            border-bottom: 1px solid #e8e8e8;
+            padding: 2px 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 24px;
+        }
+
+        .console-filters {
+            display: flex;
+            gap: 2px;
+        }
+
+        .console-filter {
+            background: none;
+            border: 1px solid transparent;
+            padding: 1px 8px;
+            cursor: pointer;
+            color: #333;
+            font-size: 11px;
+            border-radius: 2px;
+            height: 18px;
+        }
+
+        .console-filter.active {
+            background: #4285f4;
+            color: #fff;
+            border-color: #4285f4;
+        }
+
+        .console-filter:hover:not(.active) {
+            background: #f0f0f0;
+            border-color: #d3d3d3;
+        }
+
+        .console-actions {
+            display: flex;
+            gap: 2px;
+        }
+
+        .console-btn {
+            background: none;
+            border: 1px solid transparent;
+            padding: 1px 6px;
+            cursor: pointer;
+            color: #333;
+            font-size: 11px;
+            border-radius: 2px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .console-btn:hover {
+            background: #f0f0f0;
+            border-color: #d3d3d3;
+        }
+
+        .console-output {
+            flex: 1;
+            overflow-y: auto;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 11px;
+            background: #fff;
+            color: #000;
+            padding: 4px;
+            line-height: 1.4;
+        }
+
+        .console-input-container {
+            display: flex;
+            align-items: center;
+            background: #fff;
+            border-top: 1px solid #e8e8e8;
+            padding: 2px 4px;
+            height: 20px;
+        }
+
+        .console-prompt {
+            color: #666;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 11px;
+            margin-right: 4px;
+        }
+
+        .console-input-field {
+            flex: 1;
+            border: none;
+            outline: none;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 11px;
+            background: transparent;
+        }
+
+        /* Sources Panel */
+        .sources-container {
+            display: flex;
+            height: 100%;
+        }
+
+        .sources-sidebar {
+            width: 200px;
+            border-right: 1px solid #e8e8e8;
+            background: #fff;
+            overflow-y: auto;
+        }
+
+        .sources-editor {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #fff;
+        }
+
+        .editor-tabs {
+            background: #f8f8f8;
+            border-bottom: 1px solid #e8e8e8;
+            display: flex;
+            height: 24px;
+            align-items: stretch;
+        }
+
+        .editor-tab {
+            background: none;
+            border: none;
+            padding: 0 12px;
+            cursor: pointer;
+            color: #333;
+            font-size: 11px;
+            border-right: 1px solid #e8e8e8;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .editor-tab.active {
+            background: #fff;
+        }
+
+        .editor-content {
+            flex: 1;
+            overflow-y: auto;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 11px;
             padding: 8px;
-            font-family: 'Consolas', 'Monaco', monospace;
-            font-size: 12px;
+            background: #fff;
+        }
+
+        .no-file-selected {
+            color: #666;
+            font-style: italic;
+            text-align: center;
+            padding: 40px;
+        }
+
+        /* Network Panel */
+        .network-toolbar {
+            background: #f8f8f8;
+            border-bottom: 1px solid #e8e8e8;
+            padding: 2px 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 24px;
+        }
+
+        .network-filters {
+            display: flex;
+            gap: 2px;
+        }
+
+        .network-filter {
+            background: none;
+            border: 1px solid transparent;
+            padding: 1px 8px;
+            cursor: pointer;
+            color: #333;
+            font-size: 11px;
+            border-radius: 2px;
+            height: 18px;
+        }
+
+        .network-filter.active {
+            background: #4285f4;
+            color: #fff;
+            border-color: #4285f4;
+        }
+
+        .network-filter:hover:not(.active) {
+            background: #f0f0f0;
+            border-color: #d3d3d3;
+        }
+
+        .network-actions {
+            display: flex;
+            gap: 2px;
+        }
+
+        .network-btn {
+            background: none;
+            border: 1px solid transparent;
+            padding: 1px 6px;
+            cursor: pointer;
+            color: #333;
+            font-size: 11px;
+            border-radius: 2px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .network-btn:hover {
+            background: #f0f0f0;
+            border-color: #d3d3d3;
+        }
+
+        .network-timeline {
+            height: 30px;
+            background: #f8f8f8;
+            border-bottom: 1px solid #e8e8e8;
+            position: relative;
+        }
+
+        .network-table {
+            flex: 1;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .table-header {
+            display: flex;
+            background: #f8f8f8;
+            border-bottom: 1px solid #e8e8e8;
+            font-weight: 500;
+            height: 20px;
+            align-items: center;
+        }
+
+        .table-cell {
+            padding: 2px 8px;
+            font-size: 11px;
+            border-right: 1px solid #e8e8e8;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .table-cell:last-child {
+            border-right: none;
+        }
+
+        .table-body {
+            flex: 1;
+            overflow-y: auto;
         }
 
         .network-item {
-            padding: 4px 0;
-            border-bottom: 1px solid #f1f3f4;
+            display: flex;
+            border-bottom: 1px solid #f0f0f0;
+            height: 20px;
+            align-items: center;
+        }
+
+        .network-item:hover {
+            background: #f8f8f8;
+        }
+
+        /* Performance Panel */
+        .performance-toolbar {
+            background: #f8f8f8;
+            border-bottom: 1px solid #e8e8e8;
+            padding: 4px 8px;
+            display: flex;
+            gap: 8px;
+            height: 28px;
+            align-items: center;
+        }
+
+        .perf-btn {
+            background: none;
+            border: 1px solid #d3d3d3;
+            padding: 2px 8px;
+            cursor: pointer;
+            color: #333;
+            font-size: 11px;
+            border-radius: 2px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .perf-btn:hover {
+            background: #f0f0f0;
+            border-color: #999;
+        }
+
+        .perf-btn.recording {
+            background: #d93025;
+            color: #fff;
+            border-color: #d93025;
+        }
+
+        .performance-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .perf-timeline {
+            height: 200px;
+            background: #f8f8f8;
+            border-bottom: 1px solid #e8e8e8;
+            position: relative;
+        }
+
+        .perf-details {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+        }
+
+        /* Application Panel */
+        .app-sidebar {
+            width: 200px;
+            border-right: 1px solid #e8e8e8;
+            background: #fff;
+            overflow-y: auto;
+        }
+
+        .app-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+            background: #fff;
+        }
+
+        .no-section-selected {
+            color: #666;
+            font-style: italic;
+            text-align: center;
+            padding: 40px;
+        }
+
+        /* Tree Components */
+        .tree-node {
+            padding: 2px 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            height: 18px;
+            user-select: none;
+        }
+
+        .tree-node:hover {
+            background: #f0f0f0;
+        }
+
+        .tree-node.selected {
+            background: #e8f0fe;
+        }
+
+        .tree-arrow {
+            font-size: 10px;
+            width: 10px;
+            text-align: center;
+        }
+
+        .tree-icon {
+            font-size: 12px;
+        }
+
+        .tree-label {
+            flex: 1;
+        }
+
+        .tree-children {
+            margin-left: 16px;
+            display: none;
+        }
+
+        .tree-node.expanded > .tree-children {
+            display: block;
+        }
+
+        .tree-node.expanded > .tree-arrow {
+            transform: rotate(90deg);
+        }
+
+        /* Security Panel */
+        .security-overview {
+            padding: 20px;
+        }
+
+        .security-status {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .status-icon {
+            font-size: 24px;
+        }
+
+        .status-text {
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .security-details {
+            background: #f8f8f8;
+            border-radius: 4px;
+            padding: 16px;
+        }
+
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e8e8e8;
+        }
+
+        .detail-item:last-child {
+            border-bottom: none;
+        }
+
+        .detail-label {
+            font-weight: 500;
+            color: #333;
+        }
+
+        .detail-value {
+            color: #666;
+        }
+
+        /* Console Message Types */
+        .console-error {
+            color: #d93025;
+        }
+
+        .console-warning {
+            color: #ea8600;
+        }
+
+        .console-info {
+            color: #1a73e8;
+        }
+
+        .console-log {
+            color: #000;
+        }
+
+        /* Network Status Colors */
+        .network-status-200,
+        .network-status-201,
+        .network-status-204 {
+            color: #0f9d58;
+        }
+
+        .network-status-300,
+        .network-status-301,
+        .network-status-302,
+        .network-status-304 {
+            color: #f4b400;
+        }
+
+        .network-status-400,
+        .network-status-401,
+        .network-status-403,
+        .network-status-404 {
+            color: #d93025;
+        }
+
+        .network-status-500,
+        .network-status-502,
+        .network-status-503,
+        .network-status-504 {
+            color: #d93025;
         }
 
         .element-node {
@@ -970,25 +1580,235 @@
 
     <!-- Dev Tools Panel -->
     <div class="dev-tools-panel" id="dev-tools-panel" style="display: none;">
-        <div class="panel-header">Developer Tools</div>
-        <button class="panel-close" id="dev-tools-close">
-            <ion-icon name="close-outline"></ion-icon>
-        </button>
-        <div class="dev-tools-tabs">
-            <button class="dev-tab-btn active" data-tab="console">Console</button>
-            <button class="dev-tab-btn" data-tab="network">Network</button>
-            <button class="dev-tab-btn" data-tab="elements">Elements</button>
+        <div class="dev-tools-header">
+            <div class="dev-tools-title">Developer Tools</div>
+            <div class="dev-tools-controls">
+                <button class="dev-tools-control-btn" id="dev-tools-dock" title="Dock position">
+                    <ion-icon name="dock-outline"></ion-icon>
+                </button>
+                <button class="dev-tools-control-btn" id="dev-tools-settings" title="Settings">
+                    <ion-icon name="settings-outline"></ion-icon>
+                </button>
+                <button class="panel-close" id="dev-tools-close" title="Close">
+                    <ion-icon name="close-outline"></ion-icon>
+                </button>
+            </div>
         </div>
+        
+        <div class="dev-tools-tabs">
+            <button class="dev-tab-btn active" data-tab="elements" title="Elements">
+                <ion-icon name="code-outline"></ion-icon>
+                <span>Elements</span>
+            </button>
+            <button class="dev-tab-btn" data-tab="console" title="Console">
+                <ion-icon name="terminal-outline"></ion-icon>
+                <span>Console</span>
+            </button>
+            <button class="dev-tab-btn" data-tab="sources" title="Sources">
+                <ion-icon name="document-text-outline"></ion-icon>
+                <span>Sources</span>
+            </button>
+            <button class="dev-tab-btn" data-tab="network" title="Network">
+                <ion-icon name="wifi-outline"></ion-icon>
+                <span>Network</span>
+            </button>
+            <button class="dev-tab-btn" data-tab="performance" title="Performance">
+                <ion-icon name="speedometer-outline"></ion-icon>
+                <span>Performance</span>
+            </button>
+            <button class="dev-tab-btn" data-tab="application" title="Application">
+                <ion-icon name="folder-outline"></ion-icon>
+                <span>Application</span>
+            </button>
+            <button class="dev-tab-btn" data-tab="security" title="Security">
+                <ion-icon name="shield-checkmark-outline"></ion-icon>
+                <span>Security</span>
+            </button>
+        </div>
+        
         <div class="dev-tools-content">
-            <div id="dev-console" class="dev-panel active">
-                <div id="console-output"></div>
-                <input type="text" id="console-input" placeholder="Enter JavaScript..." />
+            <!-- Elements Panel -->
+            <div id="dev-elements" class="dev-panel active">
+                <div class="panel-toolbar">
+                    <div class="toolbar-section">
+                        <button class="toolbar-btn" id="element-inspect" title="Inspect Element">
+                            <ion-icon name="search-outline"></ion-icon>
+                        </button>
+                        <button class="toolbar-btn" id="element-select" title="Select Element">
+                            <ion-icon name="cursor-outline"></ion-icon>
+                        </button>
+                    </div>
+                    <div class="toolbar-section">
+                        <input type="text" id="element-search" placeholder="Search in DOM" class="toolbar-input" />
+                    </div>
+                </div>
+                <div class="panel-main">
+                    <div class="elements-container">
+                        <div class="elements-tree" id="elements-tree"></div>
+                        <div class="elements-styles" id="elements-styles">
+                            <div class="styles-section">
+                                <h4>Styles</h4>
+                                <div id="computed-styles"></div>
+                            </div>
+                            <div class="styles-section">
+                                <h4>Box Model</h4>
+                                <div id="box-model"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
+            
+            <!-- Console Panel -->
+            <div id="dev-console" class="dev-panel">
+                <div class="console-toolbar">
+                    <div class="console-filters">
+                        <button class="console-filter active" data-level="all">All</button>
+                        <button class="console-filter" data-level="errors">Errors</button>
+                        <button class="console-filter" data-level="warnings">Warnings</button>
+                        <button class="console-filter" data-level="info">Info</button>
+                        <button class="console-filter" data-level="logs">Logs</button>
+                    </div>
+                    <div class="console-actions">
+                        <button class="console-btn" id="console-clear" title="Clear Console">
+                            <ion-icon name="trash-outline"></ion-icon>
+                        </button>
+                        <button class="console-btn" id="console-preserve" title="Preserve Log">
+                            <ion-icon name="pin-outline"></ion-icon>
+                        </button>
+                    </div>
+                </div>
+                <div class="console-output" id="console-output"></div>
+                <div class="console-input-container">
+                    <span class="console-prompt">&gt;</span>
+                    <input type="text" id="console-input" placeholder="" class="console-input-field" />
+                </div>
+            </div>
+            
+            <!-- Sources Panel -->
+            <div id="dev-sources" class="dev-panel">
+                <div class="sources-container">
+                    <div class="sources-sidebar">
+                        <div class="sources-tree" id="sources-tree">
+                            <div class="tree-node expanded">
+                                <span class="tree-arrow">▼</span>
+                                <span class="tree-icon">📁</span>
+                                <span class="tree-label">(no domain)</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="sources-editor">
+                        <div class="editor-tabs" id="editor-tabs"></div>
+                        <div class="editor-content" id="editor-content">
+                            <div class="no-file-selected">Select a file to view its source</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Network Panel -->
             <div id="dev-network" class="dev-panel">
-                <div id="network-log"></div>
+                <div class="network-toolbar">
+                    <div class="network-filters">
+                        <button class="network-filter active" data-type="all">All</button>
+                        <button class="network-filter" data-type="xhr">XHR</button>
+                        <button class="network-filter" data-type="js">JS</button>
+                        <button class="network-filter" data-type="css">CSS</button>
+                        <button class="network-filter" data-type="img">Img</button>
+                        <button class="network-filter" data-type="media">Media</button>
+                        <button class="network-filter" data-type="font">Font</button>
+                    </div>
+                    <div class="network-actions">
+                        <button class="network-btn" id="network-clear" title="Clear">
+                            <ion-icon name="trash-outline"></ion-icon>
+                        </button>
+                        <button class="network-btn" id="network-export" title="Export HAR">
+                            <ion-icon name="download-outline"></ion-icon>
+                        </button>
+                    </div>
+                </div>
+                <div class="network-timeline" id="network-timeline"></div>
+                <div class="network-table">
+                    <div class="table-header">
+                        <div class="table-cell">Name</div>
+                        <div class="table-cell">Status</div>
+                        <div class="table-cell">Type</div>
+                        <div class="table-cell">Size</div>
+                        <div class="table-cell">Time</div>
+                        <div class="table-cell">Waterfall</div>
+                    </div>
+                    <div class="table-body" id="network-log"></div>
+                </div>
             </div>
-            <div id="dev-elements" class="dev-panel">
-                <div id="elements-tree"></div>
+            
+            <!-- Performance Panel -->
+            <div id="dev-performance" class="dev-panel">
+                <div class="performance-toolbar">
+                    <button class="perf-btn" id="perf-record" title="Record">
+                        <ion-icon name="radio-outline"></ion-icon>
+                        Record
+                    </button>
+                    <button class="perf-btn" id="perf-clear" title="Clear">
+                        <ion-icon name="trash-outline"></ion-icon>
+                        Clear
+                    </button>
+                </div>
+                <div class="performance-content" id="performance-content">
+                    <div class="perf-timeline" id="perf-timeline"></div>
+                    <div class="perf-details" id="perf-details">
+                        <div id="performance-display"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Application Panel -->
+            <div id="dev-application" class="dev-panel">
+                <div class="app-sidebar">
+                    <div class="app-tree">
+                        <div class="tree-node">
+                            <span class="tree-arrow">▶</span>
+                            <span class="tree-icon">🗄️</span>
+                            <span class="tree-label">Storage</span>
+                        </div>
+                        <div class="tree-children">
+                            <div class="tree-node" data-section="local-storage">
+                                <span class="tree-icon">📄</span>
+                                <span class="tree-label">Local Storage</span>
+                            </div>
+                            <div class="tree-node" data-section="session-storage">
+                                <span class="tree-icon">📄</span>
+                                <span class="tree-label">Session Storage</span>
+                            </div>
+                            <div class="tree-node" data-section="cookies">
+                                <span class="tree-icon">🍪</span>
+                                <span class="tree-label">Cookies</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="app-content" id="app-content">
+                    <div class="no-section-selected">Select a section to view storage data</div>
+                </div>
+            </div>
+            
+            <!-- Security Panel -->
+            <div id="dev-security" class="dev-panel">
+                <div class="security-overview">
+                    <div class="security-status" id="security-status">
+                        <div class="status-icon">🔒</div>
+                        <div class="status-text">Secure connection</div>
+                    </div>
+                    <div class="security-details" id="security-details">
+                        <div class="detail-item">
+                            <span class="detail-label">Connection:</span>
+                            <span class="detail-value" id="connection-type">HTTPS</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Certificate:</span>
+                            <span class="detail-value" id="certificate-info">Valid</span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
