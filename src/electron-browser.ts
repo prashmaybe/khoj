@@ -704,12 +704,39 @@ Performance Report (Last ${count} samples):
         const webview = document.createElement('iframe');
         webview.className = 'webview';
         webview.id = tabId;
-        // No sandbox for now to allow external sites to load
-        // We'll add proper security handling later
+        
+        // Apply security sandbox with appropriate restrictions
+        // Allow scripts, forms, and same-origin for functionality
+        // Block potentially dangerous features
+        webview.setAttribute('sandbox', 
+            'allow-scripts ' +
+            'allow-same-origin ' +
+            'allow-forms ' +
+            'allow-popups ' +
+            'allow-modals'
+        );
+        
+        // Add security attributes
+        webview.setAttribute('loading', 'lazy');
+        webview.setAttribute('referrerpolicy', 'no-referrer-when-downgrade');
+        
+        // Security: Validate URL before loading
+        if (url && url !== 'about:blank') {
+            const sanitizedUrl = this.sanitizeUrl(url);
+            webview.src = sanitizedUrl;
+        } else {
+            webview.src = 'about:blank';
+        }
         
         // Add load event listener to handle navigation
         webview.addEventListener('load', () => {
             this.handleTabLoad(tabId);
+        });
+        
+        // Add error event listener for security violations
+        webview.addEventListener('error', (e) => {
+            console.warn('Security error in webview:', e);
+            this.handleTabError(tabId, e);
         });
         
         const tab: BrowserTab = {
@@ -2201,8 +2228,12 @@ Performance Report (Last ${count} samples):
             this.updateStatus('Bookmark removed');
         } else {
             const bookmark: Bookmark = {
+                id: this.generateBookmarkId(),
                 url: tab.url,
                 title: tab.title,
+                favicon: '',
+                folder: 'Bookmarks Bar',
+                dateAdded: Date.now(),
                 timestamp: Date.now()
             };
             this.bookmarks.push(bookmark);
@@ -2433,6 +2464,15 @@ Performance Report (Last ${count} samples):
         this.updateStatus('Settings reset to defaults');
     }
 
+    private showBookmarks(): void {
+        // Ensure bookmarks bar is visible and highlight it
+        this.bookmarksBar.classList.remove('collapsed');
+        this.updateStatus('Bookmarks bar shown');
+        
+        // Scroll to bookmarks bar if needed
+        this.bookmarksBar.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
     private toggleBookmarksBar(): void {
         this.bookmarksBar.classList.toggle('collapsed');
         const isCollapsed = this.bookmarksBar.classList.contains('collapsed');
@@ -2460,7 +2500,8 @@ Performance Report (Last ${count} samples):
             url: tab.url,
             favicon: tab.favicon || '',
             folder: 'Bookmarks Bar',
-            dateAdded: Date.now()
+            dateAdded: Date.now(),
+            timestamp: Date.now()
         };
 
         this.bookmarks.push(bookmark);
@@ -2804,13 +2845,121 @@ Performance Report (Last ${count} samples):
     }
 
     private importBookmarks(filePath: string): void {
-        // Implementation for importing bookmarks from file
-        this.updateStatus('Bookmarks imported from: ' + filePath);
+        try {
+            if (window.electronAPI && window.electronAPI.readFile) {
+                window.electronAPI.readFile(filePath).then((content: string) => {
+                    try {
+                        const importedBookmarks = JSON.parse(content);
+                        
+                        // Validate bookmark format
+                        if (!Array.isArray(importedBookmarks)) {
+                            throw new Error('Invalid bookmarks file format');
+                        }
+                        
+                        const validBookmarks = importedBookmarks.filter(bookmark => 
+                            bookmark.url && 
+                            bookmark.title && 
+                            typeof bookmark.url === 'string' && 
+                            typeof bookmark.title === 'string'
+                        );
+                        
+                        if (validBookmarks.length === 0) {
+                            throw new Error('No valid bookmarks found in file');
+                        }
+                        
+                        // Merge with existing bookmarks (avoid duplicates)
+                        const existingUrls = new Set(this.bookmarks.map(b => b.url));
+                        const newBookmarks = validBookmarks.filter(b => !existingUrls.has(b.url));
+                        
+                        this.bookmarks.push(...newBookmarks);
+                        this.saveBookmarks();
+                        this.updateBookmarksBar();
+                        this.updateStatus(`Successfully imported ${newBookmarks.length} bookmarks from: ${filePath}`);
+                        
+                    } catch (parseError) {
+                        const errorMessage = parseError instanceof Error ? parseError.message : String(parseError);
+                        this.updateStatus('Error parsing bookmarks file: ' + errorMessage);
+                    }
+                }).catch((error: any) => {
+                    this.updateStatus('Error reading bookmarks file: ' + error.message);
+                });
+            } else {
+                // Fallback for web environment - use file input
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.json';
+                input.onchange = (e) => {
+                    const file = (e.target as HTMLInputElement).files?.[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                            try {
+                                const importedBookmarks = JSON.parse(event.target?.result as string);
+                                
+                                if (!Array.isArray(importedBookmarks)) {
+                                    throw new Error('Invalid bookmarks file format');
+                                }
+                                
+                                const validBookmarks = importedBookmarks.filter(bookmark => 
+                                    bookmark.url && 
+                                    bookmark.title && 
+                                    typeof bookmark.url === 'string' && 
+                                    typeof bookmark.title === 'string'
+                                );
+                                
+                                if (validBookmarks.length === 0) {
+                                    throw new Error('No valid bookmarks found in file');
+                                }
+                                
+                                const existingUrls = new Set(this.bookmarks.map(b => b.url));
+                                const newBookmarks = validBookmarks.filter(b => !existingUrls.has(b.url));
+                                
+                                this.bookmarks.push(...newBookmarks);
+                                this.saveBookmarks();
+                                this.updateBookmarksBar();
+                                this.updateStatus(`Successfully imported ${newBookmarks.length} bookmarks`);
+                                
+                            } catch (parseError) {
+                            const errorMessage = parseError instanceof Error ? parseError.message : String(parseError);
+                            this.updateStatus('Error parsing bookmarks file: ' + errorMessage);
+                            }
+                        };
+                        reader.readAsText(file);
+                    }
+                };
+                input.click();
+            }
+        } catch (error) {
+            this.updateStatus('Error importing bookmarks: ' + error);
+        }
     }
 
     private exportBookmarks(filePath: string): void {
-        // Implementation for exporting bookmarks to file
-        this.updateStatus('Bookmarks exported to: ' + filePath);
+        try {
+            const bookmarksData = JSON.stringify(this.bookmarks, null, 2);
+            
+            if (window.electronAPI && window.electronAPI.writeFile) {
+                window.electronAPI.writeFile(filePath, bookmarksData).then(() => {
+                    this.updateStatus(`Successfully exported ${this.bookmarks.length} bookmarks to: ${filePath}`);
+                }).catch((error: any) => {
+                    this.updateStatus('Error saving bookmarks file: ' + error.message);
+                });
+            } else {
+                // Fallback for web environment - download as file
+                const blob = new Blob([bookmarksData], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'bookmarks.json';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                this.updateStatus(`Successfully exported ${this.bookmarks.length} bookmarks`);
+            }
+        } catch (error) {
+            this.updateStatus('Error exporting bookmarks: ' + error);
+        }
     }
 
     // Window control methods
@@ -3025,6 +3174,123 @@ Performance Report (Last ${count} samples):
             }
         } catch (error) {
             console.warn('Could not restore session from localStorage:', error);
+        }
+    }
+
+    private sanitizeUrl(url: string): string {
+        try {
+            // Basic URL validation and sanitization
+            if (!url || typeof url !== 'string') {
+                return 'about:blank';
+            }
+
+            // Trim whitespace
+            url = url.trim();
+
+            // Handle special cases
+            if (url === 'about:blank' || url === 'about:newtab') {
+                return url;
+            }
+
+            // Ensure URL has a protocol
+            if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('file://')) {
+                if (url.includes('.') && !url.includes(' ')) {
+                    url = 'https://' + url;
+                } else {
+                    // Treat as search query
+                    return 'about:blank';
+                }
+            }
+
+            // Validate URL format
+            const parsedUrl = new URL(url);
+            
+            // Block potentially dangerous protocols
+            const allowedProtocols = ['http:', 'https:', 'file:', 'data:'];
+            if (!allowedProtocols.includes(parsedUrl.protocol)) {
+                console.warn('Blocked URL with disallowed protocol:', parsedUrl.protocol);
+                return 'about:blank';
+            }
+
+            // Block localhost access in production (optional security measure)
+            if (parsedUrl.hostname === 'localhost' || parsedUrl.hostname === '127.0.0.1') {
+                console.warn('Blocked localhost access for security');
+                return 'about:blank';
+            }
+
+            return parsedUrl.toString();
+        } catch (error) {
+            console.warn('URL sanitization failed:', error);
+            return 'about:blank';
+        }
+    }
+
+    private handleTabError(tabId: string, error: Event): void {
+        const tab = this.tabs.find(t => t.id === tabId);
+        if (tab) {
+            tab.isLoading = false;
+            tab.title = 'Error';
+            
+            // Create an error page to display
+            const errorContent = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Security Error</title>
+                    <style>
+                        body { 
+                            font-family: system-ui, -apple-system, sans-serif; 
+                            display: flex; 
+                            align-items: center; 
+                            justify-content: center; 
+                            height: 100vh; 
+                            margin: 0; 
+                            background: #f8f9fa; 
+                            color: #333; 
+                        }
+                        .error-container { 
+                            text-align: center; 
+                            max-width: 500px; 
+                            padding: 2rem; 
+                            background: white; 
+                            border-radius: 8px; 
+                            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+                        }
+                        h1 { color: #dc3545; margin-bottom: 1rem; }
+                        p { margin-bottom: 1.5rem; line-height: 1.6; }
+                        button { 
+                            background: #007bff; 
+                            color: white; 
+                            border: none; 
+                            padding: 0.5rem 1rem; 
+                            border-radius: 4px; 
+                            cursor: pointer; 
+                        }
+                        button:hover { background: #0056b3; }
+                    </style>
+                </head>
+                <body>
+                    <div class="error-container">
+                        <h1>Security Error</h1>
+                        <p>The page could not be loaded due to security restrictions. This may be caused by:</p>
+                        <ul style="text-align: left; margin-bottom: 1.5rem;">
+                            <li>Invalid or blocked URL protocol</li>
+                            <li>Content Security Policy violations</li>
+                            <li>Network security restrictions</li>
+                        </ul>
+                        <button onclick="window.location.href='about:blank'">Go to New Tab</button>
+                    </div>
+                </body>
+                </html>
+            `;
+
+            const webview = document.getElementById(tabId) as HTMLIFrameElement;
+            if (webview) {
+                webview.srcdoc = errorContent;
+            }
+
+            this.updateStatus(`Security error in tab: ${tab.title}`);
+            this.updateTabTitle(tabId, tab.title);
         }
     }
 }

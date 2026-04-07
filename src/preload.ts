@@ -10,6 +10,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     // File operations
     showSaveDialog: (options: any) => ipcRenderer.invoke('show-save-dialog', options),
     showOpenDialog: (options: any) => ipcRenderer.invoke('show-open-dialog', options),
+    readFile: (filePath: string) => ipcRenderer.invoke('read-file', filePath),
+    writeFile: (filePath: string, content: string) => ipcRenderer.invoke('write-file', filePath, content),
     
     // External links
     openExternal: (url: string) => ipcRenderer.invoke('open-external', url),
@@ -56,6 +58,8 @@ declare global {
             closeWindow: () => Promise<void>;
             showSaveDialog: (options: any) => Promise<any>;
             showOpenDialog: (options: any) => Promise<any>;
+            readFile: (filePath: string) => Promise<string>;
+            writeFile: (filePath: string, content: string) => Promise<void>;
             openExternal: (url: string) => Promise<void>;
             onNewTab: (callback: () => void) => void;
             onCloseTab: (callback: () => void) => void;
