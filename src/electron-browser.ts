@@ -424,7 +424,7 @@ Performance Report (Last ${count} samples):
 
         // Bookmarks bar
         this.bookmarksToggle.addEventListener('click', () => this.toggleBookmarksBar());
-        this.bookmarksManage.addEventListener('click', () => this.toggleBookmarks());
+        this.bookmarksManage.addEventListener('click', () => this.showBookmarks());
         this.bookmarksAdd.addEventListener('click', () => this.addCurrentPageToBookmarks());
 
         // Dev tools tabs
