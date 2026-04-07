@@ -1,7 +1,7 @@
 import { app, BrowserWindow, Menu, ipcMain, shell, dialog } from 'electron';
 import * as path from 'path';
 
-class ChromeLikeBrowser {
+class KhojBrowser {
     private mainWindow: BrowserWindow | null = null;
     private isDevelopment: boolean = process.env.NODE_ENV === 'development';
 
@@ -12,7 +12,7 @@ class ChromeLikeBrowser {
     private initializeApp(): void {
         // Set app user model ID for Windows
         if (process.platform === 'win32') {
-            app.setAppUserModelId('com.yourcompany.chromelikebrowser');
+            app.setAppUserModelId('com.khoj.browser');
         }
 
         // Handle app ready
@@ -356,14 +356,14 @@ class ChromeLikeBrowser {
                     {
                         label: 'Help Center',
                         click: () => {
-                            shell.openExternal('https://github.com/yourusername/chrome-like-browser');
+                            shell.openExternal('https://github.com/yourusername/khoj-browser');
                         }
                     },
                     { type: 'separator' },
                     {
                         label: 'Report an Issue',
                         click: () => {
-                            shell.openExternal('https://github.com/yourusername/chrome-like-browser/issues');
+                            shell.openExternal('https://github.com/yourusername/khoj-browser/issues');
                         }
                     }
                 ]
@@ -451,9 +451,9 @@ class ChromeLikeBrowser {
     private showAboutDialog(): void {
         dialog.showMessageBox(this.mainWindow!, {
             type: 'info',
-            title: 'About Chrome-Like Browser',
-            message: 'Chrome-Like Browser',
-            detail: 'Version 1.0.0\n\nA modern web browser built with Electron and TypeScript.\n\n© 2024 Your Company',
+            title: 'About Khoj',
+            message: 'Khoj Browser',
+            detail: 'Version 1.0.0\n\nA modern web browser built with Electron and TypeScript.\n\n© 2024 Khoj',
             buttons: ['OK']
         });
     }
@@ -500,4 +500,4 @@ class ChromeLikeBrowser {
 }
 
 // Initialize the application
-new ChromeLikeBrowser();
+new KhojBrowser();

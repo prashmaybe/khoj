@@ -41,7 +41,7 @@ interface NetworkRequest {
     duration: number;
 }
 
-class ElectronBrowser {
+class KhojBrowser {
     private tabs: BrowserTab[] = [];
     private activeTabId: string = '';
     private bookmarks: Bookmark[] = [];
@@ -881,5 +881,5 @@ class ElectronBrowser {
 
 // Initialize the browser when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-    new ElectronBrowser();
+    new KhojBrowser();
 });
