@@ -136,6 +136,7 @@ class KhojBrowser {
     private performanceMetrics: PerformanceMetrics[] = [];
     private performanceMonitoringInterval: NodeJS.Timeout | null = null;
     private pageErrors: PageError[] = [];
+    private tabLoadTimeouts: { [key: string]: NodeJS.Timeout } = {};
 
     // UI Elements
     private tabsContainer!: HTMLElement;
@@ -731,12 +732,71 @@ Performance Report (Last ${count} samples):
         // Add load event listener to handle navigation
         webview.addEventListener('load', () => {
             this.handleTabLoad(tabId);
+            // Clear any existing timeout for this tab
+            if (this.tabLoadTimeouts[tabId]) {
+                clearTimeout(this.tabLoadTimeouts[tabId]);
+                delete this.tabLoadTimeouts[tabId];
+            }
         });
         
         // Add error event listener for security violations
         webview.addEventListener('error', (e) => {
             console.warn('Security error in webview:', e);
-            this.handleTabError(tabId, e);
+            this.handleTabError(tabId, e, 'security');
+        });
+        
+        // Add specific listener for blocked responses
+        webview.addEventListener('loadstart', () => {
+            // Set a timeout to detect if the page loads successfully
+            setTimeout(() => {
+                try {
+                    const doc = webview.contentDocument;
+                    if (!doc || !doc.body || doc.body.children.length === 0) {
+                        // Page might be blocked or failed to load
+                        if (webview.src && !webview.src.startsWith('about:blank')) {
+                            this.handleTabError(tabId, new Event('timeout'), 'network');
+                        }
+                    }
+                } catch (e) {
+                    // Cross-origin - check if this might be a blocked response
+                    if (webview.src && !webview.src.startsWith('about:blank') && !webview.src.startsWith('data:')) {
+                        // For now, assume cross-origin is normal and not an error
+                        console.log('Cross-origin (normal for external sites):', webview.src);
+                    }
+                }
+            }, 5000); // Check after 5 seconds
+        });
+
+        // Add load error event listener for network errors
+        webview.addEventListener('load', () => {
+            // Check if iframe failed to load by examining its content
+            try {
+                const doc = webview.contentDocument;
+                if (doc && doc.title && (doc.title.includes('blocked') || doc.title.includes('ERR_')) || 
+                    (doc && doc.body && doc.body.textContent && 
+                     (doc.body.textContent.includes('ERR_BLOCKED_BY_RESPONSE') || 
+                      doc.body.textContent.includes('Access Denied') ||
+                      doc.body.textContent.includes('blocked')))) {
+                    this.handleTabError(tabId, new Event('blocked'), 'network');
+                    return;
+                }
+                
+                // Check for common error indicators in the page
+                if (doc && doc.body) {
+                    const bodyText = doc.body.textContent || '';
+                    const bodyHtml = doc.body.innerHTML || '';
+                    if (bodyText.includes('ERR_') || 
+                        bodyHtml.includes('error') && bodyText.includes('blocked') ||
+                        doc.title && doc.title.includes('Error')) {
+                        this.handleTabError(tabId, new Event('blocked'), 'network');
+                        return;
+                    }
+                }
+            } catch (e) {
+                // Cross-origin error - this is expected for most external sites
+                // Only treat as error if we have reason to believe it's blocked
+                console.log('Cross-origin restriction (expected for external sites):', e);
+            }
         });
         
         const tab: BrowserTab = {
@@ -883,12 +943,17 @@ Performance Report (Last ${count} samples):
             tab.url = url;
             tab.isLoading = true;
             
+            // Clear any existing timeout for this tab
+            if (this.tabLoadTimeouts[tabId]) {
+                clearTimeout(this.tabLoadTimeouts[tabId]);
+            }
+            
             // Set a timeout for page loading
-            setTimeout(() => {
-                if (tab.isLoading) {
-                    this.handlePageLoadError(tabId, url, 'TIMEOUT', 'Page load timeout', null);
+            this.tabLoadTimeouts[tabId] = setTimeout(() => {
+                if (tab && tab.isLoading) {
+                    this.handleTabError(tabId, new Event('timeout'), 'network');
                 }
-            }, 30000); // 30 second timeout
+            }, 15000); // 15 second timeout for faster error detection
             
             if (tabId === this.activeTabId) {
                 this.urlBar.value = url;
@@ -1366,9 +1431,18 @@ Performance Report (Last ${count} samples):
         }
     }
 
+    private getGreeting(): string {
+        const hour = new Date().getHours();
+        if (hour < 12) return 'Good Morning! ☀️';
+        if (hour < 17) return 'Good Afternoon! 🌤️';
+        if (hour < 21) return 'Good Evening! 🌅';
+        return 'Good Night! 🌙';
+    }
+
     private generateWelcomePageHtml(): string {
         const currentTime = new Date().toLocaleString();
         const browserVersion = '1.0.0';
+        const greeting = this.getGreeting();
         
         return `
 <!DOCTYPE html>
@@ -1376,7 +1450,7 @@ Performance Report (Last ${count} samples):
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome to Khoj</title>
+    <title>New Tab - Khoj Browser</title>
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
     <style>
@@ -1390,448 +1464,616 @@ Performance Report (Last ${count} samples):
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             color: #333;
             overflow-x: hidden;
+            position: relative;
+        }
+        
+        .background-pattern {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.1;
+            background-image: 
+                radial-gradient(circle at 20% 80%, white 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, white 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, white 0%, transparent 50%);
+            z-index: 0;
         }
         
         .container {
-            max-width: 1200px;
-            width: 100%;
-            padding: 20px;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 40px;
-            align-items: center;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            position: relative;
+            z-index: 1;
         }
         
-        .welcome-section {
+        .header {
             text-align: center;
+            margin-bottom: 40px;
             color: white;
         }
         
-        .logo {
-            font-size: 72px;
+        .greeting {
+            font-size: 48px;
             font-weight: 700;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
             background: linear-gradient(45deg, #fff, #f8f9fa);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            text-shadow: 0 2px 20px rgba(0,0,0,0.1);
         }
         
-        .tagline {
-            font-size: 24px;
-            font-weight: 300;
-            margin-bottom: 30px;
+        .date-time {
+            font-size: 18px;
             opacity: 0.9;
-        }
-        
-        .description {
-            font-size: 18px;
-            line-height: 1.6;
-            opacity: 0.8;
-            margin-bottom: 40px;
-            max-width: 500px;
-        }
-        
-        .features-section {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            padding: 40px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
-            backdrop-filter: blur(10px);
-        }
-        
-        .features-title {
-            font-size: 28px;
-            font-weight: 600;
             margin-bottom: 30px;
-            color: #343a40;
-            text-align: center;
         }
         
-        .features-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-        }
-        
-        .feature-card {
-            background: #f8f9fa;
-            border-radius: 12px;
-            padding: 24px;
-            text-align: center;
-            transition: all 0.3s ease;
-            border: 1px solid #e9ecef;
-        }
-        
-        .feature-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            border-color: #667eea;
-        }
-        
-        .feature-icon {
-            font-size: 36px;
-            color: #667eea;
-            margin-bottom: 16px;
-        }
-        
-        .feature-title {
-            font-size: 18px;
-            font-weight: 600;
-            margin-bottom: 8px;
-            color: #343a40;
-        }
-        
-        .feature-description {
-            font-size: 14px;
-            color: #6c757d;
-            line-height: 1.5;
-        }
-        
-        .quick-actions {
-            margin-top: 40px;
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-            align-items: center;
+        .search-section {
+            max-width: 600px;
+            margin: 0 auto 40px;
+            position: relative;
         }
         
         .search-container {
             position: relative;
-            width: 100%;
-            max-width: 500px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 50px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+            backdrop-filter: blur(20px);
+            transition: all 0.3s ease;
+        }
+        
+        .search-container:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 25px 70px rgba(0,0,0,0.2);
         }
         
         .search-input {
             width: 100%;
-            padding: 16px 20px 16px 50px;
+            padding: 20px 60px 20px 60px;
             border: none;
             border-radius: 50px;
-            font-size: 16px;
-            background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(10px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            transition: all 0.3s ease;
-        }
-        
-        .search-input:focus {
+            font-size: 18px;
+            background: transparent;
             outline: none;
-            background: rgba(255, 255, 255, 1);
-            box-shadow: 0 15px 40px rgba(0,0,0,0.15);
         }
         
         .search-icon {
             position: absolute;
-            left: 20px;
+            left: 25px;
             top: 50%;
             transform: translateY(-50%);
             color: #667eea;
-            font-size: 20px;
+            font-size: 24px;
         }
         
-        .action-buttons {
+        .search-shortcuts {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
             display: flex;
-            gap: 16px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-        
-        .btn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 50px;
-            font-size: 16px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: inline-flex;
-            align-items: center;
             gap: 8px;
-            text-decoration: none;
         }
         
-        .btn-primary {
-            background: #667eea;
-            color: white;
+        .shortcut-key {
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            border: 1px solid rgba(102, 126, 234, 0.3);
         }
         
-        .btn-primary:hover {
-            background: #5a67d8;
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        .quick-access {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
         }
         
-        .btn-secondary {
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            backdrop-filter: blur(10px);
+        .widget {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            backdrop-filter: blur(20px);
+            transition: all 0.3s ease;
         }
         
-        .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.3);
-            transform: translateY(-2px);
+        .widget:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 50px rgba(0,0,0,0.15);
         }
         
-        .stats {
+        .widget-header {
             display: flex;
-            justify-content: center;
-            gap: 40px;
-            margin-top: 30px;
-            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
         }
         
-        .stat-item {
+        .widget-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #343a40;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .widget-icon {
+            color: #667eea;
+            font-size: 24px;
+        }
+        
+        .quick-links {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+        }
+        
+        .quick-link {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
             text-align: center;
-            color: rgba(255, 255, 255, 0.8);
+            padding: 15px;
+            border-radius: 12px;
+            text-decoration: none;
+            color: #343a40;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .quick-link:hover {
+            background: rgba(102, 126, 234, 0.1);
+            transform: translateY(-3px);
+        }
+        
+        .quick-link-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 8px;
+            font-size: 24px;
+            color: white;
+        }
+        
+        .quick-link-title {
+            font-size: 14px;
+            font-weight: 500;
+            line-height: 1.2;
+        }
+        
+        .recent-tabs {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .recent-tab {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .recent-tab:hover {
+            background: rgba(102, 126, 234, 0.1);
+        }
+        
+        .tab-favicon {
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            background: #f8f9fa;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: #667eea;
+        }
+        
+        .tab-info {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .tab-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: #343a40;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .tab-url {
+            font-size: 12px;
+            color: #6c757d;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .bookmarks-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .bookmark-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .bookmark-item:hover {
+            background: rgba(102, 126, 234, 0.1);
+        }
+        
+        .weather-widget {
+            text-align: center;
+        }
+        
+        .weather-display {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 15px;
+        }
+        
+        .weather-icon {
+            font-size: 48px;
+            color: #667eea;
+        }
+        
+        .weather-info {
+            text-align: left;
+        }
+        
+        .temperature {
+            font-size: 36px;
+            font-weight: 700;
+            color: #343a40;
+        }
+        
+        .weather-description {
+            font-size: 14px;
+            color: #6c757d;
+            text-transform: capitalize;
+        }
+        
+        .weather-location {
+            font-size: 16px;
+            color: #6c757d;
+            margin-bottom: 10px;
+        }
+        
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            margin-top: 40px;
+        }
+        
+        .stat-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            color: white;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
         
         .stat-number {
-            font-size: 24px;
+            font-size: 32px;
             font-weight: 700;
-            margin-bottom: 4px;
+            margin-bottom: 5px;
         }
         
         .stat-label {
             font-size: 14px;
-            opacity: 0.8;
-        }
-        
-        .footer {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            text-align: center;
-            color: rgba(255, 255, 255, 0.6);
-            font-size: 14px;
+            opacity: 0.9;
         }
         
         .floating-shapes {
-            position: absolute;
+            position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
             overflow: hidden;
-            z-index: -1;
+            z-index: 0;
+            pointer-events: none;
         }
         
         .shape {
             position: absolute;
             border-radius: 50%;
             background: rgba(255, 255, 255, 0.1);
-            animation: float 6s ease-in-out infinite;
+            animation: float 8s ease-in-out infinite;
         }
         
         .shape:nth-child(1) {
-            width: 200px;
-            height: 200px;
+            width: 300px;
+            height: 300px;
             top: 10%;
             left: 10%;
             animation-delay: 0s;
         }
         
         .shape:nth-child(2) {
-            width: 150px;
-            height: 150px;
-            top: 70%;
+            width: 200px;
+            height: 200px;
+            top: 60%;
             right: 10%;
             animation-delay: 2s;
         }
         
         .shape:nth-child(3) {
-            width: 100px;
-            height: 100px;
-            top: 20%;
+            width: 150px;
+            height: 150px;
+            top: 30%;
             right: 20%;
             animation-delay: 4s;
         }
         
+        .shape:nth-child(4) {
+            width: 100px;
+            height: 100px;
+            bottom: 20%;
+            left: 30%;
+            animation-delay: 6s;
+        }
+        
         @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-20px); }
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(180deg); }
         }
         
         @media (max-width: 768px) {
             .container {
+                padding: 20px 15px;
+            }
+            
+            .greeting {
+                font-size: 36px;
+            }
+            
+            .quick-access {
                 grid-template-columns: 1fr;
                 gap: 20px;
-                padding: 10px;
             }
             
-            .logo {
-                font-size: 48px;
+            .quick-links {
+                grid-template-columns: repeat(3, 1fr);
             }
             
-            .tagline {
-                font-size: 20px;
-            }
-            
-            .description {
-                font-size: 16px;
-            }
-            
-            .features-section {
-                padding: 30px 20px;
-            }
-            
-            .features-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .action-buttons {
-                flex-direction: column;
-                width: 100%;
-            }
-            
-            .btn {
-                width: 100%;
-                justify-content: center;
+            .stats-row {
+                grid-template-columns: repeat(2, 1fr);
             }
         }
     </style>
 </head>
 <body>
+    <div class="background-pattern"></div>
     <div class="floating-shapes">
+        <div class="shape"></div>
         <div class="shape"></div>
         <div class="shape"></div>
         <div class="shape"></div>
     </div>
     
     <div class="container">
-        <div class="welcome-section">
-            <div class="logo">KHOJ</div>
-            <h1 class="tagline">Discover the Web, Your Way</h1>
-            <p class="description">
-                A modern, secure, and lightning-fast browser built for the ultimate web experience. 
-                Browse smarter with advanced features and intuitive design.
-            </p>
-            
-            <div class="quick-actions">
-                <div class="search-container">
-                    <ion-icon name="search" class="search-icon"></ion-icon>
-                    <input type="text" class="search-input" placeholder="Search the web or enter a URL..." id="home-search">
+        <header class="header">
+            <h1 class="greeting">${greeting}</h1>
+            <div class="date-time">${currentTime}</div>
+        </header>
+        
+        <section class="search-section">
+            <div class="search-container">
+                <ion-icon name="search" class="search-icon"></ion-icon>
+                <input type="text" class="search-input" placeholder="Search the web or enter a URL..." id="home-search" autofocus>
+                <div class="search-shortcuts">
+                    <span class="shortcut-key">Ctrl</span>
+                    <span class="shortcut-key">K</span>
                 </div>
-                
-                <div class="action-buttons">
-                    <button class="btn btn-primary" onclick="navigateToSearch()">
-                        <ion-icon name="search"></ion-icon>
-                        Search
-                    </button>
-                    <button class="btn btn-secondary" onclick="openNewTab()">
-                        <ion-icon name="add"></ion-icon>
-                        New Tab
-                    </button>
-                    <button class="btn btn-secondary" onclick="openSettings()">
-                        <ion-icon name="settings"></ion-icon>
-                        Settings
-                    </button>
+            </div>
+        </section>
+        
+        <div class="quick-access">
+            <div class="widget">
+                <div class="widget-header">
+                    <h3 class="widget-title">
+                        <ion-icon name="globe" class="widget-icon"></ion-icon>
+                        Quick Access
+                    </h3>
+                </div>
+                <div class="quick-links" id="quick-links">
+                    <a class="quick-link" data-url="https://github.com">
+                        <div class="quick-link-icon" style="background: #333;">
+                            <ion-icon name="logo-github"></ion-icon>
+                        </div>
+                        <span class="quick-link-title">GitHub</span>
+                    </a>
+                    <a class="quick-link" data-url="https://stackoverflow.com">
+                        <div class="quick-link-icon" style="background: #f48024;">
+                            <ion-icon name="logo-stackoverflow"></ion-icon>
+                        </div>
+                        <span class="quick-link-title">Stack Overflow</span>
+                    </a>
+                    <a class="quick-link" data-url="https://youtube.com">
+                        <div class="quick-link-icon" style="background: #ff0000;">
+                            <ion-icon name="logo-youtube"></ion-icon>
+                        </div>
+                        <span class="quick-link-title">YouTube</span>
+                    </a>
+                    <a class="quick-link" data-url="https://twitter.com">
+                        <div class="quick-link-icon" style="background: #1da1f2;">
+                            <ion-icon name="logo-twitter"></ion-icon>
+                        </div>
+                        <span class="quick-link-title">Twitter</span>
+                    </a>
+                    <a class="quick-link" data-url="https://linkedin.com">
+                        <div class="quick-link-icon" style="background: #0077b5;">
+                            <ion-icon name="logo-linkedin"></ion-icon>
+                        </div>
+                        <span class="quick-link-title">LinkedIn</span>
+                    </a>
+                    <a class="quick-link" data-url="https://reddit.com">
+                        <div class="quick-link-icon" style="background: #ff4500;">
+                            <ion-icon name="logo-reddit"></ion-icon>
+                        </div>
+                        <span class="quick-link-title">Reddit</span>
+                    </a>
                 </div>
             </div>
             
-            <div class="stats">
-                <div class="stat-item">
-                    <div class="stat-number" id="tab-count">1</div>
-                    <div class="stat-label">Active Tabs</div>
+            <div class="widget">
+                <div class="widget-header">
+                    <h3 class="widget-title">
+                        <ion-icon name="time" class="widget-icon"></ion-icon>
+                        Recent Tabs
+                    </h3>
                 </div>
-                <div class="stat-item">
-                    <div class="stat-number" id="bookmark-count">0</div>
-                    <div class="stat-label">Bookmarks</div>
+                <div class="recent-tabs" id="recent-tabs">
+                    <div class="recent-tab">
+                        <div class="tab-favicon">
+                            <ion-icon name="globe"></ion-icon>
+                        </div>
+                        <div class="tab-info">
+                            <div class="tab-title">No recent tabs</div>
+                            <div class="tab-url">Start browsing to see your recent tabs here</div>
+                        </div>
+                    </div>
                 </div>
-                <div class="stat-item">
-                    <div class="stat-number" id="download-count">0</div>
-                    <div class="stat-label">Downloads</div>
+            </div>
+            
+            <div class="widget">
+                <div class="widget-header">
+                    <h3 class="widget-title">
+                        <ion-icon name="bookmarks" class="widget-icon"></ion-icon>
+                        Recent Bookmarks
+                    </h3>
+                </div>
+                <div class="bookmarks-list" id="bookmarks-list">
+                    <div class="bookmark-item">
+                        <div class="tab-favicon">
+                            <ion-icon name="bookmark"></ion-icon>
+                        </div>
+                        <div class="tab-info">
+                            <div class="tab-title">No bookmarks yet</div>
+                            <div class="tab-url">Bookmark pages to see them here</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="widget weather-widget">
+                <div class="widget-header">
+                    <h3 class="widget-title">
+                        <ion-icon name="cloudy" class="widget-icon"></ion-icon>
+                        Weather
+                    </h3>
+                </div>
+                <div class="weather-location" id="weather-location">Detecting location...</div>
+                <div class="weather-display">
+                    <ion-icon name="sunny" class="weather-icon" id="weather-icon"></ion-icon>
+                    <div class="weather-info">
+                        <div class="temperature" id="temperature">--°</div>
+                        <div class="weather-description" id="weather-description">Loading...</div>
+                    </div>
                 </div>
             </div>
         </div>
         
-        <div class="features-section">
-            <h2 class="features-title">Powerful Features</h2>
-            <div class="features-grid">
-                <div class="feature-card">
-                    <div class="feature-icon">
-                        <ion-icon name="shield-checkmark"></ion-icon>
-                    </div>
-                    <h3 class="feature-title">Secure Browsing</h3>
-                    <p class="feature-description">
-                        Advanced security indicators and protection against malicious websites
-                    </p>
-                </div>
-                
-                <div class="feature-card">
-                    <div class="feature-icon">
-                        <ion-icon name="speedometer"></ion-icon>
-                    </div>
-                    <h3 class="feature-title">Lightning Fast</h3>
-                    <p class="feature-description">
-                        Optimized performance with intelligent caching and resource management
-                    </p>
-                </div>
-                
-                <div class="feature-card">
-                    <div class="feature-icon">
-                        <ion-icon name="extension-puzzle"></ion-icon>
-                    </div>
-                    <h3 class="feature-title">Extensible</h3>
-                    <p class="feature-description">
-                        Support for browser extensions to enhance your browsing experience
-                    </p>
-                </div>
-                
-                <div class="feature-card">
-                    <div class="feature-icon">
-                        <ion-icon name="bookmarks"></ion-icon>
-                    </div>
-                    <h3 class="feature-title">Smart Bookmarks</h3>
-                    <p class="feature-description">
-                        Organize and sync your bookmarks across sessions with intelligent search
-                    </p>
-                </div>
-                
-                <div class="feature-card">
-                    <div class="feature-icon">
-                        <ion-icon name="code</ion-icon>
-                    </div>
-                    <h3 class="feature-title">Developer Tools</h3>
-                    <p class="feature-description">
-                        Built-in developer tools for debugging and web development
-                    </p>
-                </div>
-                
-                <div class="feature-card">
-                    <div class="feature-icon">
-                        <ion-icon name="time"></ion-icon>
-                    </div>
-                    <h3 class="feature-title">Session Restore</h3>
-                    <p class="feature-description">
-                        Automatically restore your tabs and windows after restart
-                    </p>
-                </div>
+        <div class="stats-row">
+            <div class="stat-card">
+                <div class="stat-number" id="tab-count">1</div>
+                <div class="stat-label">Active Tabs</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="bookmark-count">0</div>
+                <div class="stat-label">Bookmarks</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="download-count">0</div>
+                <div class="stat-label">Downloads</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="session-time">0m</div>
+                <div class="stat-label">Session Time</div>
             </div>
         </div>
     </div>
     
-    <div class="footer">
-        <p>Khoj Browser v${browserVersion} â¢ Made with â¤ï¸ for the modern web</p>
-    </div>
-    
     <script>
-        // Initialize stats
-        function updateStats() {
-            // Send message to parent window to get stats
-            if (window.parent && window.parent !== window) {
-                window.parent.postMessage({
-                    type: 'get-home-stats',
-                    timestamp: Date.now()
-                }, '*');
+        let sessionStartTime = Date.now();
+        let weatherData = null;
+        
+        // Get greeting based on time of day
+        function getGreeting() {
+            const hour = new Date().getHours();
+            if (hour < 12) return 'Good Morning! ☀️';
+            if (hour < 17) return 'Good Afternoon! 🌤️';
+            if (hour < 21) return 'Good Evening! 🌅';
+            return 'Good Night! 🌙';
+        }
+        
+        // Update session time
+        function updateSessionTime() {
+            const elapsed = Math.floor((Date.now() - sessionStartTime) / 1000 / 60);
+            const hours = Math.floor(elapsed / 60);
+            const minutes = elapsed % 60;
+            
+            let timeString = '';
+            if (hours > 0) {
+                timeString = \`\${hours}h \${minutes}m\`;
+            } else {
+                timeString = \`\${minutes}m\`;
             }
+            
+            document.getElementById('session-time').textContent = timeString;
+        }
+        
+        // Initialize weather
+        function initWeather() {
+            // Simulate weather data (in real app, you'd call a weather API)
+            setTimeout(() => {
+                const weatherConditions = [
+                    { icon: 'sunny', temp: 72, desc: 'Clear Sky', location: 'San Francisco, CA' },
+                    { icon: 'partly-sunny', temp: 68, desc: 'Partly Cloudy', location: 'New York, NY' },
+                    { icon: 'cloudy', temp: 65, desc: 'Cloudy', location: 'London, UK' },
+                    { icon: 'rainy', temp: 60, desc: 'Light Rain', location: 'Seattle, WA' }
+                ];
+                
+                const weather = weatherConditions[Math.floor(Math.random() * weatherConditions.length)];
+                
+                document.getElementById('weather-location').textContent = weather.location;
+                document.getElementById('weather-icon').setAttribute('name', weather.icon);
+                document.getElementById('temperature').textContent = \`\${weather.temp}°F\`;
+                document.getElementById('weather-description').textContent = weather.desc;
+            }, 2000);
         }
         
         // Handle search
@@ -1840,7 +2082,6 @@ Performance Report (Last ${count} samples):
             const query = searchInput.value.trim();
             
             if (query) {
-                // Send message to parent window to navigate
                 if (window.parent && window.parent !== window) {
                     window.parent.postMessage({
                         type: 'navigate-home-search',
@@ -1851,57 +2092,165 @@ Performance Report (Last ${count} samples):
             }
         }
         
-        // Handle new tab
-        function openNewTab() {
+        // Handle quick link clicks
+        function handleQuickLinkClick(url) {
             if (window.parent && window.parent !== window) {
                 window.parent.postMessage({
-                    type: 'open-new-tab',
+                    type: 'open-link',
+                    url: url,
                     timestamp: Date.now()
                 }, '*');
             }
         }
         
-        // Handle settings
-        function openSettings() {
+        // Update stats
+        function updateStats() {
             if (window.parent && window.parent !== window) {
                 window.parent.postMessage({
-                    type: 'open-settings',
+                    type: 'get-home-stats',
                     timestamp: Date.now()
                 }, '*');
             }
         }
         
-        // Search on Enter key
-        document.getElementById('home-search').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                navigateToSearch();
-            }
-        });
-        
-        // Listen for stats updates
+        // Listen for messages from parent
         window.addEventListener('message', function(event) {
-            if (event.data.type === 'home-stats-update') {
-                document.getElementById('tab-count').textContent = event.data.tabs || '1';
-                document.getElementById('bookmark-count').textContent = event.data.bookmarks || '0';
-                document.getElementById('download-count').textContent = event.data.downloads || '0';
+            switch (event.data.type) {
+                case 'home-stats-update':
+                    document.getElementById('tab-count').textContent = event.data.tabs || '1';
+                    document.getElementById('bookmark-count').textContent = event.data.bookmarks || '0';
+                    document.getElementById('download-count').textContent = event.data.downloads || '0';
+                    
+                    // Update recent tabs and bookmarks
+                    if (event.data.recentTabs) {
+                        updateRecentTabs(event.data.recentTabs);
+                    }
+                    if (event.data.recentBookmarks) {
+                        updateBookmarks(event.data.recentBookmarks);
+                    }
+                    break;
+                    
+                case 'recent-tabs-update':
+                    updateRecentTabs(event.data.tabs || []);
+                    break;
+                    
+                case 'bookmarks-update':
+                    updateBookmarks(event.data.bookmarks || []);
+                    break;
             }
         });
         
-        // Initialize on load
-        document.addEventListener('DOMContentLoaded', function() {
-            updateStats();
+        // Update recent tabs display
+        function updateRecentTabs(tabs) {
+            const container = document.getElementById('recent-tabs');
             
-            // Update stats every 5 seconds
-            setInterval(updateStats, 5000);
+            if (tabs.length === 0) {
+                container.innerHTML = \`
+                    <div class="recent-tab">
+                        <div class="tab-favicon">
+                            <ion-icon name="globe"></ion-icon>
+                        </div>
+                        <div class="tab-info">
+                            <div class="tab-title">No recent tabs</div>
+                            <div class="tab-url">Start browsing to see your recent tabs here</div>
+                        </div>
+                    </div>
+                \`;
+                return;
+            }
+            
+            container.innerHTML = tabs.slice(0, 5).map(tab => \`
+                <div class="recent-tab" onclick="handleQuickLinkClick('\${tab.url}')">
+                    <div class="tab-favicon">
+                        \${tab.favicon ? \`<img src="\${tab.favicon}" style="width: 16px; height: 16px;">\` : '<ion-icon name="globe"></ion-icon>'}
+                    </div>
+                    <div class="tab-info">
+                        <div class="tab-title">\${tab.title}</div>
+                        <div class="tab-url">\${tab.url}</div>
+                    </div>
+                </div>
+            \`).join('');
+        }
+        
+        // Update bookmarks display
+        function updateBookmarks(bookmarks) {
+            const container = document.getElementById('bookmarks-list');
+            
+            if (bookmarks.length === 0) {
+                container.innerHTML = \`
+                    <div class="bookmark-item">
+                        <div class="tab-favicon">
+                            <ion-icon name="bookmark"></ion-icon>
+                        </div>
+                        <div class="tab-info">
+                            <div class="tab-title">No bookmarks yet</div>
+                            <div class="tab-url">Bookmark pages to see them here</div>
+                        </div>
+                    </div>
+                \`;
+                return;
+            }
+            
+            container.innerHTML = bookmarks.slice(0, 5).map(bookmark => \`
+                <div class="bookmark-item" onclick="handleQuickLinkClick('\${bookmark.url}')">
+                    <div class="tab-favicon">
+                        \${bookmark.favicon ? \`<img src="\${bookmark.favicon}" style="width: 16px; height: 16px;">\` : '<ion-icon name="bookmark"></ion-icon>'}
+                    </div>
+                    <div class="tab-info">
+                        <div class="tab-title">\${bookmark.title}</div>
+                        <div class="tab-url">\${bookmark.url}</div>
+                    </div>
+                </div>
+            \`).join('');
+        }
+        
+        // Initialize event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            // Search functionality
+            const searchInput = document.getElementById('home-search');
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    navigateToSearch();
+                }
+            });
+            
+            // Quick link clicks
+            document.querySelectorAll('.quick-link').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const url = this.getAttribute('data-url');
+                    handleQuickLinkClick(url);
+                });
+            });
+            
+            // Keyboard shortcuts
+            document.addEventListener('keydown', function(e) {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                    e.preventDefault();
+                    searchInput.focus();
+                    searchInput.select();
+                }
+            });
+            
+            // Initialize
+            updateStats();
+            initWeather();
+            
+            // Update session time every minute
+            setInterval(updateSessionTime, 60000);
+            updateSessionTime();
+            
+            // Update stats every 10 seconds
+            setInterval(updateStats, 10000);
         });
         
-        // Add some interactive animations
-        document.querySelectorAll('.feature-card').forEach(card => {
-            card.addEventListener('mouseenter', function() {
+        // Add interactive animations
+        document.querySelectorAll('.widget').forEach(widget => {
+            widget.addEventListener('mouseenter', function() {
                 this.style.transform = 'translateY(-5px) scale(1.02)';
             });
             
-            card.addEventListener('mouseleave', function() {
+            widget.addEventListener('mouseleave', function() {
                 this.style.transform = 'translateY(0) scale(1)';
             });
         });
@@ -1913,7 +2262,7 @@ Performance Report (Last ${count} samples):
             const y = e.clientY / window.innerHeight;
             
             shapes.forEach((shape, index) => {
-                const speed = (index + 1) * 20;
+                const speed = (index + 1) * 15;
                 shape.style.transform = \`translate(\${x * speed}px, \${y * speed}px)\`;
             });
         });
@@ -2000,7 +2349,19 @@ Performance Report (Last ${count} samples):
         const stats = {
             tabs: this.tabs.length,
             bookmarks: this.bookmarks.length,
-            downloads: this.downloads.length
+            downloads: this.downloads.length,
+            recentTabs: this.tabs.slice(-5).map(tab => ({
+                id: tab.id,
+                title: tab.title,
+                url: tab.url,
+                favicon: tab.favicon
+            })),
+            recentBookmarks: this.bookmarks.slice(-5).map(bookmark => ({
+                id: bookmark.id,
+                title: bookmark.title,
+                url: bookmark.url,
+                favicon: bookmark.favicon
+            }))
         };
 
         // Send stats to all iframes (in case home page is open in multiple tabs)
@@ -2990,6 +3351,12 @@ Performance Report (Last ${count} samples):
 
         const tab = this.tabs[tabIndex];
         
+        // Clear any timeout for this tab
+        if (this.tabLoadTimeouts[tabId]) {
+            clearTimeout(this.tabLoadTimeouts[tabId]);
+            delete this.tabLoadTimeouts[tabId];
+        }
+
         // Remove webview
         tab.element.remove();
         
@@ -3007,9 +3374,9 @@ Performance Report (Last ${count} samples):
             }
         }
 
-        // If no tabs left, create a new one
+        // If no tabs left, close the browser
         if (this.tabs.length === 0) {
-            this.createTab();
+            this.closeWindow();
         }
         
         this.saveSession();
@@ -3228,18 +3595,45 @@ Performance Report (Last ${count} samples):
         }
     }
 
-    private handleTabError(tabId: string, error: Event): void {
+    private handleTabError(tabId: string, error: Event, errorType: string = 'security'): void {
         const tab = this.tabs.find(t => t.id === tabId);
         if (tab) {
             tab.isLoading = false;
             tab.title = 'Error';
             
-            // Create an error page to display
+            // Create an error page to display based on error type
+            let errorTitle = 'Error';
+            let errorMessage = 'The page could not be loaded.';
+            let errorDetails: string[] = [];
+            let errorIcon = '⚠️';
+
+            if (errorType === 'network') {
+                errorTitle = 'Network Error';
+                errorIcon = '🌐';
+                errorMessage = 'The page could not be loaded due to network restrictions.';
+                errorDetails = [
+                    'ERR_BLOCKED_BY_RESPONSE - The request was blocked by the browser',
+                    'Corporate firewall or security policies may be blocking this content',
+                    'The website may have security policies that prevent embedding',
+                    'Invalid SSL certificate or HTTPS issues'
+                ];
+            } else if (errorType === 'security') {
+                errorTitle = 'Security Error';
+                errorIcon = '🔒';
+                errorMessage = 'The page could not be loaded due to security restrictions.';
+                errorDetails = [
+                    'Invalid or blocked URL protocol',
+                    'Content Security Policy violations',
+                    'Network security restrictions',
+                    'Cross-origin restrictions'
+                ];
+            }
+
             const errorContent = `
                 <!DOCTYPE html>
                 <html>
                 <head>
-                    <title>Security Error</title>
+                    <title>${errorTitle}</title>
                     <style>
                         body { 
                             font-family: system-ui, -apple-system, sans-serif; 
@@ -3248,51 +3642,148 @@ Performance Report (Last ${count} samples):
                             justify-content: center; 
                             height: 100vh; 
                             margin: 0; 
-                            background: #f8f9fa; 
+                            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
                             color: #333; 
                         }
                         .error-container { 
                             text-align: center; 
-                            max-width: 500px; 
-                            padding: 2rem; 
+                            max-width: 600px; 
+                            padding: 3rem; 
                             background: white; 
-                            border-radius: 8px; 
-                            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+                            border-radius: 16px; 
+                            box-shadow: 0 20px 40px rgba(0,0,0,0.1); 
+                            backdrop-filter: blur(10px);
                         }
-                        h1 { color: #dc3545; margin-bottom: 1rem; }
-                        p { margin-bottom: 1.5rem; line-height: 1.6; }
+                        .error-icon { 
+                            font-size: 4rem; 
+                            margin-bottom: 1rem; 
+                            display: block; 
+                        }
+                        h1 { 
+                            color: #2c3e50; 
+                            margin-bottom: 1rem; 
+                            font-size: 2rem;
+                            font-weight: 600;
+                        }
+                        .error-message {
+                            color: #7f8c8d;
+                            font-size: 1.1rem;
+                            margin-bottom: 2rem;
+                            line-height: 1.6;
+                        }
+                        .error-details {
+                            background: #f8f9fa;
+                            border-radius: 8px;
+                            padding: 1.5rem;
+                            margin-bottom: 2rem;
+                            text-align: left;
+                        }
+                        .error-details h3 {
+                            margin-top: 0;
+                            margin-bottom: 1rem;
+                            color: #495057;
+                            font-size: 1rem;
+                            text-transform: uppercase;
+                            letter-spacing: 0.5px;
+                        }
+                        .error-details ul {
+                            margin: 0;
+                            padding-left: 1.5rem;
+                        }
+                        .error-details li {
+                            margin-bottom: 0.5rem;
+                            color: #6c757d;
+                            line-height: 1.5;
+                        }
+                        .button-group {
+                            display: flex;
+                            gap: 1rem;
+                            justify-content: center;
+                            flex-wrap: wrap;
+                        }
                         button { 
                             background: #007bff; 
                             color: white; 
                             border: none; 
-                            padding: 0.5rem 1rem; 
-                            border-radius: 4px; 
+                            padding: 0.75rem 1.5rem; 
+                            border-radius: 8px; 
                             cursor: pointer; 
+                            font-size: 1rem;
+                            font-weight: 500;
+                            transition: all 0.2s ease;
                         }
-                        button:hover { background: #0056b3; }
+                        button:hover { 
+                            background: #0056b3; 
+                            transform: translateY(-1px);
+                            box-shadow: 0 4px 8px rgba(0,123,255,0.3);
+                        }
+                        button.secondary {
+                            background: #6c757d;
+                        }
+                        button.secondary:hover {
+                            background: #545b62;
+                            box-shadow: 0 4px 8px rgba(108,117,125,0.3);
+                        }
+                        .url-display {
+                            background: #e9ecef;
+                            padding: 0.5rem 1rem;
+                            border-radius: 6px;
+                            font-family: monospace;
+                            font-size: 0.9rem;
+                            word-break: break-all;
+                            margin-bottom: 1rem;
+                            color: #495057;
+                        }
                     </style>
                 </head>
                 <body>
                     <div class="error-container">
-                        <h1>Security Error</h1>
-                        <p>The page could not be loaded due to security restrictions. This may be caused by:</p>
-                        <ul style="text-align: left; margin-bottom: 1.5rem;">
-                            <li>Invalid or blocked URL protocol</li>
-                            <li>Content Security Policy violations</li>
-                            <li>Network security restrictions</li>
-                        </ul>
-                        <button onclick="window.location.href='about:blank'">Go to New Tab</button>
+                        <span class="error-icon">${errorIcon}</span>
+                        <h1>${errorTitle}</h1>
+                        <p class="error-message">${errorMessage}</p>
+                        <div class="url-display">${tab.url}</div>
+                        <div class="error-details">
+                            <h3>Possible Causes:</h3>
+                            <ul>
+                                ${errorDetails.map(detail => `<li>${detail}</li>`).join('')}
+                            </ul>
+                        </div>
+                        <div class="button-group">
+                            <button onclick="window.location.href='about:blank'">New Tab</button>
+                            <button onclick="window.location.reload()" class="secondary">Try Again</button>
+                            <button onclick="window.parent.postMessage({type: 'go-back'}, '*')" class="secondary">Go Back</button>
+                        </div>
                     </div>
+                    <script>
+                        // Handle parent messages for navigation
+                        window.addEventListener('message', function(event) {
+                            if (event.data.type === 'go-back') {
+                                history.back();
+                            }
+                        });
+                    </script>
                 </body>
                 </html>
             `;
 
             const webview = document.getElementById(tabId) as HTMLIFrameElement;
             if (webview) {
+                // Remove sandbox temporarily to allow srcdoc
+                const originalSandbox = webview.getAttribute('sandbox');
+                webview.removeAttribute('sandbox');
+                
+                // Set the error content
                 webview.srcdoc = errorContent;
+                
+                // Re-apply sandbox after a short delay
+                setTimeout(() => {
+                    if (originalSandbox) {
+                        webview.setAttribute('sandbox', originalSandbox);
+                    }
+                }, 100);
             }
 
-            this.updateStatus(`Security error in tab: ${tab.title}`);
+            this.updateStatus(`${errorType} error in tab: ${tab.title}`);
             this.updateTabTitle(tabId, tab.title);
         }
     }

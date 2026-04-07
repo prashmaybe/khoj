@@ -70,12 +70,13 @@
     "win": {
       "target": [
         {
-          "target": "nsis",
+          "target": "portable",
           "arch": [
             "x64"
           ]
         }
-      ]
+      ],
+      "sign": false
     },
     "mac": {
       "category": "public.app-category.productivity",

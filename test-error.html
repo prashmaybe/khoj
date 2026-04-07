@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Error Test Page</title>
+</head>
+<body>
+    <h1>Test Error Page</h1>
+    <p>This page contains ERR_BLOCKED_BY_RESPONSE text to test error detection.</p>
+    <p>ERR_BLOCKED_BY_RESPONSE - This should trigger the error page.</p>
+    <button onclick="testError()">Test Error Handling</button>
+    
+    <script>
+        function testError() {
+            // Simulate an error that should trigger the error page
+            document.title = 'ERR_BLOCKED_BY_RESPONSE Error';
+            document.body.innerHTML += '<p>Access Denied - blocked by response</p>';
+        }
+    </script>
+</body>
+</html>
