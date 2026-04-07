@@ -1040,17 +1040,6 @@ class KhojBrowser {
 
         // Add load error event listener for network errors
         webview.addEventListener('load', () => {
-            // Clear the loading timeout
-            if (this.tabLoadTimeouts[tabId]) {
-                clearTimeout(this.tabLoadTimeouts[tabId]);
-                delete this.tabLoadTimeouts[tabId];
-            }
-            
-            const tab = this.tabs.find(t => t.id === tabId);
-            if (tab) {
-                tab.isLoading = false;
-            }
-            
             // Check if iframe failed to load by examining its content
             try {
                 const doc = webview.contentDocument;
@@ -1088,6 +1077,15 @@ class KhojBrowser {
             }
             
             // Only show error if we have explicit evidence of blocking in the error event
+        });
+        
+        // Add context menu event listener
+        webview.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            const tab = this.tabs.find(t => t.id === tabId);
+            if (tab) {
+                this.showWebviewContextMenu(e, webview, tab);
+            }
         });
         
         // Create tab object
@@ -4476,6 +4474,138 @@ class KhojBrowser {
     private closeOtherTabs(tabId: string): void {
         const tabsToClose = this.tabs.filter(t => t.id !== tabId);
         tabsToClose.forEach(tab => this.closeTab(tab.id));
+    }
+
+    private showWebviewContextMenu(event: MouseEvent, webview: any, tab: BrowserTab): void {
+        // Create context menu
+        const menu = document.createElement('div');
+        menu.className = 'context-menu';
+        menu.style.position = 'absolute';
+        menu.style.left = event.pageX + 'px';
+        menu.style.top = event.pageY + 'px';
+
+        const canGoBack = webview.canGoBack();
+        const canGoForward = webview.canGoForward();
+
+        const items = [
+            { 
+                text: 'Back', 
+                icon: 'chevron-back-outline',
+                action: () => webview.goBack(),
+                disabled: !canGoBack
+            },
+            { 
+                text: 'Forward', 
+                icon: 'chevron-forward-outline',
+                action: () => webview.goForward(),
+                disabled: !canGoForward
+            },
+            { 
+                text: 'Reload', 
+                icon: 'refresh-outline',
+                action: () => webview.reload()
+            },
+            { type: 'separator' },
+            { 
+                text: 'View Source', 
+                icon: 'code-outline',
+                action: () => this.viewSource(tab.url)
+            },
+            { 
+                text: 'Inspect Element', 
+                icon: 'construct-outline',
+                action: () => webview.openDevTools()
+            },
+            { type: 'separator' },
+            { 
+                text: 'Save Page As...', 
+                icon: 'download-outline',
+                action: () => this.savePageAs(tab)
+            },
+            { 
+                text: 'Print', 
+                icon: 'print-outline',
+                action: () => webview.print()
+            },
+            { type: 'separator' },
+            { 
+                text: 'Copy', 
+                icon: 'copy-outline',
+                action: () => document.execCommand('copy')
+            },
+            { 
+                text: 'Paste', 
+                icon: 'clipboard-outline',
+                action: () => document.execCommand('paste')
+            },
+            { 
+                text: 'Select All', 
+                icon: 'list-outline',
+                action: () => webview.selectAll()
+            }
+        ];
+
+        items.forEach(item => {
+            if (item.type === 'separator') {
+                const separator = document.createElement('div');
+                separator.className = 'context-menu-separator';
+                menu.appendChild(separator);
+            } else {
+                const menuItem = document.createElement('div');
+                menuItem.className = 'context-menu-item';
+                if (item.disabled) {
+                    menuItem.classList.add('disabled');
+                }
+                
+                const icon = document.createElement('ion-icon');
+                if (item.icon) {
+                    icon.setAttribute('name', item.icon);
+                }
+                menuItem.appendChild(icon);
+                
+                const text = document.createElement('span');
+                text.textContent = item.text || '';
+                menuItem.appendChild(text);
+                
+                if (!item.disabled && item.action) {
+                    menuItem.addEventListener('click', () => {
+                        item.action();
+                        if (document.body.contains(menu)) {
+                            document.body.removeChild(menu);
+                        }
+                    });
+                }
+                
+                menu.appendChild(menuItem);
+            }
+        });
+
+        document.body.appendChild(menu);
+
+        // Remove menu when clicking elsewhere
+        const removeMenu = (e: MouseEvent) => {
+            if (!menu.contains(e.target as Node)) {
+                document.body.removeChild(menu);
+                document.removeEventListener('click', removeMenu);
+            }
+        };
+        setTimeout(() => document.addEventListener('click', removeMenu), 100);
+    }
+
+    private viewSource(url: string): void {
+        const viewSourceUrl = `view-source:${url}`;
+        this.createTab(viewSourceUrl);
+    }
+
+    private savePageAs(tab: BrowserTab): void {
+        // Create a simple file save dialog
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.setAttribute('nwsaveas', `${tab.title}.html`);
+        input.style.display = 'none';
+        document.body.appendChild(input);
+        input.click();
+        document.body.removeChild(input);
     }
 
     private reorderTabs(draggedTabId: string, targetTabId: string): void {
