@@ -93,7 +93,7 @@ interface CustomPerformanceEntry {
     perfType: string;
     perfStartTime: number;
     perfDuration: number;
-    details?: any;
+    details?: unknown;
     toJSON(): string;
 }
 
@@ -173,6 +173,7 @@ interface PageError {
 }
 
 class KhojBrowser {
+    [x: string]: any;
     private tabs: BrowserTab[] = [];
     private activeTabId: string = '';
     private bookmarks: Bookmark[] = [];
@@ -424,6 +425,7 @@ class KhojBrowser {
         this.loadBookmarks();
         this.loadDownloads();
         this.loadExtensions();
+        this.initializeElements();
         this.initializeUI();
         this.setupEventListeners();
         this.setupElectronEventListeners();
@@ -909,13 +911,13 @@ Performance Report (Last ${count} samples):
         if (!tab) return;
 
         this.extensions
-            .filter(ext => ext.enabled && ext.scripts?.content)
+            .filter(ext => ext.enabled && 'content' in ext.scripts && ext.scripts.content)
             .forEach(extension => {
                 try {
                     const doc = tab.element.contentDocument;
                     if (doc && doc.head) {
                         const script = doc.createElement('script');
-                        script.textContent = ext.scripts.content || '';
+                        script.textContent = (extension.scripts as { content: string }).content;
                         doc.head.appendChild(script);
                     }
                 } catch (error) {
@@ -1049,7 +1051,7 @@ Performance Report (Last ${count} samples):
         return 'tab-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
     }
 
-    private createTab(url: string = 'about:blank'): void {
+    private createTab(url: string = ''): void {
         const tabId = this.generateTabId();
         const webview = document.createElement('iframe');
         webview.className = 'webview';
@@ -1174,51 +1176,44 @@ Performance Report (Last ${count} samples):
             }
             
             // Only show error if we have explicit evidence of blocking in the error event
-            // Cross-origin restrictions are normal for external sites and don't indicate blocking
         });
         
-        const tab: BrowserTab = {
+        // Create tab object
+        const newTab: BrowserTab = {
             id: tabId,
-            url: url,
-            title: 'New Tab',
+            url: url || '',
+            title: url ? url : this.getString('newTab'),
             history: [],
-            historyIndex: -1,
+            historyIndex: 0,
             isLoading: false,
             zoomLevel: 1.0,
             isPrivate: this.isPrivateMode,
             isPinned: false,
             element: webview,
+            favicon: undefined,
             loadProgress: 0,
             securityLevel: 'unknown'
         };
-
-        this.tabs.push(tab);
-        this.webviewContainer.appendChild(webview);
-        this.createTabElement(tab);
-        this.switchToTab(tabId);
         
-        if (url !== 'about:blank') {
-            this.loadUrlInTab(tabId, url);
-        }
-    }
-
-    private createTabElement(tab: BrowserTab): void {
+        this.tabs.push(newTab);
+        
+        // Create tab element
         const tabElement = document.createElement('div');
         tabElement.className = 'tab';
-        if (tab.isPinned) tabElement.classList.add('pinned');
-        tabElement.id = 'tab-' + tab.id;
+        if (newTab.isPinned) tabElement.classList.add('pinned');
+        tabElement.id = 'tab-' + newTab.id;
         tabElement.draggable = true;
         
         const favicon = document.createElement('div');
         favicon.className = 'tab-favicon';
-        if (tab.favicon) {
-            favicon.style.backgroundImage = `url(${tab.favicon})`;
+        if (newTab.favicon) {
+            favicon.style.backgroundImage = `url(${newTab.favicon})`;
             favicon.style.backgroundSize = 'contain';
         }
         
         const title = document.createElement('span');
         title.className = 'tab-title';
-        title.textContent = tab.title;
+        title.textContent = newTab.title;
         
         const closeBtn = document.createElement('button');
         closeBtn.className = 'tab-close';
@@ -1228,7 +1223,7 @@ Performance Report (Last ${count} samples):
         icon.setAttribute('name', 'close-outline');
         closeBtn.appendChild(icon);
         
-        closeBtn.style.display = tab.isPinned ? 'none' : 'block';
+        closeBtn.style.display = newTab.isPinned ? 'none' : 'block';
         
         tabElement.appendChild(favicon);
         tabElement.appendChild(title);
@@ -1237,17 +1232,17 @@ Performance Report (Last ${count} samples):
         // Tab events
         tabElement.addEventListener('click', (e) => {
             if (!(e.target as HTMLElement).classList.contains('tab-close')) {
-                this.switchToTab(tab.id);
+                this.switchToTab(newTab.id);
             }
         });
 
         tabElement.addEventListener('contextmenu', (e) => {
             e.preventDefault();
-            this.showTabContextMenu(e, tab);
+            this.showTabContextMenu(e, newTab);
         });
 
         tabElement.addEventListener('dragstart', (e) => {
-            this.draggedTab = tab.id;
+            this.draggedTab = newTab.id;
             e.dataTransfer!.effectAllowed = 'move';
         });
 
@@ -1258,19 +1253,30 @@ Performance Report (Last ${count} samples):
 
         tabElement.addEventListener('drop', (e) => {
             e.preventDefault();
-            if (this.draggedTab && this.draggedTab !== tab.id) {
-                this.reorderTabs(this.draggedTab, tab.id);
+            if (this.draggedTab && this.draggedTab !== newTab.id) {
+                this.reorderTabs(this.draggedTab, newTab.id);
             }
             this.draggedTab = null;
         });
 
         closeBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            this.closeTab(tab.id);
+            this.closeTab(newTab.id);
         });
 
         // Insert before the new tab button
         this.tabsContainer.insertBefore(tabElement, this.newTabBtn);
+        
+        // Add webview to container
+        this.webviewContainer.appendChild(webview);
+        
+        // Switch to the new tab
+        this.switchToTab(newTab.id);
+        
+        // If no URL provided, load welcome page
+        if (!url) {
+            this.loadWelcomePage(newTab.id);
+        }
     }
 
     private switchToTab(tabId: string): void {
@@ -1815,7 +1821,7 @@ Performance Report (Last ${count} samples):
         return this.getString(greetingKey);
     }
 
-    private getString(key: string, params?: any[]): string {
+    private getString(key: string, params?: string[]): string {
         const translation = this.strings[key]?.[this.currentLanguage] || this.strings[key]?.en || key;
         if (params && params.length > 0) {
             return translation.replace(/\{(\d+)\}/g, (match, index) => params[parseInt(index)] || '');
@@ -3622,10 +3628,11 @@ Performance Report (Last ${count} samples):
                 message: `[${timestamp}] ${JSON.stringify(result)}`,
                 timestamp: Date.now()
             });
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
             this.consoleMessages.push({
                 level: 'error',
-                message: `[${timestamp}] Error: ${error.message}`,
+                message: `[${timestamp}] Error: ${errorMessage}`,
                 timestamp: Date.now()
             });
         }
@@ -3705,13 +3712,13 @@ Performance Report (Last ${count} samples):
 
     private saveSettingsFromUI(): void {
         this.settings.homepage = (document.getElementById('homepage-setting') as HTMLInputElement).value;
-        this.settings.searchEngine = (document.getElementById('search-engine-setting') as HTMLSelectElement).value as any;
+        this.settings.searchEngine = (document.getElementById('search-engine-setting') as HTMLSelectElement).value as 'google' | 'bing' | 'duckduckgo' | 'custom';
         this.settings.restoreSession = (document.getElementById('restore-session-setting') as HTMLInputElement).checked;
         this.settings.downloadPath = (document.getElementById('download-path-setting') as HTMLInputElement).value;
         this.settings.enableJavaScript = (document.getElementById('enable-javascript-setting') as HTMLInputElement).checked;
         this.settings.enableCookies = (document.getElementById('enable-cookies-setting') as HTMLInputElement).checked;
         this.settings.enablePopups = (document.getElementById('enable-popups-setting') as HTMLInputElement).checked;
-        this.settings.theme = (document.getElementById('theme-setting') as HTMLSelectElement).value as any;
+        this.settings.theme = (document.getElementById('theme-setting') as HTMLSelectElement).value as 'light' | 'dark' | 'auto';
         this.settings.defaultZoom = parseFloat((document.getElementById('default-zoom-setting') as HTMLSelectElement).value);
         
         if (this.settings.searchEngine === 'custom') {
@@ -4303,8 +4310,9 @@ Performance Report (Last ${count} samples):
                         const errorMessage = parseError instanceof Error ? parseError.message : String(parseError);
                         this.updateStatus('Error parsing bookmarks file: ' + errorMessage);
                     }
-                }).catch((error: any) => {
-                    this.updateStatus('Error reading bookmarks file: ' + error.message);
+                }).catch((error: unknown) => {
+                    const errorMessage = error instanceof Error ? error.message : String(error);
+                    this.updateStatus('Error reading bookmarks file: ' + errorMessage);
                 });
             } else {
                 // Fallback for web environment - use file input
@@ -4364,8 +4372,9 @@ Performance Report (Last ${count} samples):
             if (window.electronAPI && window.electronAPI.writeFile) {
                 window.electronAPI.writeFile(filePath, bookmarksData).then(() => {
                     this.updateStatus(`Successfully exported ${this.bookmarks.length} bookmarks to: ${filePath}`);
-                }).catch((error: any) => {
-                    this.updateStatus('Error saving bookmarks file: ' + error.message);
+                }).catch((error: unknown) => {
+                    const errorMessage = error instanceof Error ? error.message : String(error);
+                    this.updateStatus('Error saving bookmarks file: ' + errorMessage);
                 });
             } else {
                 // Fallback for web environment - download as file
