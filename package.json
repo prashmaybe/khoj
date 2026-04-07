@@ -1,23 +1,83 @@
 {
-  "name": "typescript-browser",
+  "name": "khoj-browser",
   "version": "1.0.0",
-  "description": "A web browser built from scratch using TypeScript",
-  "main": "dist/main.js",
+  "description": "A modern web browser built from scratch using TypeScript and Electron",
+  "main": "dist/electron-main.js",
+  "homepage": "https://github.com/yourusername/khoj-browser",
+  "author": {
+    "name": "Your Name",
+    "email": "your.email@example.com"
+  },
+  "license": "MIT",
   "scripts": {
     "build": "tsc",
-    "start": "tsc && electron dist/main.js",
+    "build-electron": "tsc && npm run build-renderer",
+    "build-renderer": "tsc && copy electron-index.html dist\\ && xcopy assets dist\\assets /E /I /Y",
+    "start": "npm run build-electron && electron dist/electron-main.js",
+    "start-dev": "concurrently \"npm run build-renderer\" \"electron dist/electron-main.js\"",
+    "serve": "http-server dist -p 8081 -o",
     "dev": "tsc --watch",
-    "serve": "http-server dist -p 8080 -o"
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder",
+    "dist-win": "electron-builder --win",
+    "dist-mac": "electron-builder --mac",
+    "dist-linux": "electron-builder --linux",
+    "dist-all": "electron-builder -mwl",
+    "postinstall": "electron-builder install-app-deps",
+    "clean": "rimraf dist"
   },
-  "keywords": ["browser", "typescript", "web"],
-  "author": "",
-  "license": "MIT",
+  "keywords": ["browser", "typescript", "electron", "web", "chrome"],
   "devDependencies": {
     "@types/node": "^20.0.0",
     "typescript": "^5.0.0",
-    "http-server": "^14.0.0"
+    "http-server": "^14.0.0",
+    "electron": "^28.0.0",
+    "electron-builder": "^24.0.0",
+    "concurrently": "^8.0.0",
+    "rimraf": "^5.0.0"
   },
-  "dependencies": {
-    "electron": "^28.0.0"
+  "dependencies": {},
+  "build": {
+    "appId": "com.khoj.browser",
+    "productName": "Khoj",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "node_modules/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "assets",
+        "to": "assets"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ]
+    },
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": [
+        {
+          "target": "zip",
+          "arch": ["x64"]
+        }
+      ]
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": ["x64"]
+        }
+      ],
+      "category": "Network"
+    }
   }
 }
