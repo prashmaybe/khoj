@@ -378,8 +378,6 @@ class KhojBrowser {
     private pageErrors: PageError[] = [];
     private tabLoadTimeouts: { [key: string]: NodeJS.Timeout } = {};
     private performanceEntries: CustomPerformanceEntry[] = [];
-    private storageItems: StorageItem[] = [];
-    private sourceFiles: SourceFile[] = [];
     private activeConsoleFilter: string = 'all';
     private activeNetworkFilter: string = 'all';
     private isRecordingPerformance: boolean = false;
@@ -439,6 +437,11 @@ class KhojBrowser {
         this.loadWelcomePage(this.activeTabId);
     }
 
+    private handleStorageError(operation: 'load' | 'save', key: string, error: unknown): void {
+        const action = operation === 'load' ? 'load' : 'save';
+        console.warn(`Could not ${action} ${key} from localStorage:`, error);
+    }
+
     private loadSession(): void {
         try {
             const saved = localStorage.getItem('browser_session');
@@ -446,7 +449,7 @@ class KhojBrowser {
                 this.session = JSON.parse(saved);
             }
         } catch (error) {
-            console.warn('Could not load session from localStorage:', error);
+            this.handleStorageError('load', 'session', error);
         }
     }
 
@@ -572,56 +575,6 @@ class KhojBrowser {
                 </div>
             `;
         }
-    }
-
-    private getPerformanceReport(): string {
-        if (this.performanceMetrics.length === 0) {
-            return 'No performance data available.';
-        }
-
-        const latest = this.performanceMetrics[this.performanceMetrics.length - 1];
-        const average = this.performanceMetrics.reduce((acc, metric) => ({
-            cpuUsage: acc.cpuUsage + metric.cpuUsage,
-            memoryPercentage: acc.memoryPercentage + metric.memoryUsage.percentage,
-            renderTime: acc.renderTime + metric.renderTime
-        }), { cpuUsage: 0, memoryPercentage: 0, renderTime: 0 });
-
-        const count = this.performanceMetrics.length;
-        
-        return `
-Performance Report (Last ${count} samples):
-- Average CPU Usage: ${(average.cpuUsage / count).toFixed(1)}%
-- Average Memory Usage: ${(average.memoryPercentage / count).toFixed(1)}%
-- Average Render Time: ${(average.renderTime / count).toFixed(1)}ms
-- Current Active Tabs: ${latest.activeTabs}
-- Network Requests (last 5s): ${latest.networkActivity.requestsCount}
-        `.trim();
-    }
-
-    private initializeSettings(): void {
-        this.settings = {
-            homepage: 'khoj://home',
-            searchEngine: 'google',
-            restoreSession: true,
-            downloadPath: 'downloads',
-            enableJavaScript: true,
-            enableCookies: true,
-            enablePopups: false,
-            theme: 'light',
-            defaultZoom: 1.0
-        };
-        
-        this.session = {
-            tabs: [],
-            activeTabId: '',
-            windowState: {
-                width: 1200,
-                height: 800,
-                isMaximized: false
-            }
-        };
-        
-        this.loadSettings();
     }
 
     private initializeElements(): void {
@@ -846,12 +799,6 @@ Performance Report (Last ${count} samples):
         }
     }
 
-    private loadInitialState(): void {
-        this.loadBookmarks();
-        this.loadDownloads();
-        this.loadExtensions();
-    }
-
     private loadExtensions(): void {
         try {
             const saved = localStorage.getItem('browser_extensions');
@@ -859,7 +806,7 @@ Performance Report (Last ${count} samples):
                 this.extensions = JSON.parse(saved);
             }
         } catch (error) {
-            console.warn('Could not load extensions from localStorage:', error);
+            this.handleStorageError('load', 'extensions', error);
         }
     }
 
@@ -867,42 +814,7 @@ Performance Report (Last ${count} samples):
         try {
             localStorage.setItem('browser_extensions', JSON.stringify(this.extensions));
         } catch (error) {
-            console.warn('Could not save extensions to localStorage:', error);
-        }
-    }
-
-    private installExtension(extensionData: Partial<BrowserExtension>): void {
-        const extension: BrowserExtension = {
-            id: extensionData.id || this.generateExtensionId(),
-            name: extensionData.name || 'Unknown Extension',
-            version: extensionData.version || '1.0.0',
-            description: extensionData.description || '',
-            enabled: true,
-            permissions: extensionData.permissions || [],
-            scripts: extensionData.scripts || {}
-        };
-
-        this.extensions.push(extension);
-        this.saveExtensions();
-        this.updateStatus(`Extension installed: ${extension.name}`);
-    }
-
-    private uninstallExtension(extensionId: string): void {
-        const index = this.extensions.findIndex(ext => ext.id === extensionId);
-        if (index >= 0) {
-            const extension = this.extensions[index];
-            this.extensions.splice(index, 1);
-            this.saveExtensions();
-            this.updateStatus(`Extension uninstalled: ${extension.name}`);
-        }
-    }
-
-    private toggleExtension(extensionId: string): void {
-        const extension = this.extensions.find(ext => ext.id === extensionId);
-        if (extension) {
-            extension.enabled = !extension.enabled;
-            this.saveExtensions();
-            this.updateStatus(`Extension ${extension.enabled ? 'enabled' : 'disabled'}: ${extension.name}`);
+            this.handleStorageError('save', 'extensions', error);
         }
     }
 
@@ -3516,7 +3428,45 @@ Performance Report (Last ${count} samples):
     }
 
     private showDevToolsSettings(): void {
-        alert('Dev Tools Settings\n\n• Theme: Light\n• Font Size: 12px\n• Auto-refresh: Enabled\n\nSettings panel coming soon!');
+        // Create a simple settings panel for dev tools
+        const settingsHtml = `
+            <div style="padding: 16px;">
+                <h3>Dev Tools Settings</h3>
+                <div style="margin-bottom: 12px;">
+                    <label>
+                        <input type="checkbox" id="dev-auto-refresh" checked> Auto-refresh
+                    </label>
+                </div>
+                <div style="margin-bottom: 12px;">
+                    <label>
+                        Theme:
+                        <select id="dev-theme">
+                            <option value="light" selected>Light</option>
+                            <option value="dark">Dark</option>
+                        </select>
+                    </label>
+                </div>
+                <div style="margin-bottom: 12px;">
+                    <label>
+                        Font Size:
+                        <select id="dev-font-size">
+                            <option value="10px">10px</option>
+                            <option value="12px" selected>12px</option>
+                            <option value="14px">14px</option>
+                        </select>
+                    </label>
+                </div>
+                <button onclick="this.closest('.dev-tools-panel').querySelector('.dev-tools-content').style.display = 'block'">Close Settings</button>
+            </div>
+        `;
+        
+        const devToolsContent = document.querySelector('.dev-tools-content') as HTMLElement;
+        if (devToolsContent) {
+            devToolsContent.style.display = 'none';
+            const settingsContainer = document.createElement('div');
+            settingsContainer.innerHTML = settingsHtml;
+            devToolsContent.parentElement?.appendChild(settingsContainer);
+        }
     }
 
     private updateConsole(): void {
@@ -4240,7 +4190,7 @@ Performance Report (Last ${count} samples):
         try {
             localStorage.setItem('browser_bookmarks', JSON.stringify(this.bookmarks));
         } catch (error) {
-            console.warn('Could not save bookmarks to localStorage:', error);
+            this.handleStorageError('save', 'bookmarks', error);
         }
     }
 
@@ -4251,7 +4201,7 @@ Performance Report (Last ${count} samples):
                 this.bookmarks = JSON.parse(saved);
             }
         } catch (error) {
-            console.warn('Could not load bookmarks from localStorage:', error);
+            this.handleStorageError('load', 'bookmarks', error);
         }
     }
 
@@ -4259,7 +4209,7 @@ Performance Report (Last ${count} samples):
         try {
             localStorage.setItem('browser_downloads', JSON.stringify(this.downloads));
         } catch (error) {
-            console.warn('Could not save downloads to localStorage:', error);
+            this.handleStorageError('save', 'downloads', error);
         }
     }
 
@@ -4270,7 +4220,7 @@ Performance Report (Last ${count} samples):
                 this.downloads = JSON.parse(saved);
             }
         } catch (error) {
-            console.warn('Could not load downloads from localStorage:', error);
+            this.handleStorageError('load', 'downloads', error);
         }
     }
 
@@ -4552,7 +4502,7 @@ Performance Report (Last ${count} samples):
                 this.settings = { ...this.settings, ...JSON.parse(saved) };
             }
         } catch (error) {
-            console.warn('Could not load settings from localStorage:', error);
+            this.handleStorageError('load', 'settings', error);
         }
     }
 
@@ -4560,7 +4510,7 @@ Performance Report (Last ${count} samples):
         try {
             localStorage.setItem('khoj_settings', JSON.stringify(this.settings));
         } catch (error) {
-            console.warn('Could not save settings to localStorage:', error);
+            this.handleStorageError('save', 'settings', error);
         }
     }
 
@@ -4585,7 +4535,7 @@ Performance Report (Last ${count} samples):
         try {
             localStorage.setItem('khoj_session', JSON.stringify(session));
         } catch (error) {
-            console.warn('Could not save session to localStorage:', error);
+            this.handleStorageError('save', 'session', error);
         }
     }
 
@@ -4611,7 +4561,7 @@ Performance Report (Last ${count} samples):
                 }
             }
         } catch (error) {
-            console.warn('Could not restore session from localStorage:', error);
+            this.handleStorageError('load', 'session', error);
         }
     }
 
