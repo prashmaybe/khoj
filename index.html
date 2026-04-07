@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TypeScript Browser</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .tabs-bar {
+            background: #e9ecef;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            align-items: center;
+            min-height: 36px;
+            overflow-x: auto;
+            scrollbar-width: thin;
+        }
+
+        .tabs-bar::-webkit-scrollbar {
+            height: 4px;
+        }
+
+        .tabs-bar::-webkit-scrollbar-track {
+            background: #f1f3f4;
+        }
+
+        .tabs-bar::-webkit-scrollbar-thumb {
+            background: #c1c7cd;
+            border-radius: 2px;
+        }
+
+        .tab {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-bottom: none;
+            border-radius: 4px 4px 0 0;
+            padding: 6px 12px;
+            margin: 2px 2px 0 0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            min-width: 120px;
+            max-width: 200px;
+            font-size: 13px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            position: relative;
+        }
+
+        .tab:hover {
+            background: #e9ecef;
+        }
+
+        .tab.active {
+            background: #fff;
+            border-bottom: 1px solid #fff;
+            margin-bottom: -1px;
+        }
+
+        .tab-close {
+            background: none;
+            border: none;
+            padding: 0;
+            margin: 0;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 12px;
+            color: #6c757d;
+            flex-shrink: 0;
+        }
+
+        .tab-close:hover {
+            background: #ced4da;
+            color: #495057;
+        }
+
+        .new-tab-btn {
+            background: none;
+            border: none;
+            padding: 6px 8px;
+            cursor: pointer;
+            border-radius: 4px;
+            color: #6c757d;
+            font-size: 16px;
+            margin-left: 4px;
+        }
+
+        .new-tab-btn:hover {
+            background: #dee2e6;
+        }
+
+        .toolbar {
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+            padding: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .toolbar-group {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        button {
+            background: #fff;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background: #e9ecef;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .url-bar {
+            flex: 1;
+            min-width: 300px;
+            padding: 6px 12px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .url-bar:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+        }
+
+        .webview-container {
+            flex: 1;
+            background: #fff;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .webview {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .status-bar {
+            background: #f8f9fa;
+            border-top: 1px solid #dee2e6;
+            padding: 4px 8px;
+            font-size: 12px;
+            color: #6c757d;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .loading-indicator {
+            display: none;
+            color: #007bff;
+        }
+
+        .loading-indicator.active {
+            display: inline;
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 16px;
+            margin: 16px;
+            border-radius: 4px;
+            border: 1px solid #f5c6cb;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .find-bar {
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+            padding: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .find-bar input {
+            flex: 1;
+            padding: 4px 8px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+        }
+
+        .downloads-panel, .dev-tools-panel {
+            position: fixed;
+            bottom: 0;
+            right: 0;
+            width: 400px;
+            height: 300px;
+            background: #fff;
+            border: 1px solid #dee2e6;
+            border-radius: 4px 0 0 0;
+            box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            z-index: 1000;
+        }
+
+        .downloads-panel h3, .dev-tools-panel h3 {
+            margin: 0;
+            padding: 12px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+            font-size: 14px;
+        }
+
+        .downloads-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+        }
+
+        .download-item {
+            padding: 8px;
+            border-bottom: 1px solid #e9ecef;
+            font-size: 12px;
+        }
+
+        .download-item:last-child {
+            border-bottom: none;
+        }
+
+        .dev-tools-tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .dev-tab-btn {
+            background: none;
+            border: none;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 12px;
+            border-bottom: 2px solid transparent;
+        }
+
+        .dev-tab-btn.active {
+            border-bottom-color: #007bff;
+            background: #fff;
+        }
+
+        .dev-tools-content {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .dev-panel {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: none;
+            background: #fff;
+        }
+
+        .dev-panel.active {
+            display: block;
+        }
+
+        #console-output {
+            height: calc(100% - 40px);
+            overflow-y: auto;
+            padding: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            background: #1e1e1e;
+            color: #d4d4d4;
+        }
+
+        #console-input {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 8px;
+            border: none;
+            border-top: 1px solid #dee2e6;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+
+        #network-log, #elements-tree {
+            height: 100%;
+            overflow-y: auto;
+            padding: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+
+        .network-item {
+            padding: 4px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .element-node {
+            padding: 2px 0;
+            cursor: pointer;
+        }
+
+        .element-node:hover {
+            background: #f8f9fa;
+        }
+
+        .webview {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: none;
+        }
+
+        .webview.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="tabs-bar" id="tabs-bar">
+        <!-- Tabs will be dynamically added here -->
+    </div>
+    
+    <div class="toolbar">
+        <div class="toolbar-group">
+            <button id="back-btn" disabled>Back</button>
+            <button id="forward-btn" disabled>Forward</button>
+            <button id="reload-btn" disabled>Reload</button>
+            <button id="home-btn">Home</button>
+            <button id="find-btn">Find</button>
+            <button id="print-btn">Print</button>
+        </div>
+        <div class="toolbar-group" style="flex: 1;">
+            <input type="text" class="url-bar" id="url-bar" placeholder="Enter URL or search..." />
+            <button id="go-btn">Go</button>
+        </div>
+        <div class="toolbar-group">
+            <button id="zoom-out-btn">-</button>
+            <span id="zoom-level">100%</span>
+            <button id="zoom-in-btn">+</button>
+            <button id="bookmark-btn">Bookmark</button>
+            <button id="history-btn">History</button>
+            <button id="dev-tools-btn">Dev Tools</button>
+            <button id="private-btn">Private</button>
+            <button id="downloads-btn">Downloads</button>
+        </div>
+    </div>
+
+    <div class="find-bar" id="find-bar" style="display: none;">
+        <input type="text" id="find-input" placeholder="Find in page..." />
+        <button id="find-prev">Previous</button>
+        <button id="find-next">Next</button>
+        <button id="find-close">Close</button>
+    </div>
+
+    <div class="webview-container">
+        <div id="webviews">
+            <!-- Webviews will be dynamically added here -->
+        </div>
+        <div class="error-message" id="error-message"></div>
+    </div>
+
+    <div class="status-bar">
+        <div>
+            <span id="status-text">Ready</span>
+            <span class="loading-indicator" id="loading-indicator">Loading...</span>
+        </div>
+        <div id="url-display"></div>
+    </div>
+
+    <div class="downloads-panel" id="downloads-panel" style="display: none;">
+        <h3>Downloads</h3>
+        <div id="downloads-list"></div>
+        <button id="downloads-close">Close</button>
+    </div>
+
+    <div class="dev-tools-panel" id="dev-tools-panel" style="display: none;">
+        <h3>Developer Tools</h3>
+        <div class="dev-tools-tabs">
+            <button class="dev-tab-btn active" data-tab="console">Console</button>
+            <button class="dev-tab-btn" data-tab="network">Network</button>
+            <button class="dev-tab-btn" data-tab="elements">Elements</button>
+        </div>
+        <div class="dev-tools-content">
+            <div id="dev-console" class="dev-panel active">
+                <div id="console-output"></div>
+                <input type="text" id="console-input" placeholder="Enter JavaScript..." />
+            </div>
+            <div id="dev-network" class="dev-panel">
+                <div id="network-log"></div>
+            </div>
+            <div id="dev-elements" class="dev-panel">
+                <div id="elements-tree"></div>
+            </div>
+        </div>
+        <button id="dev-tools-close">Close</button>
+    </div>
+
+    <script src="main.js"></script>
+</body>
+</html>

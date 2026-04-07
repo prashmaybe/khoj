@@ -1,0 +1,23 @@
+{
+  "name": "typescript-browser",
+  "version": "1.0.0",
+  "description": "A web browser built from scratch using TypeScript",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "tsc && electron dist/main.js",
+    "dev": "tsc --watch",
+    "serve": "http-server dist -p 8080 -o"
+  },
+  "keywords": ["browser", "typescript", "web"],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "http-server": "^14.0.0"
+  },
+  "dependencies": {
+    "electron": "^28.0.0"
+  }
+}
