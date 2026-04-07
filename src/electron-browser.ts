@@ -124,8 +124,21 @@ interface BrowserExtension {
     permissions: string[];
     scripts: {
         content?: string;
-        background?: string;
+        runAt?: string;
+    } | {}
+}
+
+interface LocalizationStrings {
+    [key: string]: {
+        [language: string]: string;
     };
+}
+
+interface Language {
+    code: string;
+    name: string;
+    nativeName: string;
+    rtl: boolean;
 }
 
 interface PerformanceMetrics {
@@ -167,6 +180,193 @@ class KhojBrowser {
     private isPrivateMode: boolean = false;
     private networkRequests: NetworkRequest[] = [];
     private consoleMessages: ConsoleMessage[] = [];
+    
+    // Localization
+    private currentLanguage: string = 'en';
+    private languages: Language[] = [
+        { code: 'en', name: 'English', nativeName: 'English', rtl: false },
+        { code: 'hi', name: 'Hindi', nativeName: 'हिन्दी', rtl: false },
+        { code: 'bn', name: 'Bengali', nativeName: 'বাংলা', rtl: false },
+        { code: 'ta', name: 'Tamil', nativeName: 'தமிழ்', rtl: false },
+        { code: 'te', name: 'Telugu', nativeName: 'తెలుగు', rtl: false },
+        { code: 'mr', name: 'Marathi', nativeName: 'मराठी', rtl: false },
+        { code: 'gu', name: 'Gujarati', nativeName: 'ગુજરાતી', rtl: false },
+        { code: 'kn', name: 'Kannada', nativeName: 'ಕನ್ನಡ', rtl: false },
+        { code: 'ml', name: 'Malayalam', nativeName: 'മലയലം', rtl: false },
+        { code: 'pa', name: 'Punjabi', nativeName: 'ਪੰਜਾਬੀ', rtl: false },
+        { code: 'or', name: 'Odia', nativeName: 'ଓଡ଼ିଆ', rtl: false },
+        { code: 'as', name: 'Assamese', nativeName: 'অসমীয়া', rtl: false },
+        { code: 'ur', name: 'Urdu', nativeName: 'اردو', rtl: true }
+    ];
+    
+    private strings: LocalizationStrings = {
+        // English
+        welcome: {
+            en: 'Welcome to Khoj',
+            hi: 'खोज में आपका स्वागत है',
+            bn: 'খোজে স্বাগতম',
+            ta: 'கோஜில் உங்களை வரவுகிறோம்',
+            te: 'ఖోజ్‌లో స్వాగతం దీరి',
+            mr: 'खोज मध्ये आपले आहेरात आहे',
+            gu: 'ખોજમાં આપનું સ્વાગત છે',
+            kn: 'ಖೋಜಿಗೆ ಸ್ವಾಗತಿದ್ದೀಸಿ',
+            ml: 'ഖോജിലേക്കുകളിൽ സ്വാഗതം',
+            pa: 'ਖੋਜ ਵਿੱਚ ਆਇਆਂ ਹੈ',
+            or: 'ଖୋଜରେ ସ୍ଵାଗତ ଅଛି',
+            as: 'খোজল স্বাগতম',
+            ur: 'کھوج میں آپ کا خیر مقدم ہے'
+        },
+        newTab: {
+            en: 'New Tab',
+            hi: 'नया टैब',
+            bn: 'নতুন ট্যাব',
+            ta: 'புதிய தாவலை',
+            te: 'కొత్త ట్యాబ్',
+            mr: 'नवा टॅब',
+            gu: 'નવું ટૅબ',
+            kn: 'ಹೊಸಟ್ಯಾಬ್',
+            ml: 'പുതിയ ടാബ്',
+            pa: 'ਨਵਾਂ ਟੈਬ',
+            or: 'ନୂତନିଆ ଟାବ',
+            as: 'নতুন টেব',
+            ur: 'نیا ٹیب'
+        },
+        closeTab: {
+            en: 'Close Tab',
+            hi: 'टैब बंद करें',
+            bn: 'ট্যাব বন্ধ করুন',
+            ta: 'தாவலை மூடு',
+            te: 'ట్యాబ్ మూసి',
+            mr: 'टॅब बंद करा',
+            gu: 'ટૅબ બંધ કરો',
+            kn: 'ಟ್ಯಾಬ್ ಮುಚ್ಚಿ',
+            ml: 'ടാബ് അടയ്ക്കുക',
+            pa: 'ਟੈਬ ਬੰਦ ਕਰੋ',
+            or: 'ଟାବ ବନ୍ଦ କରୁନ୍ତୁ',
+            as: 'টেব বন্ধ করুন',
+            ur: 'ٹیب بند کریں'
+        },
+        bookmarks: {
+            en: 'Bookmarks',
+            hi: 'बुकमार्क्स',
+            bn: 'বুকমার্ক',
+            ta: 'புத்தக்கள்',
+            te: 'ఇష్టమార్క్స్',
+            mr: 'बुकमार्क्स',
+            gu: 'બુકમાર્ક',
+            kn: 'ಬುಕ್ಮಾರ್ಕ್ಸ್',
+            ml: 'ബുക്ക്മാർക്കൾ',
+            pa: 'ਬੁੱਕਮਾਰਕ',
+            or: 'ବୁକମାର୍କ',
+            as: 'বুকমার্ক',
+            ur: 'بک مارکس'
+        },
+        downloads: {
+            en: 'Downloads',
+            hi: 'डाउनलोड्स',
+            bn: 'ডাউনলোড',
+            ta: 'பதிவிப்புகள்',
+            te: 'డౌన్‌లోడ్లు',
+            mr: 'डाउनलोड्स',
+            gu: 'ડાઉનલોડ',
+            kn: 'ಡೌನ್‌ಲೋಡ್ಸ್',
+            ml: 'ഡൌൺന്‌ലോഡുകൾ',
+            pa: 'ਡਾਊਨਲੋਡ',
+            or: 'ଡାଉନଲୋଡ',
+            as: 'ডাউনলোড',
+            ur: 'ڈاؤن لوڈ'
+        },
+        devTools: {
+            en: 'Developer Tools',
+            hi: 'डेवलपर टूल्स',
+            bn: 'ডেভেলপার টুলস',
+            ta: 'நிரலம்பியாள் கருவிகள்',
+            te: 'డెవలపర్ టూల్స్',
+            mr: 'डेव्हलपर टूल्स',
+            gu: 'ડેવલપર ટૂલ્સ',
+            kn: 'ಡೆವಲಪರ್ ಟೂಲ್ಸ್',
+            ml: 'ഡെവലപ്പർ ടൂളുകൾ',
+            pa: 'ਡੇਵਲਪਰ ਟੂਲਜ਼',
+            or: 'ଡେଭଲପର ଟୁଲସ',
+            as: 'ডেভেলপার টুলস',
+            ur: 'ڈویلپر ٹولز'
+        },
+        settings: {
+            en: 'Settings',
+            hi: 'सेटिंग्स',
+            bn: 'সেটিংস',
+            ta: 'அமைப்புகள்',
+            te: 'సెట్టింగ్స్',
+            mr: 'सेटिंग्स',
+            gu: 'સેટિંગ્સ',
+            kn: 'ಸೆಟ್ಟಿಂಗ್ಸ್',
+            ml: 'ക്രമീകളുകൾ',
+            pa: 'ਸੈਟਿੰਗਜ',
+            or: 'ସେଟିଂଗ',
+            as: 'সেটিংস',
+            ur: 'ترتیبات'
+        },
+        goodMorning: {
+            en: 'Good Morning! ☀️',
+            hi: 'सुप्रभात 🌅',
+            bn: 'শুভ স্বাগতম ☀️',
+            ta: 'காலைய்களை வணக்கள் ☀️',
+            te: 'శుభోదం స్వాగతం ☀️',
+            mr: 'शुभ सकाळ ☀️',
+            gu: 'સુવાળ સ્વાગત ☀️',
+            kn: 'ಶುಭೋದ ಸ್ವಾಗತ ☀️',
+            ml: 'ശുഭകാളം സ്വാഗതം ☀️',
+            pa: 'ਸਵੇਰ ਸੁਆਖ ☀️',
+            or: 'ସକାଳ ଶୁଭ ସ୍ଵାଗତ ☀️',
+            as: 'সুবেৰ স্বাগতম ☀️',
+            ur: 'صبح بخیر! ☀️'
+        },
+        goodAfternoon: {
+            en: 'Good Afternoon! 🌤️',
+            hi: 'दोपहर 🌤️',
+            bn: 'দুপুর স্বাগতম 🌤️',
+            ta: 'மத்யால் வணக்கள் 🌤️',
+            te: 'మధ్యపహం 🌤️',
+            mr: 'दुपार 🌤️',
+            gu: 'બપોર 🌤️',
+            kn: 'ಮಧ್ಯಾಹು 🌤️',
+            ml: 'ഉച്ച കാലിയുകൾ 🌤️',
+            pa: 'ਦੁਪੁਰ 🌤️',
+            or: 'ବିହଣ ସ୍ଵାଗତ 🌤️',
+            as: 'দুপুর স্বাগতম 🌤️',
+            ur: 'دوپہ بخیر! 🌤️'
+        },
+        goodEvening: {
+            en: 'Good Evening! 🌅',
+            hi: 'शाम 🌅',
+            bn: 'সন্ধ্যা স্বাগতম 🌅',
+            ta: 'சாலி வணக்கள் 🌅',
+            te: 'సాయం 🌅',
+            mr: 'सांज 🌅',
+            gu: 'સાંજ 🌅',
+            kn: 'ಸಂಜೆ 🌅',
+            ml: 'വൈകാലിയുകൾ 🌅',
+            pa: 'ਸ਼ਾਮ 🌅',
+            or: 'ସନ୍ଧ୍ଯା ସ୍ଵାଗତ 🌅',
+            as: 'সন্ধ্যা স্বাগতম 🌅',
+            ur: 'شام بخیر! 🌅'
+        },
+        goodNight: {
+            en: 'Good Night! 🌙',
+            hi: 'शुभ रात्री 🌙',
+            bn: 'শুভ রাত্রি 🌙',
+            ta: 'இரவு வணக்கள் 🌙',
+            te: 'శుభోదం రాత్రి 🌙',
+            mr: 'शुभ रात्री 🌙',
+            gu: 'શુભ રાત્રી 🌙',
+            kn: 'ಶುಭೋದ ರಾತ್ರಿ 🌙',
+            ml: 'ശുഭോദം രാത്രി 🌙',
+            pa: 'ਸ਼ਾਮ ਰਾਤ 🌙',
+            or: 'ଶୁଭ ରାତ୍ରୀ 🌙',
+            as: 'শুভ রাত্রি 🌙',
+            ur: 'شام بخیر! 🌙'
+        }
+    };
     private isMaximized: boolean = false;
     private settings!: BrowserSettings;
     private session!: BrowserSession;
@@ -219,14 +419,39 @@ class KhojBrowser {
     private bookmarksAdd!: HTMLButtonElement;
 
     constructor() {
-        this.initializeSettings();
-        this.initializeElements();
+        this.loadSettings();
+        this.loadSession();
+        this.loadBookmarks();
+        this.loadDownloads();
+        this.loadExtensions();
+        this.initializeUI();
         this.setupEventListeners();
         this.setupElectronEventListeners();
-        this.loadInitialState();
-        this.restoreSession();
-        this.createTab('khoj://home');
         this.startPerformanceMonitoring();
+        
+        // Initialize language
+        this.currentLanguage = this.detectLanguage();
+        this.createLanguageSwitcher();
+        
+        this.createTab(); // Start with one tab
+        this.loadWelcomePage(this.activeTabId);
+    }
+
+    private loadSession(): void {
+        try {
+            const saved = localStorage.getItem('browser_session');
+            if (saved) {
+                this.session = JSON.parse(saved);
+            }
+        } catch (error) {
+            console.warn('Could not load session from localStorage:', error);
+        }
+    }
+
+    private initializeUI(): void {
+        // Initialize UI elements
+        // This method is called to set up the initial UI state
+        console.log('UI initialized');
     }
 
     private startPerformanceMonitoring(): void {
@@ -684,13 +909,13 @@ Performance Report (Last ${count} samples):
         if (!tab) return;
 
         this.extensions
-            .filter(ext => ext.enabled && ext.scripts.content)
+            .filter(ext => ext.enabled && ext.scripts?.content)
             .forEach(extension => {
                 try {
                     const doc = tab.element.contentDocument;
                     if (doc && doc.head) {
                         const script = doc.createElement('script');
-                        script.textContent = extension.scripts.content || '';
+                        script.textContent = ext.scripts.content || '';
                         doc.head.appendChild(script);
                     }
                 } catch (error) {
@@ -1586,10 +1811,135 @@ Performance Report (Last ${count} samples):
 
     private getGreeting(): string {
         const hour = new Date().getHours();
-        if (hour < 12) return 'Good Morning! ☀️';
-        if (hour < 17) return 'Good Afternoon! 🌤️';
-        if (hour < 21) return 'Good Evening! 🌅';
-        return 'Good Night! 🌙';
+        const greetingKey = hour < 12 ? 'goodMorning' : hour < 17 ? 'goodAfternoon' : hour < 21 ? 'goodEvening' : 'goodNight';
+        return this.getString(greetingKey);
+    }
+
+    private getString(key: string, params?: any[]): string {
+        const translation = this.strings[key]?.[this.currentLanguage] || this.strings[key]?.en || key;
+        if (params && params.length > 0) {
+            return translation.replace(/\{(\d+)\}/g, (match, index) => params[parseInt(index)] || '');
+        }
+        return translation;
+    }
+
+    private setLanguage(languageCode: string): void {
+        const language = this.languages.find(lang => lang.code === languageCode);
+        if (language) {
+            this.currentLanguage = languageCode;
+            localStorage.setItem('browser_language', languageCode);
+            this.updateUILanguage();
+            this.updateStatus(`Language changed to ${language.name} (${language.nativeName})`);
+        }
+    }
+
+    private detectLanguage(): string {
+        // Try to detect language from browser/system
+        const browserLang = navigator.language || 'en';
+        const savedLang = localStorage.getItem('browser_language');
+        
+        // Check if saved language is supported
+        if (savedLang && this.languages.find(lang => lang.code === savedLang)) {
+            return savedLang;
+        }
+        
+        // Try to match browser language
+        const langCode = browserLang.split('-')[0];
+        if (this.languages.find(lang => lang.code === langCode)) {
+            return langCode;
+        }
+        
+        return 'en'; // Default to English
+    }
+
+    private updateUILanguage(): void {
+        // Update all UI elements with current language
+        this.updateTabTitles();
+        this.updateButtonTitles();
+        this.updateStatusText();
+        // Update welcome page if currently visible
+        const activeTab = this.tabs.find(t => t.id === this.activeTabId);
+        if (activeTab && activeTab.url === 'khoj://home') {
+            this.loadWelcomePage(this.activeTabId);
+        }
+    }
+
+    private updateTabTitles(): void {
+        // Update tab titles for new tabs, close buttons, etc.
+        document.querySelectorAll('.tab-title').forEach(element => {
+            const tabElement = element.closest('.tab');
+            if (tabElement) {
+                const tabId = tabElement.id.replace('tab-', '');
+                const tab = this.tabs.find(t => t.id === tabId);
+                if (tab && tab.title === 'New Tab') {
+                    element.textContent = this.getString('newTab');
+                }
+            }
+        });
+    }
+
+    private updateButtonTitles(): void {
+        // Update button texts
+        const buttons = {
+            'bookmark-btn': this.getString('bookmarks'),
+            'downloads-btn': this.getString('downloads'),
+            'dev-tools-btn': this.getString('devTools'),
+            'settings-btn': this.getString('settings'),
+            'new-tab-btn': this.getString('newTab')
+        };
+        
+        Object.entries(buttons).forEach(([id, text]) => {
+            const element = document.getElementById(id);
+            if (element && element.textContent !== text) {
+                element.textContent = text;
+            }
+        });
+    }
+
+    private updateStatusText(): void {
+        // Update status text elements
+        const statusTexts = {
+            'status-text': 'Ready',
+            'loading-text': 'Loading...'
+        };
+        
+        Object.entries(statusTexts).forEach(([id, text]) => {
+            const element = document.getElementById(id);
+            if (element && element.textContent !== text) {
+                element.textContent = text;
+            }
+        });
+    }
+
+    private createLanguageSwitcher(): void {
+        // Create language switcher dropdown
+        const languageSwitcher = document.createElement('div');
+        languageSwitcher.id = 'language-switcher';
+        languageSwitcher.className = 'language-switcher';
+        languageSwitcher.innerHTML = `
+            <select id="language-select" class="language-select">
+                ${this.languages.map(lang => `
+                    <option value="${lang.code}" ${lang.code === this.currentLanguage ? 'selected' : ''}>
+                        ${lang.nativeName} (${lang.name})
+                    </option>
+                `).join('')}
+            </select>
+        `;
+        
+        // Add to header
+        const header = document.querySelector('.header');
+        if (header) {
+            header.appendChild(languageSwitcher);
+        }
+        
+        // Add change event listener
+        const languageSelect = document.getElementById('language-select') as HTMLSelectElement;
+        if (languageSelect) {
+            languageSelect.addEventListener('change', (e) => {
+                const target = e.target as HTMLSelectElement;
+                this.setLanguage(target.value);
+            });
+        }
     }
 
     private generateWelcomePageHtml(): string {
