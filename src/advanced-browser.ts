@@ -456,8 +456,12 @@ class AdvancedBrowser {
             this.updateStatus('Bookmark removed');
         } else {
             const bookmark: Bookmark = {
+                id: 'bookmark-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
                 url: tab.url,
                 title: tab.title,
+                favicon: '',
+                folder: 'Bookmarks Bar',
+                dateAdded: Date.now(),
                 timestamp: Date.now()
             };
             this.bookmarks.push(bookmark);

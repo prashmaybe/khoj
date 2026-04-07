@@ -190,8 +190,12 @@ class Browser {
             this.updateStatus('Bookmark removed');
         } else {
             const bookmark: Bookmark = {
+                id: 'bookmark-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
                 url: this.currentUrl,
                 title: this.webview.contentDocument?.title || new URL(this.currentUrl).hostname,
+                favicon: '',
+                folder: 'Bookmarks Bar',
+                dateAdded: Date.now(),
                 timestamp: Date.now()
             };
             this.bookmarks.push(bookmark);

@@ -25,6 +25,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
     onFindPrevious: (callback: () => void) => ipcRenderer.on('find-previous', callback),
     onReload: (callback: () => void) => ipcRenderer.on('reload', callback),
     onForceReload: (callback: () => void) => ipcRenderer.on('force-reload', callback),
+    
+    // Window state events
+    onWindowMaximized: (callback: () => void) => ipcRenderer.on('window-maximized', callback),
+    onWindowUnmaximized: (callback: () => void) => ipcRenderer.on('window-unmaximized', callback),
+    onWindowFocused: (callback: () => void) => ipcRenderer.on('window-focused', callback),
+    onWindowBlurred: (callback: () => void) => ipcRenderer.on('window-blurred', callback),
     onZoomReset: (callback: () => void) => ipcRenderer.on('zoom-reset', callback),
     onZoomIn: (callback: () => void) => ipcRenderer.on('zoom-in', callback),
     onZoomOut: (callback: () => void) => ipcRenderer.on('zoom-out', callback),
@@ -38,12 +44,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
     onImportBookmarks: (callback: (filePath: string) => void) => ipcRenderer.on('import-bookmarks', (_, filePath) => callback(filePath)),
     onExportBookmarks: (callback: (filePath: string) => void) => ipcRenderer.on('export-bookmarks', (_, filePath) => callback(filePath)),
     onOpenUrlInNewTab: (callback: (url: string) => void) => ipcRenderer.on('open-url-in-new-tab', (_, url) => callback(url)),
-    
-    // Window state events
-    onWindowMaximized: (callback: () => void) => ipcRenderer.on('window-maximized', callback),
-    onWindowUnmaximized: (callback: () => void) => ipcRenderer.on('window-unmaximized', callback),
-    onWindowFocused: (callback: () => void) => ipcRenderer.on('window-focused', callback),
-    onWindowBlurred: (callback: () => void) => ipcRenderer.on('window-blurred', callback),
     
     // Remove listeners
     removeAllListeners: (channel: string) => ipcRenderer.removeAllListeners(channel)
