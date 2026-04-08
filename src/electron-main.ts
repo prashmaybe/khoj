@@ -71,6 +71,9 @@ class KhojBrowser {
             icon: this.getAppIcon()
         });
 
+        // Set Chrome user agent to avoid blocking by major sites
+        this.mainWindow.webContents.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+
         // Load the app
         const indexPath = path.join(__dirname, 'electron-index.html');
         this.mainWindow.loadFile(indexPath);
@@ -509,6 +512,9 @@ class KhojBrowser {
             icon: this.getAppIcon()
         });
 
+        // Set Chrome user agent to avoid blocking by major sites
+        newWindow.webContents.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+
         const indexPath = path.join(__dirname, 'electron-index.html');
         newWindow.loadFile(indexPath);
     }
@@ -529,6 +535,9 @@ class KhojBrowser {
             },
             icon: this.getAppIcon()
         });
+
+        // Set Chrome user agent to avoid blocking by major sites
+        incognitoWindow.webContents.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
 
         const indexPath = path.join(__dirname, 'electron-index.html');
         incognitoWindow.loadFile(indexPath);

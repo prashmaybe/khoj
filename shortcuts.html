@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chrome Shortcuts - Khoj Browser</title>
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f8f9fa;
+            color: #202124;
+            line-height: 1.6;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 32px;
+            color: #1a73e8;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .header p {
+            color: #5f6368;
+            font-size: 16px;
+        }
+
+        .shortcuts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .category-card {
+            background: #fff;
+            border-radius: 8px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .category-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+        }
+
+        .category-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #e8eaed;
+        }
+
+        .category-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #1a73e8, #4285f4);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 20px;
+        }
+
+        .category-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #202124;
+        }
+
+        .shortcut-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #f1f3f4;
+            transition: background-color 0.2s;
+        }
+
+        .shortcut-item:last-child {
+            border-bottom: none;
+        }
+
+        .shortcut-item:hover {
+            background: #f8f9fa;
+            margin: 0 -8px;
+            padding: 12px 8px;
+            border-radius: 4px;
+        }
+
+        .shortcut-description {
+            flex: 1;
+            color: #5f6368;
+            font-size: 14px;
+        }
+
+        .shortcut-keys {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .key {
+            background: #fff;
+            border: 1px solid #dadce0;
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 12px;
+            font-weight: 500;
+            color: #202124;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            min-width: 24px;
+            text-align: center;
+        }
+
+        .key-separator {
+            color: #9aa0a6;
+            font-size: 12px;
+            margin: 0 2px;
+        }
+
+        .platform-badge {
+            background: #e8f0fe;
+            color: #1a73e8;
+            padding: 2px 6px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 500;
+            margin-left: 8px;
+        }
+
+        .platform-badge.mac {
+            background: #fce8e6;
+            color: #d93025;
+        }
+
+        .search-bar {
+            background: #fff;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #dadce0;
+            border-radius: 24px;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .search-input:focus {
+            border-color: #1a73e8;
+            box-shadow: 0 1px 6px rgba(26, 115, 232, 0.2);
+        }
+
+        .footer {
+            text-align: center;
+            padding: 32px 20px;
+            color: #5f6368;
+            font-size: 14px;
+        }
+
+        .highlight {
+            background: #fef7e0;
+            padding: 2px 4px;
+            border-radius: 2px;
+        }
+
+        @media (max-width: 768px) {
+            .shortcuts-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            body {
+                padding: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Chrome Keyboard Shortcuts</h1>
+        <p>Essential shortcuts for faster browsing in Google Chrome</p>
+    </div>
+
+    <div class="search-bar">
+        <input type="text" class="search-input" placeholder="Search shortcuts..." id="searchInput">
+    </div>
+
+    <div class="shortcuts-grid">
+        <!-- Tab & Window Management -->
+        <div class="category-card">
+            <div class="category-header">
+                <div class="category-icon">
+                    <ion-icon name="duplicate-outline"></ion-icon>
+                </div>
+                <h2 class="category-title">Tab & Window Management</h2>
+            </div>
+            <div class="shortcuts-list">
+                <div class="shortcut-item">
+                    <span class="shortcut-description">New Tab</span>
+                    <div class="shortcut-keys">
+                        <span class="key">Ctrl</span>
+                        <span class="key-separator">+</span>
+                        <span class="key">T</span>
+                        <span class="platform-badge">Windows/Linux</span>
+                    </div>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-description">New Tab</span>
+                    <div class="shortcut-keys">
+                        <span class="key">Cmd</span>
+                        <span class="key-separator">+</span>
+                        <span class="key">T</span>
+                        <span class="platform-badge mac">Mac</span>
+                    </div>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-description">Close Tab</span>
+                    <div class="shortcut-keys">
+                        <span class="key">Ctrl</span>
+                        <span class="key-separator">+</span>
+                        <span class="key">W</span>
+                        <span class="platform-badge">Windows/Linux</span>
+                    </div>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-description">Close Tab</span>
+                    <div class="shortcut-keys">
+                        <span class="key">Cmd</span>
+                        <span class="key-separator">+</span>
+                        <span class="key">W</span>
+                        <span class="platform-badge mac">Mac</span>
+                    </div>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-description">Reopen Last Tab</span>
+                    <div class="shortcut-keys">
+                        <span class="key">Ctrl</span>
+                        <span class="key-separator">+</span>
+                        <span class="key">Shift</span>
+                        <span class="key-separator">+</span>
+                        <span class="key">T</span>
+                        <span class="platform-badge">Windows/Linux</span>
+                    </div>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-description">Reopen Last Tab</span>
+                    <div class="shortcut-keys">
+                        <span class="key">Cmd</span>
+                        <span class="key-separator">+</span>
+                        <span class="key">Shift</span>
+                        <span class="key-separator">+</span>
+                        <span class="key">T</span>
+                        <span class="platform-badge mac">Mac</span>
+                    </div>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-description">New Incognito Window</span>
+                    <div class="shortcut-keys">
+                        <span class="key">Ctrl</span>
+                        <span class="key-separator">+</span>
+                        <span class="key">Shift</span>
+                        <span class="key-separator">+</span>
+                        <span class="key">N</span>
+                        <span class="platform-badge">Windows/Linux</span>
+                    </div>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-description">New Incognito Window</span>
+                    <div class="shortcut-keys">
+                        <span class="key">Cmd</span>
+                        <span class="key-separator">+</span>
+                        <span class="key">Shift</span>
+                        <span class="key-separator">+</span>
+                        <span class="key">N</span>
+                        <span class="platform-badge mac">Mac</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation & Toolbar -->
+        <div class="category-card">
+            <div class="category-header">
+                <div class="category-icon">
+                    <ion-icon name="compass-outline"></ion-icon>
+                </div>
+                <h2 class="category-title">Navigation & Toolbar</h2>
+            </div>
+            <div class="shortcuts-list">
+                <div class="shortcut-item">
+                    <span class="shortcut-description">Address Bar Search</span>
+                    <div class="shortcut-keys">
+                        <span class="key">Ctrl</span>
+                        <span class="key-separator">+</span>
+                        <span class="key">L</span>
+                        <span class="platform-badge">Windows/Linux</span>
+                    </div>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-description">Address Bar Search</span>
+                    <div class="shortcut-keys">
+                        <span class="key">Cmd</span>
+                        <span class="key-separator">+</span>
+                        <span class="key">L</span>
+                        <span class="platform-badge mac">Mac</span>
+                    </div>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-description">Address Bar (Alternative)</span>
+                    <div class="shortcut-keys">
+                        <span class="key">F6</span>
+                        <span class="platform-badge">Windows/Linux</span>
+                    </div>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-description">Refresh Page</span>
+                    <div class="shortcut-keys">
+                        <span class="key">F5</span>
+                        <span class="platform-badge">Windows/Linux</span>
+                    </div>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-description">Refresh Page</span>
+                    <div class="shortcut-keys">
+                        <span class="key">Ctrl</span>
+                        <span class="key-separator">+</span>
+                        <span class="key">R</span>
+                        <span class="platform-badge">Windows/Linux</span>
+                    </div>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-description">Bookmark Page</span>
+                    <div class="shortcut-keys">
+                        <span class="key">Ctrl</span>
+                        <span class="key-separator">+</span>
+                        <span class="key">D</span>
+                        <span class="platform-badge">Windows/Linux</span>
+                    </div>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-description">Bookmark Page</span>
+                    <div class="shortcut-keys">
+                        <span class="key">Cmd</span>
+                        <span class="key-separator">+</span>
+                        <span class="key">D</span>
+                        <span class="platform-badge mac">Mac</span>
+                    </div>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-description">Zoom In</span>
+                    <div class="shortcut-keys">
+                        <span class="key">Ctrl</span>
+                        <span class="key-separator">+</span>
+                        <span class="key">+</span>
+                        <span class="platform-badge">Windows/Linux</span>
+                    </div>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-description">Zoom Out</span>
+                    <div class="shortcut-keys">
+                        <span class="key">Ctrl</span>
+                        <span class="key-separator">+</span>
+                        <span class="key">-</span>
+                        <span class="platform-badge">Windows/Linux</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chrome Features -->
+        <div class="category-card">
+            <div class="category-header">
+                <div class="category-icon">
+                    <ion-icon name="settings-outline"></ion-icon>
+                </div>
+                <h2 class="category-title">Chrome Features</h2>
+            </div>
+            <div class="shortcuts-list">
+                <div class="shortcut-item">
+                    <span class="shortcut-description">History</span>
+                    <div class="shortcut-keys">
+                        <span class="key">Ctrl</span>
+                        <span class="key-separator">+</span>
+                        <span class="key">H</span>
+                        <span class="platform-badge">Windows/Linux</span>
+                    </div>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-description">History</span>
+                    <div class="shortcut-keys">
+                        <span class="key">Cmd</span>
+                        <span class="key-separator">+</span>
+                        <span class="key">Y</span>
+                        <span class="platform-badge mac">Mac</span>
+                    </div>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-description">Downloads</span>
+                    <div class="shortcut-keys">
+                        <span class="key">Ctrl</span>
+                        <span class="key-separator">+</span>
+                        <span class="key">J</span>
+                        <span class="platform-badge">Windows/Linux</span>
+                    </div>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-description">Downloads</span>
+                    <div class="shortcut-keys">
+                        <span class="key">Cmd</span>
+                        <span class="key-separator">+</span>
+                        <span class="key">J</span>
+                        <span class="platform-badge mac">Mac</span>
+                    </div>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-description">Task Manager</span>
+                    <div class="shortcut-keys">
+                        <span class="key">Shift</span>
+                        <span class="key-separator">+</span>
+                        <span class="key">Esc</span>
+                        <span class="platform-badge">Windows/Linux</span>
+                    </div>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-description">Task Manager</span>
+                    <div class="shortcut-keys">
+                        <span class="key">Cmd</span>
+                        <span class="key-separator">+</span>
+                        <span class="key">Option</span>
+                        <span class="key-separator">+</span>
+                        <span class="key">Esc</span>
+                        <span class="platform-badge mac">Mac</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Additional Essential Shortcuts -->
+        <div class="category-card">
+            <div class="category-header">
+                <div class="category-icon">
+                    <ion-icon name="star-outline"></ion-icon>
+                </div>
+                <h2 class="category-title">Additional Essentials</h2>
+            </div>
+            <div class="shortcuts-list">
+                <div class="shortcut-item">
+                    <span class="shortcut-description">Go Back</span>
+                    <div class="shortcut-keys">
+                        <span class="key">Alt</span>
+                        <span class="key-separator">+</span>
+                        <span class="key">Left Arrow</span>
+                        <span class="platform-badge">Windows/Linux</span>
+                    </div>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-description">Go Back</span>
+                    <div class="shortcut-keys">
+                        <span class="key">Cmd</span>
+                        <span class="key-separator">+</span>
+                        <span class="key">[</span>
+                        <span class="platform-badge mac">Mac</span>
+                    </div>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-description">Go Forward</span>
+                    <div class="shortcut-keys">
+                        <span class="key">Alt</span>
+                        <span class="key-separator">+</span>
+                        <span class="key">Right Arrow</span>
+                        <span class="platform-badge">Windows/Linux</span>
+                    </div>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-description">Go Forward</span>
+                    <div class="shortcut-keys">
+                        <span class="key">Cmd</span>
+                        <span class="key-separator">+</span>
+                        <span class="key">]</span>
+                        <span class="platform-badge mac">Mac</span>
+                    </div>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-description">Find on Page</span>
+                    <div class="shortcut-keys">
+                        <span class="key">Ctrl</span>
+                        <span class="key-separator">+</span>
+                        <span class="key">F</span>
+                        <span class="platform-badge">Windows/Linux</span>
+                    </div>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-description">Find on Page</span>
+                    <div class="shortcut-keys">
+                        <span class="key">Cmd</span>
+                        <span class="key-separator">+</span>
+                        <span class="key">F</span>
+                        <span class="platform-badge mac">Mac</span>
+                    </div>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-description">Print Page</span>
+                    <div class="shortcut-keys">
+                        <span class="key">Ctrl</span>
+                        <span class="key-separator">+</span>
+                        <span class="key">P</span>
+                        <span class="platform-badge">Windows/Linux</span>
+                    </div>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-description">Print Page</span>
+                    <div class="shortcut-keys">
+                        <span class="key">Cmd</span>
+                        <span class="key-separator">+</span>
+                        <span class="key">P</span>
+                        <span class="platform-badge mac">Mac</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>Pro tip: Use <span class="highlight">Ctrl+Shift+T</span> (Windows) or <span class="highlight">Cmd+Shift+T</span> (Mac) to quickly restore accidentally closed tabs!</p>
+        <p>Customize your homepage shortcuts via "Customize Chrome" in a new tab.</p>
+    </div>
+
+    <script>
+        // Search functionality
+        const searchInput = document.getElementById('searchInput');
+        const shortcutItems = document.querySelectorAll('.shortcut-item');
+
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            
+            shortcutItems.forEach(item => {
+                const description = item.querySelector('.shortcut-description').textContent.toLowerCase();
+                const keys = Array.from(item.querySelectorAll('.key')).map(key => key.textContent.toLowerCase()).join(' ');
+                
+                if (description.includes(searchTerm) || keys.includes(searchTerm)) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+
+            // Hide category cards if all their shortcuts are hidden
+            document.querySelectorAll('.category-card').forEach(card => {
+                const visibleItems = card.querySelectorAll('.shortcut-item[style="display: flex;"], .shortcut-item:not([style])');
+                if (visibleItems.length === 0) {
+                    card.style.display = 'none';
+                } else {
+                    card.style.display = 'block';
+                }
+            });
+        });
+
+        // Add keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            // Press '/' to focus search
+            if (e.key === '/' && document.activeElement !== searchInput) {
+                e.preventDefault();
+                searchInput.focus();
+            }
+            
+            // Press 'Escape' to clear search
+            if (e.key === 'Escape' && document.activeElement === searchInput) {
+                searchInput.value = '';
+                searchInput.dispatchEvent(new Event('input'));
+                searchInput.blur();
+            }
+        });
+    </script>
+</body>
+</html>

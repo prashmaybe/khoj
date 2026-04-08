@@ -60,6 +60,12 @@
             -webkit-app-region: no-drag;
         }
 
+        .title-bar-right {
+            display: flex;
+            align-items: center;
+            -webkit-app-region: no-drag;
+        }
+
         .window-button {
             width: 46px;
             height: 32px;
@@ -497,6 +503,113 @@
 
         .action-button.active {
             color: #1a73e8;
+        }
+
+        .action-button.incognito-active {
+            color: #ea4335;
+            background: #fef7e0;
+        }
+
+        .action-button.incognito-active:hover {
+            background: #fce8e6;
+        }
+
+        /* Incognito Mode Styles */
+        body.incognito-mode {
+            background: #1e1e1e;
+        }
+
+        body.incognito-mode .title-bar {
+            background: linear-gradient(to bottom, #2d2d2d, #1d1d1d);
+            border-bottom-color: #404040;
+        }
+
+        body.incognito-mode .app-title {
+            color: #fff;
+        }
+
+        body.incognito-mode .tabs-container {
+            background: #252525;
+            border-bottom-color: #404040;
+        }
+
+        body.incognito-mode .tab {
+            background: #3c3c3c;
+            border-color: #404040;
+            color: #fff;
+        }
+
+        body.incognito-mode .tab:hover {
+            background: #4a4a4a;
+        }
+
+        body.incognito-mode .tab.active {
+            background: #1e1e1e;
+            color: #ea4335;
+        }
+
+        body.incognito-mode .navbar {
+            background: #2d2d2d;
+            border-bottom-color: #404040;
+        }
+
+        body.incognito-mode .url-bar-container {
+            background: #3c3c3c;
+            border-color: #404040;
+        }
+
+        body.incognito-mode .url-bar {
+            color: #fff;
+        }
+
+        body.incognito-mode .url-bar::placeholder {
+            color: #9aa0a6;
+        }
+
+        body.incognito-mode .webview-container {
+            background: #1e1e1e;
+        }
+
+        body.incognito-mode .status-bar {
+            background: #2d2d2d;
+            border-top-color: #404040;
+            color: #9aa0a6;
+        }
+
+        body.incognito-mode .bookmarks-bar {
+            background: #252525;
+            border-bottom-color: #404040;
+        }
+
+        body.incognito-mode .bookmark-item {
+            background: #3c3c3c;
+            border-color: #404040;
+            color: #fff;
+        }
+
+        body.incognito-mode .bookmark-item:hover {
+            background: #4a4a4a;
+        }
+
+        .incognito-indicator {
+            display: none;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            background: #ea4335;
+            color: white;
+            font-size: 12px;
+            font-weight: 500;
+            border-radius: 16px;
+            margin-left: 8px;
+        }
+
+        .incognito-indicator.active {
+            display: flex;
+        }
+
+        .incognito-indicator ion-icon {
+            font-size: 14px;
         }
 
         /* Main Content Area */
@@ -1512,6 +1625,10 @@
     <div class="title-bar">
         <div class="title-bar-left">
             <div class="app-title">Khoj</div>
+            <div class="incognito-indicator" id="incognito-indicator">
+                <ion-icon name="shield-outline"></ion-icon>
+                <span>Incognito</span>
+            </div>
         </div>
         <div class="title-bar-right">
             <button class="window-control" id="minimize-btn">
@@ -1588,6 +1705,9 @@
             </button>
             <button class="action-button" id="settings-btn">
                 <ion-icon name="settings-outline"></ion-icon>
+            </button>
+            <button class="action-button" id="incognito-btn">
+                <ion-icon name="shield-outline"></ion-icon>
             </button>
             <button class="action-button" id="menu-btn">
                 <ion-icon name="menu-outline"></ion-icon>

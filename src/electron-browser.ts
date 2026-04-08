@@ -399,6 +399,8 @@ class KhojBrowser {
     private downloadsBtn!: HTMLButtonElement;
     private devToolsBtn!: HTMLButtonElement;
     private settingsBtn!: HTMLButtonElement;
+    private incognitoBtn!: HTMLButtonElement;
+    private incognitoIndicator!: HTMLElement;
     private statusText!: HTMLElement;
     private loadingIndicator!: HTMLElement;
     private urlDisplay!: HTMLElement;
@@ -423,6 +425,7 @@ class KhojBrowser {
         this.loadBookmarks();
         this.loadDownloads();
         this.loadExtensions();
+        this.loadIncognitoMode(); // Load incognito mode preference
         this.initializeElements();
         this.initializeUI();
         this.setupEventListeners();
@@ -433,8 +436,13 @@ class KhojBrowser {
         this.currentLanguage = this.detectLanguage();
         this.createLanguageSwitcher();
         
-        this.createTab(); // Start with one tab
-        this.loadWelcomePage(this.activeTabId);
+        // Create initial tab based on incognito mode
+        if (this.isPrivateMode) {
+            this.createIncognitoTab();
+        } else {
+            this.createTab();
+            this.loadWelcomePage(this.activeTabId);
+        }
     }
 
     private handleStorageError(operation: 'load' | 'save', key: string, error: unknown): void {
@@ -593,6 +601,8 @@ class KhojBrowser {
         this.downloadsBtn = document.getElementById('downloads-btn') as HTMLButtonElement;
         this.devToolsBtn = document.getElementById('dev-tools-btn') as HTMLButtonElement;
         this.settingsBtn = document.getElementById('settings-btn') as HTMLButtonElement;
+        this.incognitoBtn = document.getElementById('incognito-btn') as HTMLButtonElement;
+        this.incognitoIndicator = document.getElementById('incognito-indicator')!;
         this.statusText = document.getElementById('status-text')!;
         this.loadingIndicator = document.getElementById('loading-indicator')!;
         this.urlDisplay = document.getElementById('url-display')!;
@@ -643,6 +653,7 @@ class KhojBrowser {
         this.downloadsBtn.addEventListener('click', () => this.toggleDownloads());
         this.devToolsBtn.addEventListener('click', () => this.toggleDevTools());
         this.settingsBtn.addEventListener('click', () => this.toggleSettings());
+        this.incognitoBtn.addEventListener('click', () => this.toggleIncognitoMode());
 
         // Panel controls
         document.getElementById('downloads-close')!.addEventListener('click', () => this.hideDownloads());
@@ -964,6 +975,12 @@ class KhojBrowser {
     }
 
     private createTab(url: string = ''): void {
+        // If incognito mode is active, create incognito tab instead
+        if (this.isPrivateMode) {
+            this.createIncognitoTab(url);
+            return;
+        }
+
         const tabId = this.generateTabId();
         const webview = document.createElement('iframe');
         webview.className = 'webview';
@@ -3610,6 +3627,269 @@ class KhojBrowser {
         this.settingsPanel.style.display = 'none';
     }
 
+    private toggleIncognitoMode(): void {
+        this.isPrivateMode = !this.isPrivateMode;
+        this.updateIncognitoUI();
+        
+        if (this.isPrivateMode) {
+            this.updateStatus('Incognito mode enabled - Your browsing is private');
+            // Close all existing regular tabs and create new incognito tab
+            this.closeAllTabs();
+            this.createIncognitoTab();
+        } else {
+            this.updateStatus('Incognito mode disabled');
+            // Close all incognito tabs and create new regular tab
+            this.closeAllTabs();
+            this.createTab();
+        }
+        
+        // Save incognito mode preference
+        this.saveIncognitoMode();
+    }
+
+    private updateIncognitoUI(): void {
+        const body = document.body;
+        const incognitoBtn = this.incognitoBtn;
+        const incognitoIndicator = this.incognitoIndicator;
+        
+        if (this.isPrivateMode) {
+            body.classList.add('incognito-mode');
+            incognitoBtn.classList.add('incognito-active');
+            incognitoIndicator.classList.add('active');
+        } else {
+            body.classList.remove('incognito-mode');
+            incognitoBtn.classList.remove('incognito-active');
+            incognitoIndicator.classList.remove('active');
+        }
+    }
+
+    private createIncognitoTab(url: string = ''): void {
+        const tabId = this.generateTabId();
+        const webview = document.createElement('iframe');
+        webview.className = 'webview';
+        webview.id = 'webview-' + tabId;
+        webview.style.display = 'none';
+        
+        // Set incognito-specific attributes
+        webview.setAttribute('sandbox', 'allow-same-origin allow-scripts allow-forms allow-popups');
+        
+        webview.addEventListener('load', () => {
+            const tab = this.tabs.find(t => t.id === tabId);
+            if (tab) {
+                tab.isLoading = false;
+                tab.loadProgress = 100;
+                this.updateTabDisplay(tab.id);
+                this.updateProgressBar(tab.id, false);
+                this.updateStatus('Page loaded');
+            }
+        });
+        
+        // Create incognito tab object
+        const newTab: BrowserTab = {
+            id: tabId,
+            url: url || '',
+            title: url ? url : 'Incognito Tab',
+            history: [],
+            historyIndex: 0,
+            isLoading: false,
+            zoomLevel: 1.0,
+            isPrivate: true,
+            isPinned: false,
+            element: webview,
+            favicon: '',
+            loadProgress: 0,
+            securityLevel: 'unknown'
+        };
+        
+        this.tabs.push(newTab);
+        
+        // Create tab element with incognito styling
+        const tabElement = document.createElement('div');
+        tabElement.className = 'tab incognito-tab';
+        tabElement.id = 'tab-' + newTab.id;
+        tabElement.draggable = true;
+        
+        const favicon = document.createElement('div');
+        favicon.className = 'tab-favicon';
+        favicon.innerHTML = '<ion-icon name="shield-outline" style="color: #ea4335; font-size: 14px;"></ion-icon>';
+        
+        const title = document.createElement('span');
+        title.className = 'tab-title';
+        title.textContent = newTab.title;
+        
+        const closeBtn = document.createElement('button');
+        closeBtn.className = 'tab-close';
+        closeBtn.innerHTML = '<ion-icon name="close-outline"></ion-icon>';
+        
+        tabElement.appendChild(favicon);
+        tabElement.appendChild(title);
+        tabElement.appendChild(closeBtn);
+        
+        // Tab events
+        tabElement.addEventListener('click', (e) => {
+            if (!(e.target as HTMLElement).classList.contains('tab-close')) {
+                this.switchToTab(newTab.id);
+            }
+        });
+
+        tabElement.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            this.showTabContextMenu(e, newTab);
+        });
+
+        closeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.closeTab(newTab.id);
+        });
+
+        // Insert before the new tab button
+        this.tabsContainer.insertBefore(tabElement, this.newTabBtn);
+        
+        // Add webview to container
+        this.webviewContainer.appendChild(webview);
+        
+        // Switch to the new tab
+        this.switchToTab(newTab.id);
+        
+        // If no URL provided, load incognito welcome page
+        if (!url) {
+            this.loadIncognitoWelcomePage(newTab.id);
+        }
+    }
+
+    private closeAllTabs(): void {
+        // Close all tabs without saving session data
+        const tabsToClose = [...this.tabs];
+        tabsToClose.forEach(tab => {
+            this.closeTab(tab.id);
+        });
+    }
+
+    private saveIncognitoMode(): void {
+        try {
+            localStorage.setItem('incognito_mode', this.isPrivateMode.toString());
+        } catch (error) {
+            this.handleStorageError('save', 'incognito_mode', error);
+        }
+    }
+
+    private loadIncognitoMode(): void {
+        try {
+            const saved = localStorage.getItem('incognito_mode');
+            if (saved) {
+                this.isPrivateMode = saved === 'true';
+                this.updateIncognitoUI();
+            }
+        } catch (error) {
+            this.handleStorageError('load', 'incognito_mode', error);
+        }
+    }
+
+    private loadIncognitoWelcomePage(tabId: string): void {
+        const tab = this.tabs.find(t => t.id === tabId);
+        if (!tab) return;
+
+        const welcomeHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Incognito Mode</title>
+            <style>
+                body {
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                    background: #1e1e1e;
+                    color: #fff;
+                    margin: 0;
+                    padding: 40px;
+                    text-align: center;
+                }
+                .container {
+                    max-width: 600px;
+                    margin: 0 auto;
+                }
+                .icon {
+                    font-size: 64px;
+                    color: #ea4335;
+                    margin-bottom: 20px;
+                }
+                h1 {
+                    font-size: 32px;
+                    margin-bottom: 16px;
+                    color: #fff;
+                }
+                .description {
+                    font-size: 16px;
+                    line-height: 1.6;
+                    margin-bottom: 32px;
+                    color: #9aa0a6;
+                }
+                .features {
+                    text-align: left;
+                    background: #2d2d2d;
+                    padding: 24px;
+                    border-radius: 8px;
+                    margin-bottom: 32px;
+                }
+                .feature {
+                    margin-bottom: 16px;
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                }
+                .feature-icon {
+                    color: #34a853;
+                    font-size: 20px;
+                }
+                .search-bar {
+                    background: #3c3c3c;
+                    border: 1px solid #404040;
+                    border-radius: 24px;
+                    padding: 12px 20px;
+                    font-size: 16px;
+                    color: #fff;
+                    width: 100%;
+                    max-width: 400px;
+                    outline: none;
+                }
+                .search-bar::placeholder {
+                    color: #9aa0a6;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="icon"> shield </div>
+                <h1>You've gone incognito</h1>
+                <div class="description">
+                    Now you can browse privately, and other people who use this device won't see your activity.
+                </div>
+                <div class="features">
+                    <div class="feature">
+                        <span class="feature-icon">checkmark</span>
+                        <span>Chrome won't save your browsing history, cookies and site data, or information entered in forms</span>
+                    </div>
+                    <div class="feature">
+                        <span class="feature-icon">checkmark</span>
+                        <span>Your activity might still be visible to websites you visit, your employer or school</span>
+                    </div>
+                    <div class="feature">
+                        <span class="feature-icon">checkmark</span>
+                        <span>Your downloads and bookmarks will be saved</span>
+                    </div>
+                </div>
+                <input type="text" class="search-bar" placeholder="Search or enter a web address" />
+            </div>
+        </body>
+        </html>`;
+
+        const blob = new Blob([welcomeHtml], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        tab.element.src = url;
+        tab.url = url;
+        tab.title = 'Incognito Mode';
+    }
+
     private loadSettingsUI(): void {
         // Load current settings into UI
         document.getElementById('homepage-setting')!.setAttribute('value', this.settings.homepage);
@@ -3927,6 +4207,12 @@ class KhojBrowser {
                     e.preventDefault();
                     this.loadWelcomePage(this.activeTabId);
                     break;
+                case 'n':
+                    if (e.shiftKey) {
+                        e.preventDefault();
+                        this.toggleIncognitoMode();
+                    }
+                    break;
                     
                 // Page Actions
                 case 'f':
@@ -4160,6 +4446,18 @@ class KhojBrowser {
     private addToHistory(tabId: string, url: string, title: string): void {
         const tab = this.tabs.find(t => t.id === tabId);
         if (!tab) return;
+
+        // Don't save history for incognito tabs
+        if (tab.isPrivate || this.isPrivateMode) {
+            tab.title = title;
+            // Update tab title in UI
+            const tabElement = document.getElementById('tab-' + tabId);
+            if (tabElement) {
+                tabElement.querySelector('.tab-title')!.textContent = title;
+            }
+            this.updateNavigationButtons();
+            return;
+        }
 
         const entry: BrowserHistory = {
             url,
@@ -4647,14 +4945,17 @@ class KhojBrowser {
     private saveSession(): void {
         if (!this.settings.restoreSession) return;
         
+        // Filter out incognito tabs from session saving
+        const regularTabs = this.tabs.filter(tab => !tab.isPrivate);
+        
         const session: BrowserSession = {
-            tabs: this.tabs.map(tab => ({
+            tabs: regularTabs.map(tab => ({
                 id: tab.id,
                 url: tab.url,
                 title: tab.title,
                 isPinned: tab.isPinned
             })),
-            activeTabId: this.activeTabId,
+            activeTabId: regularTabs.find(tab => tab.id === this.activeTabId)?.id || '',
             windowState: {
                 width: window.innerWidth,
                 height: window.innerHeight,
