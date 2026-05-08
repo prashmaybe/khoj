@@ -187,29 +187,38 @@ const App: React.FC = () => {
       
       <div className="browser-toolbar">
         <div className="navigation-controls">
-          <button onClick={goBack} className="nav-button" title="Back">
-            ←
+          <button onClick={goBack} className="nav-button" title="Back" aria-label="Back">
+            <span className="nav-icon" aria-hidden="true">←</span>
           </button>
-          <button onClick={goForward} className="nav-button" title="Forward">
-            →
+          <button onClick={goForward} className="nav-button" title="Forward" aria-label="Forward">
+            <span className="nav-icon" aria-hidden="true">→</span>
           </button>
-          <button onClick={reload} className="nav-button" title="Reload">
-            ↻
+          <button onClick={reload} className="nav-button" title="Reload" aria-label="Reload">
+            <span className="nav-icon" aria-hidden="true">↻</span>
           </button>
         </div>
         <div className="url-bar">
-          <input
-            type="text"
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder="Enter URL..."
-            className="url-input"
-            disabled={activeTab?.isLoading}
-          />
-          <button onClick={handleNavigate} className="navigate-button" disabled={activeTab?.isLoading}>
-            {activeTab?.isLoading ? 'Loading...' : 'Go'}
-          </button>
+          <div className={`omnibox ${activeTab?.isLoading ? 'is-loading' : ''}`}>
+            <span className="omnibox-lock" aria-hidden="true">🔒</span>
+            <input
+              type="text"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder="Search or type a URL"
+              className="url-input"
+              disabled={activeTab?.isLoading}
+            />
+            <button
+              onClick={handleNavigate}
+              className="navigate-button"
+              disabled={activeTab?.isLoading}
+              aria-label="Go"
+              title="Go"
+            >
+              {activeTab?.isLoading ? '⟳' : '→'}
+            </button>
+          </div>
         </div>
       </div>
       

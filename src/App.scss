@@ -1,9 +1,11 @@
 body {
-  font-family: Arial, sans-serif;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji",
+    "Segoe UI Emoji";
   margin: 0;
   padding: 0;
   height: 100vh;
   overflow: hidden;
+  background: #f1f3f4;
 }
 
 .browser {
@@ -15,30 +17,59 @@ body {
 
 .tab-bar {
   display: flex;
-  background-color: #e8e8e8;
-  border-bottom: 1px solid #ccc;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px 0;
+  background: #dee1e6;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
   overflow-x: auto;
   flex-shrink: 0;
+  -webkit-app-region: drag;
+
+  &::-webkit-scrollbar {
+    height: 6px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 999px;
+  }
 }
 
 .tab {
   display: flex;
   align-items: center;
-  padding: 8px 12px;
-  background-color: #d0d0d0;
-  border-right: 1px solid #bbb;
+  gap: 8px;
+  padding: 7px 10px;
+  background: rgba(255, 255, 255, 0.45);
+  border: 1px solid rgba(0, 0, 0, 0.08);
   cursor: pointer;
-  min-width: 120px;
-  max-width: 200px;
+  min-width: 140px;
+  max-width: 240px;
   position: relative;
-  
+  border-radius: 10px 10px 0 0;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
+  -webkit-app-region: no-drag;
+
   &:hover {
-    background-color: #c0c0c0;
+    background: rgba(255, 255, 255, 0.7);
   }
   
   &.active {
-    background-color: #f5f5f5;
-    border-bottom: 2px solid #61dafb;
+    background: #f8f9fa;
+    border-color: rgba(0, 0, 0, 0.10);
+    box-shadow: 0 -1px 0 rgba(255, 255, 255, 0.8), 0 1px 8px rgba(0, 0, 0, 0.08);
+
+    &::after {
+      content: "";
+      position: absolute;
+      left: 10px;
+      right: 10px;
+      bottom: -1px;
+      height: 2px;
+      background: #1a73e8;
+      border-radius: 999px;
+      opacity: 0.9;
+    }
   }
 }
 
@@ -47,99 +78,136 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 12px;
-  font-family: Arial, sans-serif;
+  font-size: 12.5px;
+  color: rgba(0, 0, 0, 0.78);
+  line-height: 1;
 }
 
 .tab-close {
   background: none;
   border: none;
-  font-size: 16px;
+  font-size: 14px;
   cursor: pointer;
   padding: 0;
-  margin-left: 8px;
-  color: #666;
+  margin-left: 2px;
+  color: rgba(0, 0, 0, 0.6);
   border-radius: 50%;
-  width: 16px;
-  height: 16px;
+  width: 22px;
+  height: 22px;
   display: flex;
   align-items: center;
   justify-content: center;
   
   &:hover {
-    background-color: #999;
-    color: white;
+    background: rgba(0, 0, 0, 0.08);
+    color: rgba(0, 0, 0, 0.85);
   }
 }
 
 .new-tab-button {
-  background: none;
-  border: none;
-  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  padding: 6px 10px;
   cursor: pointer;
   font-size: 18px;
-  color: #666;
-  min-width: 40px;
+  color: rgba(0, 0, 0, 0.72);
+  min-width: 34px;
+  height: 30px;
+  border-radius: 8px 8px 0 0;
+  -webkit-app-region: no-drag;
   
   &:hover {
-    background-color: #c0c0c0;
+    background: rgba(255, 255, 255, 0.8);
   }
 }
 
 .browser-toolbar {
-  background-color: #f5f5f5;
-  border-bottom: 1px solid #ddd;
-  padding: 10px;
+  background: #f8f9fa;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  padding: 8px 10px;
   display: flex;
   align-items: center;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  gap: 10px;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
+  -webkit-app-region: drag;
 }
 
 .url-bar {
   display: flex;
   flex: 1;
-  max-width: 800px;
+  max-width: 980px;
   margin: 0 auto;
   width: 100%;
 }
 
+.omnibox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 999px;
+  padding: 6px 10px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  -webkit-app-region: no-drag;
+
+  &:focus-within {
+    border-color: rgba(26, 115, 232, 0.55);
+    box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.18);
+  }
+}
+
+.omnibox-lock {
+  font-size: 12px;
+  opacity: 0.65;
+  width: 18px;
+  display: inline-flex;
+  justify-content: center;
+}
+
 .url-input {
   flex: 1;
-  padding: 8px 12px;
-  border: 1px solid #ccc;
-  border-radius: 4px 0 0 4px;
-  font-size: 14px;
-  font-family: Arial, sans-serif;
+  padding: 6px 0;
+  border: none;
+  background: transparent;
+  border-radius: 0;
+  font-size: 13.5px;
   outline: none;
-  
-  &:focus {
-    border-color: #61dafb;
-    box-shadow: 0 0 0 2px rgba(97, 218, 251, 0.2);
+
+  &::placeholder {
+    color: rgba(0, 0, 0, 0.45);
   }
 }
 
 .navigate-button {
-  padding: 8px 16px;
-  background-color: #61dafb;
-  border: 1px solid #61dafb;
-  border-radius: 0 4px 4px 0;
+  width: 34px;
+  height: 28px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.06);
   cursor: pointer;
   font-size: 14px;
-  font-family: Arial, sans-serif;
-  transition: background-color 0.2s;
+  color: rgba(0, 0, 0, 0.75);
+  transition: background-color 0.15s, border-color 0.15s, transform 0.05s;
   
   &:hover {
-    background-color: #4fa8c5;
+    background: rgba(0, 0, 0, 0.08);
   }
   
   &:active {
-    background-color: #3d8b9f;
+    transform: translateY(1px);
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
   }
 }
 
 .browser-content {
   flex: 1;
-  background-color: white;
+  background-color: #ffffff;
   overflow: hidden;
   position: relative;
 }
@@ -149,12 +217,12 @@ body {
   align-items: center;
   justify-content: center;
   height: 100%;
-  background-color: #f9f9f9;
+  background: #ffffff;
 }
 
 .tab-info {
   text-align: center;
-  color: #666;
+  color: rgba(0, 0, 0, 0.65);
   
   p {
     margin: 8px 0;
@@ -164,35 +232,40 @@ body {
 
 .navigation-controls {
   display: flex;
-  gap: 5px;
-  margin-right: 10px;
+  gap: 6px;
+  margin-right: 4px;
+  -webkit-app-region: no-drag;
 }
 
 .nav-button {
-  background: none;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  width: 32px;
-  height: 32px;
+  background: rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 999px;
+  width: 34px;
+  height: 34px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
-  color: #666;
-  transition: all 0.2s;
+  color: rgba(0, 0, 0, 0.72);
+  transition: background-color 0.15s, border-color 0.15s, transform 0.05s;
   
   &:hover {
-    background-color: #e0e0e0;
-    border-color: #999;
+    background: rgba(0, 0, 0, 0.08);
+    border-color: rgba(0, 0, 0, 0.12);
   }
   
   &:active {
-    background-color: #d0d0d0;
+    transform: translateY(1px);
   }
   
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
   }
+}
+
+.nav-icon {
+  font-size: 14px;
+  line-height: 1;
 }
