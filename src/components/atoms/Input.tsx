@@ -28,9 +28,11 @@ const Input = React.memo(forwardRef<any, InputProps>(({
       borderRadius: 8,
       paddingHorizontal: 12,
       paddingVertical: 8,
-      fontSize: 14,
+      fontSize: colors.fontSize.sm,
       color: colors.inputText,
       backgroundColor: colors.inputBackground,
+      fontFamily: colors.fontFamily,
+      fontWeight: colors.fontWeight.normal,
     };
     
     const variantStyles = {
@@ -40,7 +42,7 @@ const Input = React.memo(forwardRef<any, InputProps>(({
         borderRadius: 999,
         paddingHorizontal: 10,
         paddingVertical: 6,
-        fontSize: 13.5,
+        fontSize: colors.fontSize.xs,
         backgroundColor: 'transparent',
       },
       search: {}
@@ -48,14 +50,14 @@ const Input = React.memo(forwardRef<any, InputProps>(({
     
     const sizeStyles = {
       small: {
-        fontSize: 12,
+        fontSize: colors.fontSize.xs,
         paddingHorizontal: 8,
         paddingVertical: 6,
         minHeight: 32,
       },
       medium: {},
       large: {
-        fontSize: 16,
+        fontSize: colors.fontSize.base,
         paddingHorizontal: 16,
         paddingVertical: 12,
         minHeight: 48,

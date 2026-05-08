@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { useTheme } from '../../contexts/ThemeContext';
 import TabBar from './TabBar';
 import BrowserToolbar from './BrowserToolbar';
 import { ErrorPage } from '../ErrorPages';
@@ -50,6 +51,7 @@ const Browser: React.FC<BrowserProps> = React.memo(({
   onRetryLoad,
   searchBarRef
 }) => {
+  const { colors } = useTheme();
   const activeTab = tabs.find(tab => tab.id === activeTabId);
 
   return (
@@ -86,15 +88,43 @@ const Browser: React.FC<BrowserProps> = React.memo(({
           />
         ) : (
           /* Content would be rendered by WebView in React Native */
-          <View style={styles.contentPlaceholder}>
+          <View style={[styles.contentPlaceholder, { backgroundColor: colors.background }]}>
             {activeTab ? (
               <View style={styles.tabInfo}>
-                <Text style={styles.text}>Active Tab: {activeTab.title}</Text>
-                <Text style={styles.text}>URL: {activeTab.url}</Text>
-                {activeTab.isLoading && <Text style={styles.text}>Loading...</Text>}
+                <Text style={[styles.text, { 
+                  color: colors.text, 
+                  fontSize: colors.fontSize.base,
+                  fontFamily: colors.fontFamily,
+                  fontWeight: colors.fontWeight.medium
+                }]}>
+                  Active Tab: {activeTab.title}
+                </Text>
+                <Text style={[styles.text, { 
+                  color: colors.textSecondary, 
+                  fontSize: colors.fontSize.sm,
+                  fontFamily: colors.fontFamily
+                }]}>
+                  URL: {activeTab.url}
+                </Text>
+                {activeTab.isLoading && (
+                  <Text style={[styles.text, { 
+                    color: colors.buttonPrimary, 
+                    fontSize: colors.fontSize.sm,
+                    fontFamily: colors.fontFamily,
+                    fontWeight: colors.fontWeight.medium
+                  }]}>
+                    Loading...
+                  </Text>
+                )}
               </View>
             ) : (
-              <Text style={styles.text}>No tabs open</Text>
+              <Text style={[styles.text, { 
+                color: colors.textSecondary, 
+                fontSize: colors.fontSize.base,
+                fontFamily: colors.fontFamily
+              }]}>
+                No tabs open
+              </Text>
             )}
           </View>
         )}
@@ -120,7 +150,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   text: {
-    fontSize: 16,
     marginBottom: 8,
   },
 });
