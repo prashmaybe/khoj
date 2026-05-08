@@ -35,34 +35,143 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 const electron_1 = require("electron");
 const path = __importStar(require("path"));
+const fs = require("fs");
 let mainWindow = null;
+let browserViews = new Map();
+let activeViewId = null;
 function createWindow() {
+    const preloadPath = path.join(__dirname, "preload.js");
+    console.log("Preload script path:", preloadPath);
+    console.log("Preload script exists:", fs.existsSync(preloadPath));
     mainWindow = new electron_1.BrowserWindow({
         height: 800,
         width: 1200,
         webPreferences: {
-            nodeIntegration: true,
-            contextIsolation: false,
+            nodeIntegration: false,
+            contextIsolation: true,
+            webSecurity: true,
+            allowRunningInsecureContent: false,
+            preload: preloadPath,
         },
     });
-    if (process.env.NODE_ENV === 'development') {
-        mainWindow.loadURL('http://localhost:3000');
+    const isDev = process.env.NODE_ENV === "development" || !electron_1.app.isPackaged;
+    if (isDev) {
+        mainWindow.loadURL("http://localhost:8080");
         mainWindow.webContents.openDevTools();
     }
     else {
-        mainWindow.loadFile(path.join(__dirname, 'dist/index.html'));
+        mainWindow.loadFile(path.join(__dirname, "dist/index.html"));
     }
-    mainWindow.on('closed', () => {
+    mainWindow.on("closed", () => {
         mainWindow = null;
     });
 }
-electron_1.app.whenReady().then(createWindow);
-electron_1.app.on('window-all-closed', () => {
-    if (process.platform !== 'darwin') {
+function setupIpcHandlers() {
+    electron_1.ipcMain.handle("create-tab", async (_, tabId, url) => {
+        if (!mainWindow)
+            return null;
+        const view = new electron_1.BrowserView({
+            webPreferences: {
+                nodeIntegration: false,
+                contextIsolation: true,
+                sandbox: true,
+            },
+        });
+        browserViews.set(tabId, view);
+        view.webContents.on("did-start-loading", () => {
+            var _a;
+            (_a = mainWindow) === null || _a === void 0 ? void 0 : _a.webContents.send("tab-loading", tabId);
+        });
+        view.webContents.on("did-finish-load", () => {
+            var _a;
+            (_a = mainWindow) === null || _a === void 0 ? void 0 : _a.webContents.send("tab-loaded", tabId, view.webContents.getURL());
+        });
+        view.webContents.on("did-fail-load", (_, errorCode, errorDescription) => {
+            var _a;
+            (_a = mainWindow) === null || _a === void 0 ? void 0 : _a.webContents.send("tab-failed", tabId, errorCode, errorDescription);
+        });
+        await view.webContents.loadURL(url);
+        if (!activeViewId) {
+            activeViewId = tabId;
+            mainWindow.addBrowserView(view);
+            const b = mainWindow.getBounds();
+            view.setBounds({ x: 0, y: 100, width: b.width, height: b.height - 100 });
+        }
+        return tabId;
+    });
+    electron_1.ipcMain.handle("navigate-tab", async (_, tabId, url) => {
+        const view = browserViews.get(tabId);
+        if (view) {
+            await view.webContents.loadURL(url);
+        }
+    });
+    electron_1.ipcMain.handle("switch-tab", (_, tabId) => {
+        if (!mainWindow)
+            return;
+        const currentView = activeViewId ? browserViews.get(activeViewId) : undefined;
+        if (currentView) {
+            mainWindow.removeBrowserView(currentView);
+        }
+        const newView = browserViews.get(tabId);
+        if (newView) {
+            activeViewId = tabId;
+            mainWindow.addBrowserView(newView);
+            const b = mainWindow.getBounds();
+            newView.setBounds({ x: 0, y: 100, width: b.width, height: b.height - 100 });
+        }
+    });
+    electron_1.ipcMain.handle("close-tab", (_, tabId) => {
+        const view = browserViews.get(tabId);
+        if (!view)
+            return;
+        view.webContents.close();
+        browserViews.delete(tabId);
+        if (!mainWindow)
+            return;
+        if (activeViewId === tabId) {
+            activeViewId = null;
+            const remainingTabs = Array.from(browserViews.keys());
+            if (remainingTabs.length > 0) {
+                const newActiveTab = remainingTabs[0];
+                const newView = browserViews.get(newActiveTab);
+                if (newView) {
+                    activeViewId = newActiveTab;
+                    mainWindow.addBrowserView(newView);
+                    const b = mainWindow.getBounds();
+                    newView.setBounds({ x: 0, y: 100, width: b.width, height: b.height - 100 });
+                }
+            }
+        }
+    });
+    electron_1.ipcMain.handle("go-back", (_, tabId) => {
+        const view = browserViews.get(tabId);
+        if (view && view.webContents.canGoBack()) {
+            view.webContents.goBack();
+        }
+    });
+    electron_1.ipcMain.handle("go-forward", (_, tabId) => {
+        const view = browserViews.get(tabId);
+        if (view && view.webContents.canGoForward()) {
+            view.webContents.goForward();
+        }
+    });
+    electron_1.ipcMain.handle("reload", (_, tabId) => {
+        const view = browserViews.get(tabId);
+        if (view) {
+            view.webContents.reload();
+        }
+    });
+}
+electron_1.app.whenReady().then(() => {
+    createWindow();
+    setupIpcHandlers();
+});
+electron_1.app.on("window-all-closed", () => {
+    if (process.platform !== "darwin") {
         electron_1.app.quit();
     }
 });
-electron_1.app.on('activate', () => {
+electron_1.app.on("activate", () => {
     if (electron_1.BrowserWindow.getAllWindows().length === 0) {
         createWindow();
     }
