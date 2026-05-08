@@ -114,7 +114,8 @@ function createWindow() {
         mainWindow.webContents.openDevTools();
     }
     else {
-        mainWindow.loadFile(path.join(__dirname, "dist/index.html"));
+        // In production, load the HTML file from the public directory
+        mainWindow.loadFile(path.join(__dirname, "public/index.html"));
     }
     mainWindow.on("closed", () => {
         mainWindow = null;
