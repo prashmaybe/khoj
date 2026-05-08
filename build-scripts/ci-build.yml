@@ -1,0 +1,217 @@
+# GitHub Actions CI/CD Pipeline for Khoj Browser
+# This file defines the complete build process for all platforms
+
+name: Build Khoj Browser
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  release:
+    types: [ published ]
+
+jobs:
+  # Web Build
+  build-web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Build web version
+        run: npm run build-web
+      
+      - name: Upload web artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: web-build
+          path: dist/
+
+  # Windows Build
+  build-windows:
+    runs-on: windows-latest
+    needs: build-web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Download web build
+        uses: actions/download-artifact@v3
+        with:
+          name: web-build
+          path: dist/
+      
+      - name: Build Windows executable
+        run: npm run build-windows
+      
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: windows-build
+          path: dist/win/
+
+  # macOS Build
+  build-macos:
+    runs-on: macos-latest
+    needs: build-web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Download web build
+        uses: actions/download-artifact@v3
+        with:
+          name: web-build
+          path: dist/
+      
+      - name: Build macOS application
+        run: npm run build-macos
+      
+      - name: Upload macOS artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: macos-build
+          path: dist/mac/
+
+  # Linux Build
+  build-linux:
+    runs-on: ubuntu-latest
+    needs: build-web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Download web build
+        uses: actions/download-artifact@v3
+        with:
+          name: web-build
+          path: dist/
+      
+      - name: Build Linux application
+        run: npm run build-linux
+      
+      - name: Upload Linux artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: linux-build
+          path: dist/linux/
+
+  # Android Build
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '11'
+      
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v2
+      
+      - name: Build Android APK
+        run: npm run build-android
+      
+      - name: Upload Android artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: android-build
+          path: android/app/build/outputs/apk/release/
+
+  # iOS Build (macOS only)
+  build-ios:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Install CocoaPods
+        run: |
+          cd ios
+          pod install
+      
+      - name: Build iOS application
+        run: npm run build-ios
+      
+      - name: Upload iOS artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: ios-build
+          path: ios/build/
+
+  # Release Job
+  release:
+    runs-on: ubuntu-latest
+    needs: [build-windows, build-macos, build-linux, build-android, build-ios]
+    if: github.event_name == 'release'
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v3
+      
+      - name: Create release assets
+        run: |
+          mkdir -p release-assets
+          
+          # Windows
+          cp -r windows-build/* release-assets/
+          
+          # macOS
+          cp -r macos-build/* release-assets/
+          
+          # Linux
+          cp -r linux-build/* release-assets/
+          
+          # Android
+          cp -r android-build/* release-assets/
+          
+          # iOS
+          if [ -d "ios-build" ]; then
+            cp -r ios-build/* release-assets/
+          fi
+      
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v1
+        with:
+          files: release-assets/**
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

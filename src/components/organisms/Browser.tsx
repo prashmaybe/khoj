@@ -1,4 +1,5 @@
 import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
 import TabBar from './TabBar';
 import BrowserToolbar from './BrowserToolbar';
 import { ErrorPage } from '../ErrorPages';
@@ -50,7 +51,7 @@ const Browser: React.FC<BrowserProps> = ({
   const activeTab = tabs.find(tab => tab.id === activeTabId);
 
   return (
-    <div className="browser">
+    <View style={styles.browser}>
       <TabBar
         tabs={tabs}
         activeTabId={activeTabId}
@@ -72,7 +73,7 @@ const Browser: React.FC<BrowserProps> = ({
         disabled={activeTab?.isLoading}
       />
       
-      <div className="browser-content">
+      <View style={styles.browserContent}>
         {activeTab?.hasError ? (
           <ErrorPage
             errorCode={activeTab.errorCode || -1}
@@ -81,22 +82,44 @@ const Browser: React.FC<BrowserProps> = ({
             onRetry={onRetryLoad}
           />
         ) : (
-          /* Content is rendered by WebContentsView in main process */
-          <div className="content-placeholder">
+          /* Content would be rendered by WebView in React Native */
+          <View style={styles.contentPlaceholder}>
             {activeTab ? (
-              <div className="tab-info">
-                <p>Active Tab: {activeTab.title}</p>
-                <p>URL: {activeTab.url}</p>
-                {activeTab.isLoading && <p>Loading...</p>}
-              </div>
+              <View style={styles.tabInfo}>
+                <Text style={styles.text}>Active Tab: {activeTab.title}</Text>
+                <Text style={styles.text}>URL: {activeTab.url}</Text>
+                {activeTab.isLoading && <Text style={styles.text}>Loading...</Text>}
+              </View>
             ) : (
-              <p>No tabs open</p>
+              <Text style={styles.text}>No tabs open</Text>
             )}
-          </div>
+          </View>
         )}
-      </div>
-    </div>
+      </View>
+    </View>
   );
 };
+
+const styles = StyleSheet.create({
+  browser: {
+    flex: 1,
+  },
+  browserContent: {
+    flex: 1,
+  },
+  contentPlaceholder: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  tabInfo: {
+    alignItems: 'center',
+  },
+  text: {
+    fontSize: 16,
+    marginBottom: 8,
+  },
+});
 
 export default Browser;

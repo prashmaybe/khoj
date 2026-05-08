@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import './App.scss';
-import { ElectronAPI } from './electron.d';
+import { SafeAreaView, StyleSheet, View } from 'react-native';
 import { Browser } from './components/organisms';
 
 interface Tab {
@@ -24,122 +23,29 @@ const App: React.FC = () => {
   const activeTab = tabs.find(tab => tab.id === activeTabId);
 
   useEffect(() => {
-    // Check if electronAPI is available
-    if (!window.electronAPI) {
-      console.error('electronAPI is not available. Make sure preload script is loaded correctly.');
-      return;
-    }
-
-    // Create initial tab
+    // Create initial tab for React Native
     const initialTabId = Date.now().toString();
     createTab(initialTabId, HOME_URL);
-    
-    // Set up event listeners
-    window.electronAPI.onTabLoading((tabId: string) => {
-      setTabs(prevTabs => 
-        prevTabs.map(tab => 
-          tab.id === tabId ? { ...tab, isLoading: true } : tab
-        )
-      );
-    });
-    
-    window.electronAPI.onTabLoaded((tabId: string, loadedUrl: string) => {
-      setTabs(prevTabs => 
-        prevTabs.map(tab => 
-          tab.id === tabId
-            ? {
-                ...tab,
-                isLoading: false,
-                url: loadedUrl,
-                // Title will be updated via `page-title-updated`; keep a reasonable fallback.
-                title: loadedUrl === HOME_URL ? 'New Tab' : tab.title || loadedUrl,
-              }
-            : tab
-        )
-      );
-    });
-
-    window.electronAPI.onTabTitleUpdated((tabId: string, title: string) => {
-      const cleaned = (title || '').trim();
-      if (!cleaned) return;
-      setTabs(prevTabs =>
-        prevTabs.map(tab => (tab.id === tabId ? { ...tab, title: cleaned } : tab))
-      );
-    });
-
-    window.electronAPI.onTabFaviconUpdated((tabId: string, faviconUrl: string | null) => {
-      setTabs(prevTabs =>
-        prevTabs.map(tab => (tab.id === tabId ? { ...tab, faviconUrl } : tab))
-      );
-    });
-    
-    window.electronAPI.onTabFailed((tabId: string, errorCode: number, errorDescription: string) => {
-      console.error(`Tab ${tabId} failed to load:`, errorCode, errorDescription);
-      setTabs(prevTabs => 
-        prevTabs.map(tab => 
-          tab.id === tabId ? { 
-            ...tab, 
-            isLoading: false, 
-            hasError: true, 
-            errorCode, 
-            errorDescription 
-          } : tab
-        )
-      );
-    });
-    
-    return () => {
-      if (window.electronAPI) {
-        window.electronAPI.removeAllListeners('tab-loading');
-        window.electronAPI.removeAllListeners('tab-loaded');
-        window.electronAPI.removeAllListeners('tab-failed');
-        window.electronAPI.removeAllListeners('tab-title-updated');
-        window.electronAPI.removeAllListeners('tab-favicon-updated');
-      }
-    };
   }, []);
 
-  // Set up message listener for home page navigation
-  useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
-      if (event.data && event.data.type === 'navigate' && event.data.url) {
-        setUrl(event.data.url);
-        setTimeout(() => handleNavigate(), 0); // Use setTimeout to avoid stale closure
-      }
-    };
-    
-    window.addEventListener('message', handleMessage);
-    
-    return () => {
-      window.removeEventListener('message', handleMessage);
-    };
-  }, []); // Empty dependency array since we use setTimeout
-
+  
   const createTab = async (tabId?: string, initialUrl?: string) => {
-    if (!window.electronAPI) {
-      console.error('electronAPI is not available');
-      return;
-    }
-    
     const newTabId = tabId || Date.now().toString();
     const targetUrl = initialUrl || HOME_URL;
     
-    const createdTabId = await window.electronAPI.createTab(newTabId, targetUrl);
-    if (createdTabId) {
-      const newTab: Tab = {
-        id: createdTabId,
-        title: targetUrl === HOME_URL ? 'New Tab' : 'New Tab',
-        url: targetUrl,
-        faviconUrl: null,
-        isLoading: true,
-        hasError: false,
-        errorCode: undefined,
-        errorDescription: undefined
-      };
-      setTabs(prevTabs => [...prevTabs, newTab]);
-      setActiveTabId(createdTabId);
-      setUrl(targetUrl);
-    }
+    const newTab: Tab = {
+      id: newTabId,
+      title: targetUrl === HOME_URL ? 'New Tab' : 'New Tab',
+      url: targetUrl,
+      faviconUrl: null,
+      isLoading: false,
+      hasError: false,
+      errorCode: undefined,
+      errorDescription: undefined
+    };
+    setTabs(prevTabs => [...prevTabs, newTab]);
+    setActiveTabId(newTabId);
+    setUrl(targetUrl);
   };
 
   const isSearchQuery = (input: string): boolean => {
@@ -176,11 +82,15 @@ const App: React.FC = () => {
   };
 
   const handleNavigate = async () => {
-    if (!activeTabId || !window.electronAPI) return;
+    if (!activeTabId) return;
     
     let formattedUrl = url.trim();
     if (formattedUrl === HOME_URL) {
-      await window.electronAPI.navigateTab(activeTabId, HOME_URL);
+      setTabs(prevTabs => 
+        prevTabs.map(tab => 
+          tab.id === activeTabId ? { ...tab, url: HOME_URL } : tab
+        )
+      );
       setUrl(HOME_URL);
       return;
     }
@@ -188,7 +98,6 @@ const App: React.FC = () => {
     // Check if this is a search query
     if (isSearchQuery(formattedUrl)) {
       const searchUrl = createGoogleSearchUrl(formattedUrl);
-      await window.electronAPI.navigateTab(activeTabId, searchUrl);
       setTabs(prevTabs => 
         prevTabs.map(tab => 
           tab.id === activeTabId 
@@ -210,7 +119,6 @@ const App: React.FC = () => {
         formattedUrl = 'https://' + formattedUrl;
       }
       
-      await window.electronAPI.navigateTab(activeTabId, formattedUrl);
       setTabs(prevTabs => 
         prevTabs.map(tab => 
           tab.id === activeTabId 
@@ -240,9 +148,8 @@ const App: React.FC = () => {
   };
 
   const closeTab = async (tabId: string) => {
-    if (tabs.length === 1 || !window.electronAPI) return;
+    if (tabs.length === 1) return;
     
-    await window.electronAPI.closeTab(tabId);
     const newTabs = tabs.filter(tab => tab.id !== tabId);
     setTabs(newTabs);
     
@@ -254,10 +161,7 @@ const App: React.FC = () => {
   };
 
   const switchTab = async (tabId: string) => {
-    if (!window.electronAPI) return;
-    
     setActiveTabId(tabId);
-    await window.electronAPI.switchTab(tabId);
     const tab = tabs.find(t => t.id === tabId);
     if (tab) {
       setUrl(tab.url);
@@ -265,31 +169,32 @@ const App: React.FC = () => {
   };
 
   const goBack = () => {
-    if (activeTabId && window.electronAPI) {
-      window.electronAPI.goBack(activeTabId);
-    }
+    // Navigation history would need to be implemented for React Native
+    console.log('Go back functionality');
   };
 
   const goForward = () => {
-    if (activeTabId && window.electronAPI) {
-      window.electronAPI.goForward(activeTabId);
-    }
+    // Navigation history would need to be implemented for React Native
+    console.log('Go forward functionality');
   };
 
   const reload = () => {
-    if (activeTabId && window.electronAPI) {
-      window.electronAPI.reload(activeTabId);
-    }
+    // WebView reload would need to be implemented for React Native
+    console.log('Reload functionality');
   };
 
   const goHome = async () => {
-    if (!activeTabId || !window.electronAPI) return;
-    await window.electronAPI.navigateTab(activeTabId, HOME_URL);
+    if (!activeTabId) return;
+    setTabs(prevTabs => 
+      prevTabs.map(tab => 
+        tab.id === activeTabId ? { ...tab, url: HOME_URL } : tab
+      )
+    );
     setUrl(HOME_URL);
   };
 
   const retryLoad = async () => {
-    if (!activeTabId || !window.electronAPI) return;
+    if (!activeTabId) return;
     
     // Clear error state and retry
     setTabs(prevTabs => 
@@ -297,7 +202,7 @@ const App: React.FC = () => {
         tab.id === activeTabId 
           ? { 
               ...tab, 
-              isLoading: true,
+              isLoading: false,
               hasError: false,
               errorCode: undefined,
               errorDescription: undefined
@@ -305,28 +210,35 @@ const App: React.FC = () => {
           : tab
       )
     );
-    
-    await window.electronAPI.navigateTab(activeTabId, activeTab?.url || HOME_URL);
   };
 
   return (
-    <Browser
-      tabs={tabs}
-      activeTabId={activeTabId}
-      url={url}
-      onUrlChange={setUrl}
-      onNavigate={handleNavigate}
-      onKeyPress={handleKeyPress}
-      onTabClick={switchTab}
-      onTabClose={closeTab}
-      onNewTab={addNewTab}
-      onBack={goBack}
-      onForward={goForward}
-      onReload={reload}
-      onHome={goHome}
-      onRetryLoad={retryLoad}
-    />
+    <SafeAreaView style={styles.container}>
+      <Browser
+        tabs={tabs}
+        activeTabId={activeTabId}
+        url={url}
+        onUrlChange={setUrl}
+        onNavigate={handleNavigate}
+        onKeyPress={handleKeyPress}
+        onTabClick={switchTab}
+        onTabClose={closeTab}
+        onNewTab={addNewTab}
+        onBack={goBack}
+        onForward={goForward}
+        onReload={reload}
+        onHome={goHome}
+        onRetryLoad={retryLoad}
+      />
+    </SafeAreaView>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+});
 
 export default App;

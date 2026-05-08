@@ -1,4 +1,5 @@
 import React from 'react';
+import { View, StyleSheet } from 'react-native';
 import { NavigationControls, SearchBar } from '../molecules';
 
 interface BrowserToolbarProps {
@@ -27,7 +28,7 @@ const BrowserToolbar: React.FC<BrowserToolbarProps> = ({
   disabled = false
 }) => {
   return (
-    <div className="browser-toolbar">
+    <View style={styles.browserToolbar}>
       <NavigationControls
         onBack={onBack}
         onForward={onForward}
@@ -43,8 +44,20 @@ const BrowserToolbar: React.FC<BrowserToolbarProps> = ({
         isLoading={isLoading}
         disabled={disabled}
       />
-    </div>
+    </View>
   );
 };
+
+const styles = StyleSheet.create({
+  browserToolbar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f8f8f8',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
+  },
+});
 
 export default BrowserToolbar;

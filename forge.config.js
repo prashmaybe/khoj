@@ -1,0 +1,70 @@
+module.exports = {
+  packagerConfig: {
+    name: 'Khoj Browser',
+    executableName: 'khoj-browser',
+    icon: 'assets/icon',
+    extraResource: [
+      'assets'
+    ],
+    asar: true,
+    ignore: [
+      /src/,
+      /\.git/,
+      /node_modules\/\.bin/,
+      /out/,
+      /dist/
+    ]
+  },
+  rebuildConfig: {},
+  makers: [
+    {
+      name: '@electron-forge/maker-squirrel',
+      config: {
+        name: 'khoj_browser',
+        authors: 'Khoj Team',
+        description: 'Cross-platform browser application',
+        iconUrl: 'https://raw.githubusercontent.com/prashmaybe/khoj/main/assets/icon.ico'
+      }
+    },
+    {
+      name: '@electron-forge/maker-zip',
+      platforms: ['darwin']
+    },
+    {
+      name: '@electron-forge/maker-deb',
+      config: {
+        options: {
+          maintainer: 'Khoj Team',
+          homepage: 'https://github.com/prashmaybe/khoj'
+        }
+      }
+    },
+    {
+      name: '@electron-forge/maker-rpm',
+      config: {
+        options: {
+          maintainer: 'Khoj Team',
+          homepage: 'https://github.com/prashmaybe/khoj'
+        }
+      }
+    }
+  ],
+  plugins: [
+    {
+      name: '@electron-forge/plugin-auto-unpack-natives',
+      config: {}
+    },
+    {
+      name: '@electron-forge/plugin-fuses',
+      config: {
+        version: FusesPlugin.FUSES_VERSION_1,
+        [FusesPlugin.FUSES.runAsNode]: false,
+        [FusesPlugin.FUSES.enableCookieEncryption]: true,
+        [FusesPlugin.FUSES.enableNodeOptionsEnvironmentVariable]: false,
+        [FusesPlugin.FUSES.enableNodeCliInspectArguments]: false,
+        [FusesPlugin.FUSES.enableEmbeddedAsarIntegrityValidation]: true,
+        [FusesPlugin.FUSES.onlyLoadAppFromAsar]: true,
+      }
+    }
+  ]
+};

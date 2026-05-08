@@ -1,4 +1,5 @@
 import React from 'react';
+import { View, StyleSheet } from 'react-native';
 import { Tab } from '../molecules';
 import { Button } from '../atoms';
 
@@ -25,7 +26,7 @@ const TabBar: React.FC<TabBarProps> = ({
   onNewTab
 }) => {
   return (
-    <div className="tab-bar">
+    <View style={styles.tabBar}>
       {tabs.map(tab => (
         <Tab
           key={tab.id}
@@ -39,11 +40,31 @@ const TabBar: React.FC<TabBarProps> = ({
           showCloseButton={tabs.length > 1}
         />
       ))}
-      <Button className="new-tab-button" onClick={onNewTab}>
+      <Button style={styles.newTabButton} onClick={onNewTab}>
         +
       </Button>
-    </div>
+    </View>
   );
 };
+
+const styles = StyleSheet.create({
+  tabBar: {
+    flexDirection: 'row',
+    backgroundColor: '#f5f5f5',
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
+  },
+  newTabButton: {
+    marginLeft: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: '#007AFF',
+    borderRadius: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+});
 
 export default TabBar;

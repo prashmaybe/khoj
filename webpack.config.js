@@ -4,14 +4,15 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 module.exports = [
   {
     mode: 'development',
-    entry: './src/index.tsx',
+    entry: './src/index.web.tsx',
     name: 'renderer',
-    // The renderer runs with `nodeIntegration: false`, so it must be bundled
-    // for a browser-like environment (no `require` at runtime).
     target: 'web',
     devtool: 'source-map',
     resolve: {
       extensions: ['.tsx', '.ts', '.js'],
+      alias: {
+        'react-native$': 'react-native-web',
+      },
     },
     module: {
       rules: [
@@ -29,14 +30,16 @@ module.exports = [
           test: /\.scss$/,
           use: ['style-loader', 'css-loader', 'sass-loader'],
         },
+        {
+          test: /\.(png|jpe?g|gif|svg)$/i,
+          type: 'asset/resource',
+        },
       ],
     },
     output: {
       filename: 'bundle.js',
       path: path.resolve(__dirname, 'dist'),
       clean: true,
-      // With `nodeIntegration: false`, `global` doesn't exist in the renderer.
-      // Ensure webpack runtime uses a browser-safe global.
       globalObject: 'globalThis',
     },
     plugins: [
