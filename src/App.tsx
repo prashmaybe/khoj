@@ -126,6 +126,39 @@ const App: React.FC = () => {
     }
   };
 
+  const isSearchQuery = (input: string): boolean => {
+    const trimmed = input.trim();
+    
+    // If it starts with http:// or https://, it's a URL
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      return false;
+    }
+    
+    // If it contains spaces, it's likely a search query
+    if (trimmed.includes(' ')) {
+      return true;
+    }
+    
+    // Check if it's a valid domain format (has at least one dot and no spaces)
+    const domainRegex = /^[a-zA-Z0-9-]+\.[a-zA-Z]{2,}$/;
+    if (domainRegex.test(trimmed)) {
+      return false;
+    }
+    
+    // If it doesn't have a dot, it's likely a search query
+    if (!trimmed.includes('.')) {
+      return true;
+    }
+    
+    // Default to treating as search query for safety
+    return true;
+  };
+
+  const createGoogleSearchUrl = (query: string): string => {
+    const encodedQuery = encodeURIComponent(query.trim());
+    return `https://www.google.com/search?q=${encodedQuery}`;
+  };
+
   const handleNavigate = async () => {
     if (!activeTabId || !window.electronAPI) return;
     
@@ -135,26 +168,49 @@ const App: React.FC = () => {
       setUrl(HOME_URL);
       return;
     }
-    if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
-      formattedUrl = 'https://' + formattedUrl;
-    }
     
-    await window.electronAPI.navigateTab(activeTabId, formattedUrl);
-    setTabs(prevTabs => 
-      prevTabs.map(tab => 
-        tab.id === activeTabId 
-          ? { 
-              ...tab, 
-              url: formattedUrl, 
-              title: formattedUrl,
-              hasError: false,
-              errorCode: undefined,
-              errorDescription: undefined
-            }
-          : tab
-      )
-    );
-    setUrl(formattedUrl);
+    // Check if this is a search query
+    if (isSearchQuery(formattedUrl)) {
+      const searchUrl = createGoogleSearchUrl(formattedUrl);
+      await window.electronAPI.navigateTab(activeTabId, searchUrl);
+      setTabs(prevTabs => 
+        prevTabs.map(tab => 
+          tab.id === activeTabId 
+            ? { 
+                ...tab, 
+                url: searchUrl, 
+                title: formattedUrl,
+                hasError: false,
+                errorCode: undefined,
+                errorDescription: undefined
+              }
+            : tab
+        )
+      );
+      setUrl(searchUrl);
+    } else {
+      // It's a URL, format it properly
+      if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
+        formattedUrl = 'https://' + formattedUrl;
+      }
+      
+      await window.electronAPI.navigateTab(activeTabId, formattedUrl);
+      setTabs(prevTabs => 
+        prevTabs.map(tab => 
+          tab.id === activeTabId 
+            ? { 
+                ...tab, 
+                url: formattedUrl, 
+                title: formattedUrl,
+                hasError: false,
+                errorCode: undefined,
+                errorDescription: undefined
+              }
+            : tab
+        )
+      );
+      setUrl(formattedUrl);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
