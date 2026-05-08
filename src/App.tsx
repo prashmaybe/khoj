@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './App.scss';
 import { ElectronAPI } from './electron.d';
-import { ErrorPage, ErrorTest } from './components/ErrorPages';
+import { ErrorPage } from './components/ErrorPages';
 
 interface Tab {
   id: string;
@@ -20,7 +20,6 @@ const App: React.FC = () => {
   const [tabs, setTabs] = useState<Tab[]>([]);
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
   const [url, setUrl] = useState<string>(HOME_URL);
-  const [showErrorTest, setShowErrorTest] = useState<boolean>(false);
 
   const activeTab = tabs.find(tab => tab.id === activeTabId);
 
@@ -283,16 +282,8 @@ const App: React.FC = () => {
             </button>
           </div>
           <button onClick={goHome} className="nav-button home-button" title="Home" aria-label="Home">
-            <span className="nav-icon" aria-hidden="true">⌂</span>
-          </button>
-          <button 
-            onClick={() => setShowErrorTest(true)} 
-            className="nav-button test-button" 
-            title="Test Error Pages" 
-            aria-label="Test Error Pages"
-          >
-            <span className="nav-icon" aria-hidden="true">⚠️</span>
-          </button>
+          <span className="nav-icon" aria-hidden="true">⌂</span>
+        </button>
           <div className="url-bar">
             <div className={`omnibox ${activeTab?.isLoading ? 'is-loading' : ''}`}>
               <span className="omnibox-lock" aria-hidden="true">🔒</span>
@@ -342,10 +333,6 @@ const App: React.FC = () => {
           )}
         </div>
       </div>
-      
-      {showErrorTest && (
-        <ErrorTest onClose={() => setShowErrorTest(false)} />
-      )}
     </>
   );
 };
