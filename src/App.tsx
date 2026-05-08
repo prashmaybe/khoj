@@ -120,6 +120,8 @@ const App: React.FC = () => {
             src={activeTab.url}
             style={{ width: '100%', height: '100%' }}
             nodeintegration={false}
+            security={false}
+            allowpopups={true}
           />
         )}
       </div>

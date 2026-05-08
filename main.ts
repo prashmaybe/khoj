@@ -10,6 +10,9 @@ function createWindow(): void {
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
+      webSecurity: false,
+      allowRunningInsecureContent: true,
+      webviewTag: true,
     },
   });
 
