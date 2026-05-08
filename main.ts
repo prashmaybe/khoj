@@ -5,6 +5,48 @@ let mainWindow: BrowserWindow | null = null;
 let browserViews: Map<string, BrowserView> = new Map();
 let activeViewId: string | null = null;
 
+const HOME_ROUTE = 'khoj://home';
+function getHomeDataUrl(): string {
+  const html = `<!doctype html>
+  <html>
+    <head>
+      <meta charset="utf-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <title>New Tab</title>
+      <style>
+        :root { color-scheme: light; }
+        html, body { height: 100%; margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; background: #ffffff; }
+        .wrap { height: 100%; display: grid; place-items: center; }
+        .card { width: min(720px, calc(100vw - 48px)); text-align: center; }
+        .logo { font-size: 44px; font-weight: 700; letter-spacing: -0.02em; color: rgba(0,0,0,.82); margin-bottom: 18px; }
+        .sub { color: rgba(0,0,0,.6); font-size: 14px; margin-bottom: 18px; }
+        .hint { color: rgba(0,0,0,.45); font-size: 12px; margin-top: 14px; }
+        .pill { display: inline-flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 999px; border: 1px solid rgba(0,0,0,.12); background: #f8f9fa; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; background: #1a73e8; opacity: .9; }
+      </style>
+    </head>
+    <body>
+      <div class="wrap">
+        <div class="card">
+          <div class="logo">Khoj</div>
+          <div class="sub">Search or type a URL in the address bar to get started.</div>
+          <div class="pill"><span class="dot"></span><span>New Tab</span></div>
+          <div class="hint">Tip: Click the Home button anytime to come back here.</div>
+        </div>
+      </div>
+    </body>
+  </html>`;
+  return `data:text/html;charset=utf-8,${encodeURIComponent(html)}`;
+}
+
+function toLoadableUrl(url: string): string {
+  return url === HOME_ROUTE ? getHomeDataUrl() : url;
+}
+
+function toReportedUrl(url: string): string {
+  return url.startsWith('data:text/html') ? HOME_ROUTE : url;
+}
+
 function updateActiveViewBounds(): void {
   if (!mainWindow || !activeViewId) return;
   const view = browserViews.get(activeViewId);
@@ -82,19 +124,28 @@ function setupIpcHandlers() {
     
     browserViews.set(tabId, view);
     
+    // Keep renderer tab strip (title + favicon) in sync with the page.
+    view.webContents.on('page-title-updated', (_event, title) => {
+      mainWindow?.webContents.send('tab-title-updated', tabId, title);
+    });
+    view.webContents.on('page-favicon-updated', (_event, favicons) => {
+      const favicon = Array.isArray(favicons) && favicons.length > 0 ? favicons[0] : null;
+      mainWindow?.webContents.send('tab-favicon-updated', tabId, favicon);
+    });
+
     view.webContents.on('did-start-loading', () => {
       mainWindow?.webContents.send('tab-loading', tabId);
     });
     
     view.webContents.on('did-finish-load', () => {
-      mainWindow?.webContents.send('tab-loaded', tabId, view.webContents.getURL());
+      mainWindow?.webContents.send('tab-loaded', tabId, toReportedUrl(view.webContents.getURL()));
     });
     
     view.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
       mainWindow?.webContents.send('tab-failed', tabId, errorCode, errorDescription);
     });
     
-    await view.webContents.loadURL(url);
+    await view.webContents.loadURL(toLoadableUrl(url));
     
     if (!activeViewId) {
       activeViewId = tabId;
@@ -108,7 +159,7 @@ function setupIpcHandlers() {
   ipcMain.handle('navigate-tab', async (_, tabId: string, url: string) => {
     const view = browserViews.get(tabId);
     if (view) {
-      await view.webContents.loadURL(url);
+      await view.webContents.loadURL(toLoadableUrl(url));
     }
   });
   

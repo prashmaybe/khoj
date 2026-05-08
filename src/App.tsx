@@ -6,13 +6,16 @@ interface Tab {
   id: string;
   title: string;
   url: string;
+  faviconUrl?: string | null;
   isLoading?: boolean;
 }
+
+const HOME_URL = 'khoj://home';
 
 const App: React.FC = () => {
   const [tabs, setTabs] = useState<Tab[]>([]);
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
-  const [url, setUrl] = useState<string>('https://www.google.com');
+  const [url, setUrl] = useState<string>(HOME_URL);
 
   const activeTab = tabs.find(tab => tab.id === activeTabId);
 
@@ -25,7 +28,7 @@ const App: React.FC = () => {
 
     // Create initial tab
     const initialTabId = Date.now().toString();
-    createTab(initialTabId, 'https://www.google.com');
+    createTab(initialTabId, HOME_URL);
     
     // Set up event listeners
     window.electronAPI.onTabLoading((tabId: string) => {
@@ -39,8 +42,30 @@ const App: React.FC = () => {
     window.electronAPI.onTabLoaded((tabId: string, loadedUrl: string) => {
       setTabs(prevTabs => 
         prevTabs.map(tab => 
-          tab.id === tabId ? { ...tab, isLoading: false, url: loadedUrl, title: loadedUrl } : tab
+          tab.id === tabId
+            ? {
+                ...tab,
+                isLoading: false,
+                url: loadedUrl,
+                // Title will be updated via `page-title-updated`; keep a reasonable fallback.
+                title: loadedUrl === HOME_URL ? 'New Tab' : tab.title || loadedUrl,
+              }
+            : tab
         )
+      );
+    });
+
+    window.electronAPI.onTabTitleUpdated((tabId: string, title: string) => {
+      const cleaned = (title || '').trim();
+      if (!cleaned) return;
+      setTabs(prevTabs =>
+        prevTabs.map(tab => (tab.id === tabId ? { ...tab, title: cleaned } : tab))
+      );
+    });
+
+    window.electronAPI.onTabFaviconUpdated((tabId: string, faviconUrl: string | null) => {
+      setTabs(prevTabs =>
+        prevTabs.map(tab => (tab.id === tabId ? { ...tab, faviconUrl } : tab))
       );
     });
     
@@ -58,6 +83,8 @@ const App: React.FC = () => {
         window.electronAPI.removeAllListeners('tab-loading');
         window.electronAPI.removeAllListeners('tab-loaded');
         window.electronAPI.removeAllListeners('tab-failed');
+        window.electronAPI.removeAllListeners('tab-title-updated');
+        window.electronAPI.removeAllListeners('tab-favicon-updated');
       }
     };
   }, []);
@@ -69,14 +96,15 @@ const App: React.FC = () => {
     }
     
     const newTabId = tabId || Date.now().toString();
-    const targetUrl = initialUrl || 'https://www.google.com';
+    const targetUrl = initialUrl || HOME_URL;
     
     const createdTabId = await window.electronAPI.createTab(newTabId, targetUrl);
     if (createdTabId) {
       const newTab: Tab = {
         id: createdTabId,
-        title: 'New Tab',
+        title: targetUrl === HOME_URL ? 'New Tab' : 'New Tab',
         url: targetUrl,
+        faviconUrl: null,
         isLoading: true
       };
       setTabs(prevTabs => [...prevTabs, newTab]);
@@ -89,6 +117,11 @@ const App: React.FC = () => {
     if (!activeTabId || !window.electronAPI) return;
     
     let formattedUrl = url.trim();
+    if (formattedUrl === HOME_URL) {
+      await window.electronAPI.navigateTab(activeTabId, HOME_URL);
+      setUrl(HOME_URL);
+      return;
+    }
     if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
       formattedUrl = 'https://' + formattedUrl;
     }
@@ -157,6 +190,12 @@ const App: React.FC = () => {
     }
   };
 
+  const goHome = async () => {
+    if (!activeTabId || !window.electronAPI) return;
+    await window.electronAPI.navigateTab(activeTabId, HOME_URL);
+    setUrl(HOME_URL);
+  };
+
   return (
     <div className="browser">
       <div className="tab-bar">
@@ -166,6 +205,9 @@ const App: React.FC = () => {
             className={`tab ${activeTabId === tab.id ? 'active' : ''}`}
             onClick={() => switchTab(tab.id)}
           >
+            <span className="tab-favicon" aria-hidden="true">
+              {tab.faviconUrl ? <img src={tab.faviconUrl} alt="" /> : <span className="tab-favicon-fallback" />}
+            </span>
             <span className="tab-title">{tab.title}</span>
             {tabs.length > 1 && (
               <button
@@ -197,6 +239,9 @@ const App: React.FC = () => {
             <span className="nav-icon" aria-hidden="true">↻</span>
           </button>
         </div>
+        <button onClick={goHome} className="nav-button home-button" title="Home" aria-label="Home">
+          <span className="nav-icon" aria-hidden="true">⌂</span>
+        </button>
         <div className="url-bar">
           <div className={`omnibox ${activeTab?.isLoading ? 'is-loading' : ''}`}>
             <span className="omnibox-lock" aria-hidden="true">🔒</span>

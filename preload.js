@@ -114,6 +114,12 @@ electron__WEBPACK_IMPORTED_MODULE_0__.contextBridge.exposeInMainWorld('electronA
     onTabFailed: (callback) => {
         electron__WEBPACK_IMPORTED_MODULE_0__.ipcRenderer.on('tab-failed', (_, tabId, errorCode, errorDescription) => callback(tabId, errorCode, errorDescription));
     },
+    onTabTitleUpdated: (callback) => {
+        electron__WEBPACK_IMPORTED_MODULE_0__.ipcRenderer.on('tab-title-updated', (_, tabId, title) => callback(tabId, title));
+    },
+    onTabFaviconUpdated: (callback) => {
+        electron__WEBPACK_IMPORTED_MODULE_0__.ipcRenderer.on('tab-favicon-updated', (_, tabId, faviconUrl) => callback(tabId, faviconUrl));
+    },
     removeAllListeners: (channel) => {
         electron__WEBPACK_IMPORTED_MODULE_0__.ipcRenderer.removeAllListeners(channel);
     }

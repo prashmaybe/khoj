@@ -10,6 +10,8 @@ export interface ElectronAPI {
   onTabLoading: (callback: (tabId: string) => void) => void;
   onTabLoaded: (callback: (tabId: string, url: string) => void) => void;
   onTabFailed: (callback: (tabId: string, errorCode: number, errorDescription: string) => void) => void;
+  onTabTitleUpdated: (callback: (tabId: string, title: string) => void) => void;
+  onTabFaviconUpdated: (callback: (tabId: string, faviconUrl: string | null) => void) => void;
   
   removeAllListeners: (channel: string) => void;
 }

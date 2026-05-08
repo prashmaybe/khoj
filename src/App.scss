@@ -83,6 +83,30 @@ body {
   line-height: 1;
 }
 
+.tab-favicon {
+  width: 16px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 16px;
+  border-radius: 4px;
+  overflow: hidden;
+
+  img {
+    width: 16px;
+    height: 16px;
+    object-fit: contain;
+  }
+}
+
+.tab-favicon-fallback {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.18);
+}
+
 .tab-close {
   background: none;
   border: none;
@@ -263,6 +287,10 @@ body {
     opacity: 0.5;
     cursor: not-allowed;
   }
+}
+
+.home-button {
+  margin-left: -4px;
 }
 
 .nav-icon {

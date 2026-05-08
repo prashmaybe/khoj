@@ -20,6 +20,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onTabFailed: (callback: (tabId: string, errorCode: number, errorDescription: string) => void) => {
     ipcRenderer.on('tab-failed', (_, tabId, errorCode, errorDescription) => callback(tabId, errorCode, errorDescription));
   },
+  onTabTitleUpdated: (callback: (tabId: string, title: string) => void) => {
+    ipcRenderer.on('tab-title-updated', (_, tabId, title) => callback(tabId, title));
+  },
+  onTabFaviconUpdated: (callback: (tabId: string, faviconUrl: string | null) => void) => {
+    ipcRenderer.on('tab-favicon-updated', (_, tabId, faviconUrl) => callback(tabId, faviconUrl));
+  },
   
   removeAllListeners: (channel: string) => {
     ipcRenderer.removeAllListeners(channel);
@@ -40,6 +46,8 @@ declare global {
       onTabLoading: (callback: (tabId: string) => void) => void;
       onTabLoaded: (callback: (tabId: string, url: string) => void) => void;
       onTabFailed: (callback: (tabId: string, errorCode: number, errorDescription: string) => void) => void;
+      onTabTitleUpdated: (callback: (tabId: string, title: string) => void) => void;
+      onTabFaviconUpdated: (callback: (tabId: string, faviconUrl: string | null) => void) => void;
       
       removeAllListeners: (channel: string) => void;
     };
