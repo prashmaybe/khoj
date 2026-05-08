@@ -72,7 +72,6 @@
       "buildResources": "build"
     },
     "files": [
-      "dist/**/*",
       "main.js",
       "preload.js",
       "package.json",
