@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { NavigationControls, SearchBar } from '../molecules';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface BrowserToolbarProps {
   url: string;
@@ -29,8 +30,10 @@ const BrowserToolbar: React.FC<BrowserToolbarProps> = React.memo(({
   disabled = false,
   searchBarRef
 }) => {
+  const { colors } = useTheme();
+
   return (
-    <View style={styles.browserToolbar}>
+    <View style={[styles.browserToolbar, { backgroundColor: colors.toolbar, borderBottomColor: colors.border }]}>
       <NavigationControls
         onBack={onBack}
         onForward={onForward}
@@ -55,11 +58,9 @@ const styles = StyleSheet.create({
   browserToolbar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8f8f8',
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
   },
 });
 

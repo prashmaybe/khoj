@@ -1,5 +1,6 @@
 import React from 'react';
 import { Text, StyleSheet } from 'react-native';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface IconProps {
   name: string;
@@ -8,8 +9,10 @@ interface IconProps {
 }
 
 const Icon: React.FC<IconProps> = React.memo(({ name, size = 'medium', style }) => {
+  const { colors } = useTheme();
+
   const getIconStyle = () => {
-    const baseStyle = styles.icon;
+    const baseStyle = [styles.icon, { color: colors.text }];
     
     const sizeStyles = {
       small: styles.iconSmall,

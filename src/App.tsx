@@ -3,6 +3,7 @@ import { SafeAreaView, StyleSheet, View } from 'react-native';
 import { Browser } from './components/organisms';
 import KeyboardShortcutsHelp from './components/organisms/KeyboardShortcutsHelp';
 import { KeyboardShortcuts } from './services/KeyboardShortcuts';
+import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 
 interface Tab {
   id: string;
@@ -17,7 +18,8 @@ interface Tab {
 
 const HOME_URL = 'khoj://home';
 
-const App: React.FC = React.memo(() => {
+const AppContent: React.FC = React.memo(() => {
+  const { colors } = useTheme();
   const [tabs, setTabs] = useState<Tab[]>([]);
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
   const [url, setUrl] = useState<string>(HOME_URL);
@@ -356,7 +358,7 @@ const App: React.FC = React.memo(() => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <Browser
         tabs={tabs}
         activeTabId={activeTabId}
@@ -382,10 +384,17 @@ const App: React.FC = React.memo(() => {
   );
 });
 
+const App: React.FC = () => {
+  return (
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
+  );
+};
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
 });
 

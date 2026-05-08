@@ -1,6 +1,7 @@
 import React, { forwardRef } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Input, Button, Icon } from '../atoms';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface SearchBarProps {
   value: string;
@@ -21,10 +22,16 @@ const SearchBar = React.memo(forwardRef<any, SearchBarProps>(({
   placeholder = 'Search or type a URL',
   disabled = false
 }, ref) => {
+  const { colors } = useTheme();
+
   return (
     <View style={styles.urlBar}>
-      <View style={[styles.omnibox, isLoading && styles.omniboxLoading]}>
-        <Icon name="🔒" style={styles.omniboxLock} />
+      <View style={[
+        styles.omnibox, 
+        { backgroundColor: colors.inputBackground, borderColor: colors.borderSecondary },
+        isLoading && { opacity: 0.7 }
+      ]}>
+        <Icon name="🔒" style={[styles.omniboxLock, { color: colors.textSecondary }]} />
         <Input
           ref={ref}
           value={value}
@@ -60,15 +67,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
-    backgroundColor: '#ffffff',
     borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.12)',
     borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 6,
-  },
-  omniboxLoading: {
-    opacity: 0.7,
   },
   omniboxLock: {
     fontSize: 12,
@@ -80,9 +82,7 @@ const styles = StyleSheet.create({
     width: 34,
     height: 28,
     borderRadius: 999,
-    backgroundColor: 'rgba(0, 0, 0, 0.04)',
     borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.06)',
   },
 });
 

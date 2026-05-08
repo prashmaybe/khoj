@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface ErrorPageProps {
   errorCode: number;
@@ -14,6 +15,8 @@ const ErrorPage: React.FC<ErrorPageProps> = React.memo(({
   url, 
   onRetry 
 }) => {
+  const { colors } = useTheme();
+
   const getErrorDetails = (code: number) => {
     switch (code) {
       case -105: // ERR_NAME_NOT_RESOLVED
@@ -121,32 +124,32 @@ const ErrorPage: React.FC<ErrorPageProps> = React.memo(({
   const errorDetails = getErrorDetails(errorCode);
 
   return (
-    <ScrollView style={styles.errorPage}>
+    <ScrollView style={[styles.errorPage, { backgroundColor: colors.background }]}>
       <View style={styles.errorContainer}>
         <Text style={styles.errorIcon}>{errorDetails.icon}</Text>
-        <Text style={styles.errorTitle}>{errorDetails.title}</Text>
-        <Text style={styles.errorDescription}>{errorDetails.description}</Text>
+        <Text style={[styles.errorTitle, { color: colors.text }]}>{errorDetails.title}</Text>
+        <Text style={[styles.errorDescription, { color: colors.textSecondary }]}>{errorDetails.description}</Text>
         
         <View style={styles.errorCode}>
-          <Text style={styles.errorCodeText}>Error code: </Text>
-          <Text style={styles.codeValue}>{errorCode}</Text>
+          <Text style={[styles.errorCodeText, { color: colors.textSecondary }]}>Error code: </Text>
+          <Text style={[styles.codeValue, { color: colors.info }]}>{errorCode}</Text>
         </View>
 
         <View style={styles.errorSuggestions}>
-          <Text style={styles.suggestionsTitle}>What you can try:</Text>
+          <Text style={[styles.suggestionsTitle, { color: colors.text }]}>What you can try:</Text>
           {errorDetails.suggestions.map((suggestion, index) => (
-            <Text key={index} style={styles.suggestionItem}>• {suggestion}</Text>
+            <Text key={index} style={[styles.suggestionItem, { color: colors.textSecondary }]}>• {suggestion}</Text>
           ))}
         </View>
 
         <View style={styles.errorActions}>
           {onRetry && (
-            <TouchableOpacity onPress={onRetry} style={styles.retryButton}>
-              <Text style={styles.buttonText}>Try again</Text>
+            <TouchableOpacity onPress={onRetry} style={[styles.retryButton, { backgroundColor: colors.buttonPrimary }]}>
+              <Text style={[styles.buttonText, { color: colors.buttonPrimaryText }]}>Try again</Text>
             </TouchableOpacity>
           )}
-          <TouchableOpacity onPress={() => {}} style={styles.backButton}>
-            <Text style={styles.backButtonText}>Go back</Text>
+          <TouchableOpacity onPress={() => {}} style={[styles.backButton, { backgroundColor: colors.buttonSecondary, borderColor: colors.border }]}>
+            <Text style={[styles.backButtonText, { color: colors.buttonSecondaryText }]}>Go back</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -157,7 +160,6 @@ const ErrorPage: React.FC<ErrorPageProps> = React.memo(({
 const styles = StyleSheet.create({
   errorPage: {
     flex: 1,
-    backgroundColor: '#ffffff',
   },
   errorContainer: {
     flex: 1,
@@ -172,13 +174,11 @@ const styles = StyleSheet.create({
   errorTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#202124',
     textAlign: 'center',
     marginBottom: 16,
   },
   errorDescription: {
     fontSize: 16,
-    color: '#5f6368',
     textAlign: 'center',
     marginBottom: 24,
     lineHeight: 24,
@@ -190,11 +190,9 @@ const styles = StyleSheet.create({
   },
   errorCodeText: {
     fontSize: 14,
-    color: '#5f6368',
   },
   codeValue: {
     fontSize: 14,
-    color: '#1a73e8',
     fontWeight: '500',
   },
   errorSuggestions: {
@@ -204,12 +202,10 @@ const styles = StyleSheet.create({
   suggestionsTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#202124',
     marginBottom: 16,
   },
   suggestionItem: {
     fontSize: 14,
-    color: '#5f6368',
     marginBottom: 8,
     lineHeight: 20,
   },
@@ -218,15 +214,12 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   retryButton: {
-    backgroundColor: '#1a73e8',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
   },
   backButton: {
-    backgroundColor: '#f8f9fa',
     borderWidth: 1,
-    borderColor: '#dadce0',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
@@ -234,12 +227,10 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#ffffff',
   },
   backButtonText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#202124',
   },
 });
 

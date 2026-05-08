@@ -2,6 +2,7 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Tab } from '../molecules';
 import { Button } from '../atoms';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface TabData {
   id: string;
@@ -25,8 +26,10 @@ const TabBar: React.FC<TabBarProps> = React.memo(({
   onTabClose,
   onNewTab
 }) => {
+  const { colors } = useTheme();
+
   return (
-    <View style={styles.tabBar}>
+    <View style={[styles.tabBar, { backgroundColor: colors.tabBar, borderBottomColor: colors.border }]}>
       {tabs.map(tab => (
         <Tab
           key={tab.id}
@@ -50,17 +53,14 @@ const TabBar: React.FC<TabBarProps> = React.memo(({
 const styles = StyleSheet.create({
   tabBar: {
     flexDirection: 'row',
-    backgroundColor: '#f5f5f5',
     paddingVertical: 8,
     paddingHorizontal: 4,
     borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
   },
   newTabButton: {
     marginLeft: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    backgroundColor: '#007AFF',
     borderRadius: 4,
     justifyContent: 'center',
     alignItems: 'center',

@@ -2,6 +2,7 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Button } from '../atoms';
 import { Icon } from '../atoms';
+import ThemeToggle from '../atoms/ThemeToggle';
 
 interface NavigationControlsProps {
   onBack: () => void;
@@ -55,6 +56,7 @@ const NavigationControls: React.FC<NavigationControlsProps> = React.memo(({
       >
         <Icon name="⌂" />
       </Button>
+      <ThemeToggle style={styles.themeToggle} />
     </>
   );
 });
@@ -67,6 +69,9 @@ const styles = StyleSheet.create({
   },
   homeButton: {
     marginLeft: -4,
+  },
+  themeToggle: {
+    marginLeft: 8,
   },
 });
 

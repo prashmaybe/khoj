@@ -1,5 +1,6 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, ViewStyle } from 'react-native';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface ButtonProps {
   variant?: 'primary' | 'secondary' | 'nav';
@@ -18,13 +19,15 @@ const Button: React.FC<ButtonProps> = React.memo(({
   disabled = false,
   style
 }) => {
+  const { colors } = useTheme();
+
   const getButtonStyle = () => {
     const baseStyle = styles.button;
     
     const variantStyles = {
-      primary: styles.buttonPrimary,
-      secondary: styles.buttonSecondary,
-      nav: styles.navButton
+      primary: { backgroundColor: colors.buttonPrimary, borderColor: colors.buttonPrimary },
+      secondary: { backgroundColor: colors.buttonSecondary, borderColor: colors.border },
+      nav: { backgroundColor: colors.buttonNav, borderColor: colors.borderSecondary }
     };
     
     const sizeStyles = {
@@ -45,9 +48,9 @@ const Button: React.FC<ButtonProps> = React.memo(({
     const baseTextStyle = styles.buttonText;
     
     const variantTextStyles = {
-      primary: styles.buttonTextPrimary,
-      secondary: styles.buttonTextSecondary,
-      nav: styles.navButtonText
+      primary: { color: colors.buttonPrimaryText },
+      secondary: { color: colors.buttonSecondaryText },
+      nav: { color: colors.buttonNavText }
     };
     
     const sizeTextStyles = {
@@ -82,19 +85,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'transparent',
   },
-  buttonPrimary: {
-    backgroundColor: '#1a73e8',
-    borderColor: '#1a73e8',
-  },
-  buttonSecondary: {
-    backgroundColor: '#f8f9fa',
-    borderColor: '#dadce0',
-  },
-  navButton: {
-    backgroundColor: 'rgba(0, 0, 0, 0.04)',
-    borderColor: 'rgba(0, 0, 0, 0.08)',
-    borderRadius: 999,
-  },
   buttonSmall: {
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -114,16 +104,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     textAlign: 'center',
-  },
-  buttonTextPrimary: {
-    color: '#ffffff',
-  },
-  buttonTextSecondary: {
-    color: '#202124',
-  },
-  navButtonText: {
-    color: 'rgba(0, 0, 0, 0.72)',
-    fontSize: 14,
   },
   buttonTextSmall: {
     fontSize: 12,

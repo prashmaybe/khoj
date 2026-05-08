@@ -1,5 +1,6 @@
 import React, { forwardRef } from 'react';
 import { TextInput, StyleSheet, ViewStyle } from 'react-native';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface InputProps {
   variant?: 'default' | 'url' | 'search';
@@ -18,19 +19,47 @@ const Input = React.memo(forwardRef<any, InputProps>(({
   style,
   ...props 
 }, ref) => {
+  const { colors } = useTheme();
+
   const getInputStyle = () => {
-    const baseStyle = styles.input;
+    const baseStyle = {
+      borderWidth: 1,
+      borderColor: colors.inputBorder,
+      borderRadius: 8,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      fontSize: 14,
+      color: colors.inputText,
+      backgroundColor: colors.inputBackground,
+    };
     
     const variantStyles = {
-      default: styles.inputDefault,
-      url: styles.urlInput,
-      search: styles.searchInput
+      default: {},
+      url: {
+        borderColor: colors.borderSecondary,
+        borderRadius: 999,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        fontSize: 13.5,
+        backgroundColor: 'transparent',
+      },
+      search: {}
     };
     
     const sizeStyles = {
-      small: styles.inputSmall,
-      medium: styles.inputMedium,
-      large: styles.inputLarge
+      small: {
+        fontSize: 12,
+        paddingHorizontal: 8,
+        paddingVertical: 6,
+        minHeight: 32,
+      },
+      medium: {},
+      large: {
+        fontSize: 16,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        minHeight: 48,
+      }
     };
     
     return [
@@ -45,55 +74,11 @@ const Input = React.memo(forwardRef<any, InputProps>(({
     <TextInput
       ref={ref}
       style={getInputStyle()}
-      placeholderTextColor="rgba(0, 0, 0, 0.45)"
+      placeholderTextColor={colors.inputPlaceholder}
       {...props}
     />
   );
 }));
 
-const styles = StyleSheet.create({
-  input: {
-    borderWidth: 1,
-    borderColor: '#dadce0',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    fontSize: 14,
-    color: '#202124',
-    backgroundColor: '#ffffff',
-  },
-  inputDefault: {
-    borderColor: '#dadce0',
-  },
-  urlInput: {
-    borderColor: 'rgba(0, 0, 0, 0.12)',
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    fontSize: 13.5,
-    backgroundColor: 'transparent',
-  },
-  searchInput: {
-    borderColor: '#dadce0',
-  },
-  inputSmall: {
-    fontSize: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    minHeight: 32,
-  },
-  inputMedium: {
-    fontSize: 14,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    minHeight: 40,
-  },
-  inputLarge: {
-    fontSize: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    minHeight: 48,
-  },
-});
 
 export default Input;
