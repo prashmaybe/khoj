@@ -19,21 +19,146 @@ function getHomeDataUrl(): string {
         .wrap { height: 100%; display: grid; place-items: center; }
         .card { width: min(720px, calc(100vw - 48px)); text-align: center; }
         .logo { font-size: 44px; font-weight: 700; letter-spacing: -0.02em; color: rgba(0,0,0,.82); margin-bottom: 18px; }
-        .sub { color: rgba(0,0,0,.6); font-size: 14px; margin-bottom: 18px; }
+        .sub { color: rgba(0,0,0,.6); font-size: 14px; margin-bottom: 32px; }
         .hint { color: rgba(0,0,0,.45); font-size: 12px; margin-top: 14px; }
-        .pill { display: inline-flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 999px; border: 1px solid rgba(0,0,0,.12); background: #f8f9fa; }
+        .pill { display: inline-flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 999px; border: 1px solid rgba(0,0,0,.12); background: #f8f9fa; margin-bottom: 32px; }
         .dot { width: 10px; height: 10px; border-radius: 50%; background: #1a73e8; opacity: .9; }
+        
+        .search-container { width: 100%; max-width: 584px; margin: 0 auto 32px; }
+        .search-box {
+          width: 100%;
+          height: 44px;
+          border: 1px solid #dfe1e5;
+          border-radius: 24px;
+          padding: 0 16px 0 44px;
+          font-size: 16px;
+          outline: none;
+          background: #fff;
+          box-shadow: 0 1px 6px rgba(32,33,36,.28);
+          transition: box-shadow 0.2s ease;
+        }
+        .search-box:hover, .search-box:focus {
+          box-shadow: 0 1px 6px rgba(32,33,36,.38);
+          border-color: rgba(223,225,229,0);
+        }
+        .search-box:focus {
+          box-shadow: 0 1px 6px rgba(32,33,36,.48);
+        }
+        .search-wrapper { position: relative; }
+        .search-icon {
+          position: absolute;
+          left: 16px;
+          top: 50%;
+          transform: translateY(-50%);
+          width: 20px;
+          height: 20px;
+          opacity: 0.5;
+          pointer-events: none;
+        }
+        .search-icon::before {
+          content: "🔍";
+          font-size: 16px;
+        }
       </style>
     </head>
     <body>
       <div class="wrap">
         <div class="card">
           <div class="logo">Khoj</div>
-          <div class="sub">Search or type a URL in the address bar to get started.</div>
+          <div class="sub">Search the web or enter a URL</div>
+          
+          <div class="search-container">
+            <div class="search-wrapper">
+              <span class="search-icon"></span>
+              <input 
+                type="text" 
+                class="search-box" 
+                id="searchInput"
+                placeholder="Search Google or type a URL"
+                autocomplete="off"
+                autofocus
+              />
+            </div>
+          </div>
+          
           <div class="pill"><span class="dot"></span><span>New Tab</span></div>
           <div class="hint">Tip: Click the Home button anytime to come back here.</div>
         </div>
       </div>
+      
+      <script>
+        const searchInput = document.getElementById('searchInput');
+        
+        function isSearchQuery(input) {
+          const trimmed = input.trim();
+          
+          // If it starts with http:// or https://, it's a URL
+          if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+            return false;
+          }
+          
+          // If it contains spaces, it's likely a search query
+          if (trimmed.includes(' ')) {
+            return true;
+          }
+          
+          // Check if it's a valid domain format (has at least one dot and no spaces)
+          const domainRegex = /^[a-zA-Z0-9-]+\\.[a-zA-Z]{2,}$/;
+          if (domainRegex.test(trimmed)) {
+            return false;
+          }
+          
+          // If it doesn't have a dot, it's likely a search query
+          if (!trimmed.includes('.')) {
+            return true;
+          }
+          
+          // Default to treating as search query for safety
+          return true;
+        }
+        
+        function createGoogleSearchUrl(query) {
+          const encodedQuery = encodeURIComponent(query.trim());
+          return \`https://www.google.com/search?q=\${encodedQuery}\`;
+        }
+        
+        function formatUrl(input) {
+          let formattedUrl = input.trim();
+          if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
+            formattedUrl = 'https://' + formattedUrl;
+          }
+          return formattedUrl;
+        }
+        
+        function handleSearch() {
+          const query = searchInput.value.trim();
+          if (!query) return;
+          
+          let targetUrl;
+          if (isSearchQuery(query)) {
+            targetUrl = createGoogleSearchUrl(query);
+          } else {
+            targetUrl = formatUrl(query);
+          }
+          
+          // Send message to parent window to navigate
+          if (window.parent && window.parent.postMessage) {
+            window.parent.postMessage({
+              type: 'navigate',
+              url: targetUrl
+            }, '*');
+          }
+        }
+        
+        searchInput.addEventListener('keypress', function(e) {
+          if (e.key === 'Enter') {
+            handleSearch();
+          }
+        });
+        
+        // Focus the search input when page loads
+        searchInput.focus();
+      </script>
     </body>
   </html>`;
   return `data:text/html;charset=utf-8,${encodeURIComponent(html)}`;

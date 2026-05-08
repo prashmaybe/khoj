@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './App.scss';
 import { ElectronAPI } from './electron.d';
-import { ErrorPage } from './components/ErrorPages';
+import { Browser } from './components/organisms';
 
 interface Tab {
   id: string;
@@ -98,6 +98,22 @@ const App: React.FC = () => {
       }
     };
   }, []);
+
+  // Set up message listener for home page navigation
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data && event.data.type === 'navigate' && event.data.url) {
+        setUrl(event.data.url);
+        setTimeout(() => handleNavigate(), 0); // Use setTimeout to avoid stale closure
+      }
+    };
+    
+    window.addEventListener('message', handleMessage);
+    
+    return () => {
+      window.removeEventListener('message', handleMessage);
+    };
+  }, []); // Empty dependency array since we use setTimeout
 
   const createTab = async (tabId?: string, initialUrl?: string) => {
     if (!window.electronAPI) {
@@ -294,102 +310,22 @@ const App: React.FC = () => {
   };
 
   return (
-    <>
-      <div className="browser">
-        <div className="tab-bar">
-          {tabs.map(tab => (
-            <div
-              key={tab.id}
-              className={`tab ${activeTabId === tab.id ? 'active' : ''}`}
-              onClick={() => switchTab(tab.id)}
-            >
-              <span className="tab-favicon" aria-hidden="true">
-                {tab.faviconUrl ? <img src={tab.faviconUrl} alt="" /> : <span className="tab-favicon-fallback" />}
-              </span>
-              <span className="tab-title">{tab.title}</span>
-              {tabs.length > 1 && (
-                <button
-                  className="tab-close"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    closeTab(tab.id);
-                  }}
-                >
-                  ×
-                </button>
-              )}
-            </div>
-          ))}
-          <button className="new-tab-button" onClick={addNewTab}>
-            +
-          </button>
-        </div>
-        
-        <div className="browser-toolbar">
-          <div className="navigation-controls">
-            <button onClick={goBack} className="nav-button" title="Back" aria-label="Back">
-              <span className="nav-icon" aria-hidden="true">←</span>
-            </button>
-            <button onClick={goForward} className="nav-button" title="Forward" aria-label="Forward">
-              <span className="nav-icon" aria-hidden="true">→</span>
-            </button>
-            <button onClick={reload} className="nav-button" title="Reload" aria-label="Reload">
-              <span className="nav-icon" aria-hidden="true">↻</span>
-            </button>
-          </div>
-          <button onClick={goHome} className="nav-button home-button" title="Home" aria-label="Home">
-          <span className="nav-icon" aria-hidden="true">⌂</span>
-        </button>
-          <div className="url-bar">
-            <div className={`omnibox ${activeTab?.isLoading ? 'is-loading' : ''}`}>
-              <span className="omnibox-lock" aria-hidden="true">🔒</span>
-              <input
-                type="text"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Search or type a URL"
-                className="url-input"
-                disabled={activeTab?.isLoading}
-              />
-              <button
-                onClick={handleNavigate}
-                className="navigate-button"
-                disabled={activeTab?.isLoading}
-                aria-label="Go"
-                title="Go"
-              >
-                {activeTab?.isLoading ? '⟳' : '→'}
-              </button>
-            </div>
-          </div>
-        </div>
-        
-        <div className="browser-content">
-          {activeTab?.hasError ? (
-            <ErrorPage
-              errorCode={activeTab.errorCode || -1}
-              errorDescription={activeTab.errorDescription || 'Unknown error'}
-              url={activeTab.url}
-              onRetry={retryLoad}
-            />
-          ) : (
-            /* Content is rendered by WebContentsView in main process */
-            <div className="content-placeholder">
-              {activeTab ? (
-                <div className="tab-info">
-                  <p>Active Tab: {activeTab.title}</p>
-                  <p>URL: {activeTab.url}</p>
-                  {activeTab.isLoading && <p>Loading...</p>}
-                </div>
-              ) : (
-                <p>No tabs open</p>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-    </>
+    <Browser
+      tabs={tabs}
+      activeTabId={activeTabId}
+      url={url}
+      onUrlChange={setUrl}
+      onNavigate={handleNavigate}
+      onKeyPress={handleKeyPress}
+      onTabClick={switchTab}
+      onTabClose={closeTab}
+      onNewTab={addNewTab}
+      onBack={goBack}
+      onForward={goForward}
+      onReload={reload}
+      onHome={goHome}
+      onRetryLoad={retryLoad}
+    />
   );
 };
 
