@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { SafeAreaView, StyleSheet, View } from 'react-native';
 import { Browser } from './components/organisms';
+import KeyboardShortcutsHelp from './components/organisms/KeyboardShortcutsHelp';
+import { KeyboardShortcuts } from './services/KeyboardShortcuts';
 
 interface Tab {
   id: string;
@@ -19,6 +21,9 @@ const App: React.FC = () => {
   const [tabs, setTabs] = useState<Tab[]>([]);
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
   const [url, setUrl] = useState<string>(HOME_URL);
+  const [closedTabs, setClosedTabs] = useState<Tab[]>([]);
+  const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
+  const searchBarRef = useRef<any>(null);
 
   const activeTab = tabs.find(tab => tab.id === activeTabId);
 
@@ -27,6 +32,138 @@ const App: React.FC = () => {
     const initialTabId = Date.now().toString();
     createTab(initialTabId, HOME_URL);
   }, []);
+
+  useEffect(() => {
+    // Initialize keyboard shortcuts
+    const keyboardShortcuts = new KeyboardShortcuts({
+      // Tab & Window Management
+      onNewTab: () => {
+        addNewTab();
+      },
+      onReopenClosedTab: () => {
+        if (closedTabs.length > 0) {
+          const lastClosedTab = closedTabs[closedTabs.length - 1];
+          setClosedTabs(prev => prev.slice(0, -1));
+          createTab(lastClosedTab.id, lastClosedTab.url);
+        }
+      },
+      onCloseTab: () => {
+        if (activeTabId) {
+          closeTab(activeTabId);
+        }
+      },
+      onCycleTab: (direction) => {
+        if (tabs.length <= 1) return;
+        
+        const currentIndex = tabs.findIndex(tab => tab.id === activeTabId);
+        let newIndex;
+        
+        if (direction === 'forward') {
+          newIndex = (currentIndex + 1) % tabs.length;
+        } else {
+          newIndex = currentIndex === 0 ? tabs.length - 1 : currentIndex - 1;
+        }
+        
+        switchTab(tabs[newIndex].id);
+      },
+      onSwitchToTab: (tabNumber) => {
+        if (tabNumber > 0 && tabNumber <= tabs.length) {
+          switchTab(tabs[tabNumber - 1].id);
+        }
+      },
+      onSwitchToLastTab: () => {
+        if (tabs.length > 0) {
+          switchTab(tabs[tabs.length - 1].id);
+        }
+      },
+      
+      // Address Bar
+      onFocusAddressBar: () => {
+        searchBarRef.current?.focus();
+      },
+      onSearchGoogle: () => {
+        setUrl('');
+        searchBarRef.current?.focus();
+      },
+      
+      // Page Navigation & Display
+      onGoBack: () => {
+        goBack();
+      },
+      onGoForward: () => {
+        goForward();
+      },
+      onReload: () => {
+        reload();
+      },
+      onBookmarkPage: () => {
+        // TODO: Implement bookmark functionality
+        console.log('Bookmark page functionality not yet implemented');
+      },
+      onToggleBookmarksBar: () => {
+        // TODO: Implement bookmarks bar toggle
+        console.log('Toggle bookmarks bar functionality not yet implemented');
+      },
+      onOpenHistory: () => {
+        // TODO: Implement history functionality
+        console.log('Open history functionality not yet implemented');
+      },
+      onOpenDownloads: () => {
+        // TODO: Implement downloads functionality
+        console.log('Open downloads functionality not yet implemented');
+      },
+      onViewPageSource: () => {
+        // TODO: Implement view page source functionality
+        console.log('View page source functionality not yet implemented');
+      },
+      onOpenDevTools: () => {
+        // TODO: Implement dev tools functionality
+        console.log('Open dev tools functionality not yet implemented');
+      },
+      
+      // Editing & General
+      onFindText: () => {
+        // TODO: Implement find functionality
+        console.log('Find text functionality not yet implemented');
+      },
+      onPrintPage: () => {
+        // TODO: Implement print functionality
+        console.log('Print page functionality not yet implemented');
+      },
+      
+      // Help
+      onShowShortcutsHelp: () => {
+        setShowShortcutsHelp(true);
+      },
+      
+      // Window Management (Electron-specific)
+      onNewWindow: () => {
+        // TODO: Implement new window functionality
+        console.log('New window functionality not yet implemented');
+      },
+      onNewIncognitoWindow: () => {
+        // TODO: Implement incognito window functionality
+        console.log('New incognito window functionality not yet implemented');
+      },
+      onCloseWindow: () => {
+        // TODO: Implement close window functionality
+        console.log('Close window functionality not yet implemented');
+      },
+    });
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      keyboardShortcuts.handleKeyDown(event);
+    };
+
+    // Add event listener for keyboard shortcuts
+    if (typeof window !== 'undefined') {
+      window.addEventListener('keydown', handleKeyDown);
+      
+      return () => {
+        window.removeEventListener('keydown', handleKeyDown);
+      };
+    }
+  }, [tabs, activeTabId, closedTabs, url]);
 
   
   const createTab = async (tabId?: string, initialUrl?: string) => {
@@ -150,6 +287,12 @@ const App: React.FC = () => {
   const closeTab = async (tabId: string) => {
     if (tabs.length === 1) return;
     
+    const tabToClose = tabs.find(tab => tab.id === tabId);
+    if (tabToClose) {
+      // Save closed tab to history (limit to 10 closed tabs)
+      setClosedTabs(prev => [...prev.slice(-9), tabToClose]);
+    }
+    
     const newTabs = tabs.filter(tab => tab.id !== tabId);
     setTabs(newTabs);
     
@@ -229,6 +372,11 @@ const App: React.FC = () => {
         onReload={reload}
         onHome={goHome}
         onRetryLoad={retryLoad}
+        searchBarRef={searchBarRef}
+      />
+      <KeyboardShortcutsHelp
+        visible={showShortcutsHelp}
+        onClose={() => setShowShortcutsHelp(false)}
       />
     </SafeAreaView>
   );

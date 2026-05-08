@@ -13,6 +13,7 @@ interface BrowserToolbarProps {
   onHome: () => void;
   isLoading?: boolean;
   disabled?: boolean;
+  searchBarRef?: React.RefObject<any>;
 }
 
 const BrowserToolbar: React.FC<BrowserToolbarProps> = ({
@@ -25,7 +26,8 @@ const BrowserToolbar: React.FC<BrowserToolbarProps> = ({
   onReload,
   onHome,
   isLoading = false,
-  disabled = false
+  disabled = false,
+  searchBarRef
 }) => {
   return (
     <View style={styles.browserToolbar}>
@@ -37,6 +39,7 @@ const BrowserToolbar: React.FC<BrowserToolbarProps> = ({
         disabled={disabled}
       />
       <SearchBar
+        ref={searchBarRef}
         value={url}
         onChange={onUrlChange}
         onNavigate={onNavigate}

@@ -30,6 +30,7 @@ interface BrowserProps {
   onReload: () => void;
   onHome: () => void;
   onRetryLoad: () => void;
+  searchBarRef?: React.RefObject<any>;
 }
 
 const Browser: React.FC<BrowserProps> = ({
@@ -46,7 +47,8 @@ const Browser: React.FC<BrowserProps> = ({
   onForward,
   onReload,
   onHome,
-  onRetryLoad
+  onRetryLoad,
+  searchBarRef
 }) => {
   const activeTab = tabs.find(tab => tab.id === activeTabId);
 
@@ -71,6 +73,7 @@ const Browser: React.FC<BrowserProps> = ({
         onHome={onHome}
         isLoading={activeTab?.isLoading}
         disabled={activeTab?.isLoading}
+        searchBarRef={searchBarRef}
       />
       
       <View style={styles.browserContent}>

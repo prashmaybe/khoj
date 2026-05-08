@@ -1,13 +1,12 @@
 # Khoj - Cross-Platform Browser
 
-A universal browser application built with React Native that runs on **mobile (Android/iOS)**, **desktop (Windows/macOS/Linux)**, and **web** platforms.
+A universal browser application built with React Native that runs on **mobile (Android/iOS)** and **desktop (Windows/macOS/Linux)** platforms.
 
 ## Cross-Platform Architecture
 
-This project uses React Native with React Native Web to provide a truly cross-platform experience:
+This project uses React Native to provide a truly cross-platform experience:
 - **Mobile**: React Native (Android/iOS)
-- **Desktop**: Electron + React Native Web
-- **Web**: React Native Web in browser
+- **Desktop**: Electron
 
 ## Platform Support
 
@@ -15,8 +14,7 @@ This project uses React Native with React Native Web to provide a truly cross-pl
 ✅ **iOS** - Native React Native app  
 ✅ **Windows** - Electron desktop app  
 ✅ **macOS** - Electron desktop app  
-✅ **Linux** - Electron desktop app  
-✅ **Web** - Browser-based app
+✅ **Linux** - Electron desktop app
 
 ## Prerequisites
 
@@ -89,13 +87,6 @@ npm run desktop
 npm run electron-dev
 ```
 
-#### Web Development
-
-#### Run in Browser
-```bash
-npm run web
-```
-
 ### Building for Production
 
 #### Quick Build Commands
@@ -108,9 +99,6 @@ npm run build-all          # Build all platforms (alias)
 
 #### Platform-Specific Builds
 ```bash
-# Web
-npm run build-web
-
 # Desktop Applications
 npm run build-desktop      # All desktop platforms
 npm run build-windows      # Windows executable
@@ -247,6 +235,46 @@ gh workflow run
 - **Python 3** (for node-gyp)
 - **libgtk-3-dev** (for some native modules)
 
+### Hardware Requirements
+
+#### Android
+- **Processor**: ARMv7 or ARM64
+- **RAM**: Minimum 1GB RAM (2GB recommended)
+- **Storage**: Minimum 50MB free space
+- **Display**: Touchscreen display recommended
+- **Connectivity**: Internet connection for initial setup and updates
+
+#### iOS
+- **Device**: iPhone 5s or newer, iPad Air or newer
+- **Processor**: A7 chip or newer
+- **RAM**: Minimum 1GB RAM
+- **Storage**: Minimum 50MB free space
+- **Connectivity**: Internet connection for initial setup and updates
+
+#### Windows Desktop
+- **Processor**: Intel/AMD x86/x64 processor, 1GHz or faster
+- **RAM**: Minimum 2GB RAM (4GB recommended)
+- **Storage**: Minimum 100MB free space
+- **Graphics**: DirectX 9 or later with WDDM 1.0 driver
+- **Display**: Minimum 800x600 resolution
+- **Connectivity**: Internet connection for updates
+
+#### macOS Desktop
+- **Processor**: Intel 64-bit or Apple Silicon
+- **RAM**: Minimum 2GB RAM (4GB recommended)
+- **Storage**: Minimum 100MB free space
+- **OS**: macOS 10.12 or later
+- **Display**: Minimum 800x600 resolution
+- **Connectivity**: Internet connection for updates
+
+#### Linux Desktop
+- **Processor**: Intel/AMD x86/x64 processor
+- **RAM**: Minimum 2GB RAM (4GB recommended)
+- **Storage**: Minimum 100MB free space
+- **Graphics**: OpenGL 2.0+ compatible graphics card
+- **Display**: Minimum 800x600 resolution
+- **Connectivity**: Internet connection for updates
+
 ### Code Signing
 
 #### Windows
@@ -278,7 +306,6 @@ gh workflow run
 
 #### Direct Distribution
 - **GitHub Releases**: Automated upload on release creation
-- **Website Hosting**: Host installers on your own server
 - **Package Managers**: Submit to Linux repositories
 
 ## Project Structure
@@ -293,16 +320,13 @@ khoj/
 │   │   └── templates/      # Page templates
 │   ├── App.tsx             # Universal main application component
 │   ├── index.tsx           # React Native mobile entry point
-│   └── index.web.tsx       # Web/desktop entry point
 ├── android/                # Android-specific code
 ├── ios/                    # iOS-specific code
-├── public/                 # Web assets and HTML template
 ├── main.ts                 # Electron main process
 ├── preload.ts              # Electron preload script
 ├── index.js                # React Native entry point
 ├── metro.config.js         # Metro bundler configuration
 ├── babel.config.js         # Babel configuration
-├── webpack.config.js       # Web/desktop bundler configuration
 ├── react-native.config.js  # Native module configuration
 └── package.json            # Dependencies and scripts
 ```
@@ -316,23 +340,19 @@ khoj/
 
 ### 2. Platform Abstraction
 - **Mobile**: Direct React Native rendering
-- **Web/Desktop**: React Native Web translates components to web equivalents
 - **Desktop Apps**: Electron wrapper provides native desktop features
 
 ### 3. Entry Points
 - **index.tsx**: React Native mobile apps (Android/iOS)
-- **index.web.tsx**: Web and Electron desktop apps
-- **webpack.config.js**: Handles React Native Web compilation
 
 ### 4. Dependencies
-- **Core**: `react`, `react-native`, `react-native-web`
+- **Core**: `react`, `react-native`
 - **Mobile**: Metro bundler, React Native CLI
-- **Desktop/Web**: Webpack, Electron, React Native Web
 - **WebView**: `react-native-webview` for web content
 
 ## Features
 
-- ✅ **Universal Cross-Platform Support** (Android, iOS, Windows, macOS, Linux, Web)
+- ✅ **Universal Cross-Platform Support** (Android, iOS, Windows, macOS, Linux)
 - ✅ **Tab Management System** - Create, close, and switch between tabs
 - ✅ **Navigation Controls** - Back, forward, reload, and home buttons
 - ✅ **Search Functionality** - Smart URL detection and Google search integration
@@ -351,8 +371,6 @@ if (Platform.OS === 'android') {
   // Android-specific code
 } else if (Platform.OS === 'ios') {
   // iOS-specific code
-} else if (Platform.OS === 'web') {
-  // Web-specific code
 } else if (Platform.OS === 'windows' || Platform.OS === 'macos') {
   // Desktop-specific code
 }
@@ -360,7 +378,6 @@ if (Platform.OS === 'android') {
 
 ### WebView Integration
 - **Mobile**: Uses `react-native-webview` for native web content
-- **Web/Desktop**: Translates to iframe/webview equivalents via React Native Web
 
 ### Styling Strategy
 - **Universal**: React Native StyleSheet works across all platforms

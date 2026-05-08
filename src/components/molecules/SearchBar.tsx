@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { forwardRef } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Input, Button, Icon } from '../atoms';
 
@@ -12,7 +12,7 @@ interface SearchBarProps {
   disabled?: boolean;
 }
 
-const SearchBar: React.FC<SearchBarProps> = ({
+const SearchBar = forwardRef<any, SearchBarProps>(({
   value,
   onChange,
   onNavigate,
@@ -20,12 +20,13 @@ const SearchBar: React.FC<SearchBarProps> = ({
   isLoading = false,
   placeholder = 'Search or type a URL',
   disabled = false
-}) => {
+}, ref) => {
   return (
     <View style={styles.urlBar}>
       <View style={[styles.omnibox, isLoading && styles.omniboxLoading]}>
         <Icon name="🔒" style={styles.omniboxLock} />
         <Input
+          ref={ref}
           value={value}
           onChangeText={onChange}
           onKeyPress={onKeyPress}
@@ -45,7 +46,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
       </View>
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   urlBar: {

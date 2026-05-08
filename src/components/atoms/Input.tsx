@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { forwardRef } from 'react';
 import { TextInput, StyleSheet, ViewStyle } from 'react-native';
 
 interface InputProps {
@@ -12,12 +12,12 @@ interface InputProps {
   onKeyPress?: (e: any) => void;
 }
 
-const Input: React.FC<InputProps> = ({ 
+const Input = forwardRef<any, InputProps>(({ 
   variant = 'default', 
   inputSize = 'medium', 
   style,
   ...props 
-}) => {
+}, ref) => {
   const getInputStyle = () => {
     const baseStyle = styles.input;
     
@@ -43,12 +43,13 @@ const Input: React.FC<InputProps> = ({
 
   return (
     <TextInput
+      ref={ref}
       style={getInputStyle()}
       placeholderTextColor="rgba(0, 0, 0, 0.45)"
       {...props}
     />
   );
-};
+});
 
 const styles = StyleSheet.create({
   input: {
