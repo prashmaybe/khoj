@@ -1,5 +1,5 @@
 import React from 'react';
-import './ErrorPage.scss';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 
 interface ErrorPageProps {
   errorCode: number;
@@ -121,38 +121,126 @@ const ErrorPage: React.FC<ErrorPageProps> = ({
   const errorDetails = getErrorDetails(errorCode);
 
   return (
-    <div className="error-page">
-      <div className="error-container">
-        <div className="error-icon">{errorDetails.icon}</div>
-        <h1 className="error-title">{errorDetails.title}</h1>
-        <p className="error-description">{errorDetails.description}</p>
+    <ScrollView style={styles.errorPage}>
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorIcon}>{errorDetails.icon}</Text>
+        <Text style={styles.errorTitle}>{errorDetails.title}</Text>
+        <Text style={styles.errorDescription}>{errorDetails.description}</Text>
         
-        <div className="error-code">
-          Error code: <span className="code-value">{errorCode}</span>
-        </div>
+        <View style={styles.errorCode}>
+          <Text style={styles.errorCodeText}>Error code: </Text>
+          <Text style={styles.codeValue}>{errorCode}</Text>
+        </View>
 
-        <div className="error-suggestions">
-          <h3>What you can try:</h3>
-          <ul>
-            {errorDetails.suggestions.map((suggestion, index) => (
-              <li key={index}>{suggestion}</li>
-            ))}
-          </ul>
-        </div>
+        <View style={styles.errorSuggestions}>
+          <Text style={styles.suggestionsTitle}>What you can try:</Text>
+          {errorDetails.suggestions.map((suggestion, index) => (
+            <Text key={index} style={styles.suggestionItem}>• {suggestion}</Text>
+          ))}
+        </View>
 
-        <div className="error-actions">
+        <View style={styles.errorActions}>
           {onRetry && (
-            <button onClick={onRetry} className="retry-button">
-              Try again
-            </button>
+            <TouchableOpacity onPress={onRetry} style={styles.retryButton}>
+              <Text style={styles.buttonText}>Try again</Text>
+            </TouchableOpacity>
           )}
-          <button onClick={() => window.history.back()} className="back-button">
-            Go back
-          </button>
-        </div>
-      </div>
-    </div>
+          <TouchableOpacity onPress={() => {}} style={styles.backButton}>
+            <Text style={styles.backButtonText}>Go back</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </ScrollView>
   );
 };
+
+const styles = StyleSheet.create({
+  errorPage: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+  },
+  errorContainer: {
+    flex: 1,
+    padding: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  errorIcon: {
+    fontSize: 64,
+    marginBottom: 20,
+  },
+  errorTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#202124',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  errorDescription: {
+    fontSize: 16,
+    color: '#5f6368',
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 24,
+  },
+  errorCode: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 32,
+  },
+  errorCodeText: {
+    fontSize: 14,
+    color: '#5f6368',
+  },
+  codeValue: {
+    fontSize: 14,
+    color: '#1a73e8',
+    fontWeight: '500',
+  },
+  errorSuggestions: {
+    width: '100%',
+    marginBottom: 32,
+  },
+  suggestionsTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#202124',
+    marginBottom: 16,
+  },
+  suggestionItem: {
+    fontSize: 14,
+    color: '#5f6368',
+    marginBottom: 8,
+    lineHeight: 20,
+  },
+  errorActions: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  retryButton: {
+    backgroundColor: '#1a73e8',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  backButton: {
+    backgroundColor: '#f8f9fa',
+    borderWidth: 1,
+    borderColor: '#dadce0',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  buttonText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#ffffff',
+  },
+  backButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#202124',
+  },
+});
 
 export default ErrorPage;

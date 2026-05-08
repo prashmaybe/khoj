@@ -1,7 +1,7 @@
 {
   "name": "khoj",
   "version": "1.0.0",
-  "description": "",
+  "description": "A modern browser built with React Native and Electron",
   "main": "main.js",
   "scripts": {
     "start": "react-native start",
@@ -44,15 +44,13 @@
   "dependencies": {
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "@types/react-native": "^0.72.0",
     "concurrently": "^9.2.1",
     "css-loader": "^7.1.4",
-    "electron": "^42.0.0",
     "html-webpack-plugin": "^5.6.7",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
-    "react-native": "^0.72.0",
-    "react-native-web": "^0.19.6",
+    "react-native": "^0.85.3",
+    "react-native-web": "^0.21.2",
     "react-native-webview": "^13.2.2",
     "sass": "^1.99.0",
     "sass-loader": "^16.0.7",
@@ -73,6 +71,7 @@
     "@electron-forge/plugin-auto-unpack-natives": "^7.4.0",
     "@electron-forge/plugin-fuses": "^7.4.0",
     "@react-native/metro-config": "^0.72.0",
+    "electron": "^42.0.0",
     "electron-builder": "^24.0.0",
     "electron-packager": "^17.1.1",
     "metro": "^0.76.0",
@@ -83,19 +82,28 @@
     "appId": "com.khoj.browser",
     "productName": "Khoj Browser",
     "directories": {
-      "output": "dist"
+      "output": "dist",
+      "buildResources": "build"
     },
     "files": [
       "dist/**/*",
       "main.js",
       "preload.js",
-      "package.json"
+      "package.json",
+      "node_modules/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "src",
+        "to": "src",
+        "filter": ["**/*"]
+      }
     ],
     "win": {
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64", "ia32"]
+          "arch": ["x64"]
         },
         {
           "target": "portable",
@@ -103,11 +111,13 @@
         }
       ],
       "icon": "assets/icon.ico",
-      "requestedExecutionLevel": "asInvoker"
+      "requestedExecutionLevel": "asInvoker",
+      "publisherName": "Khoj"
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
+      "allowElevation": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "Khoj Browser"
@@ -124,7 +134,8 @@
         }
       ],
       "icon": "assets/icon.icns",
-      "category": "public.app-category.productivity"
+      "category": "public.app-category.productivity",
+      "hardenedRuntime": true
     },
     "linux": {
       "target": [
@@ -144,8 +155,7 @@
       "icon": "assets/icon.png",
       "category": "Network"
     },
-    "web": {
-      "fingerprint": "null"
-    }
+    "compression": "maximum",
+    "removePackageScripts": true
   }
 }

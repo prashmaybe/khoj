@@ -1,4 +1,5 @@
 import React from 'react';
+import { View, StyleSheet } from 'react-native';
 import { Browser } from '../organisms';
 
 interface BrowserTemplateProps {
@@ -7,10 +8,16 @@ interface BrowserTemplateProps {
 
 const BrowserTemplate: React.FC<BrowserTemplateProps> = ({ children }) => {
   return (
-    <div className="browser-template">
+    <View style={styles.browserTemplate}>
       {children}
-    </div>
+    </View>
   );
 };
+
+const styles = StyleSheet.create({
+  browserTemplate: {
+    flex: 1,
+  },
+});
 
 export default BrowserTemplate;

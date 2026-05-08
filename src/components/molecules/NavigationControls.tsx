@@ -1,4 +1,5 @@
 import React from 'react';
+import { View, StyleSheet } from 'react-native';
 import { Button } from '../atoms';
 import { Icon } from '../atoms';
 
@@ -19,46 +20,54 @@ const NavigationControls: React.FC<NavigationControlsProps> = ({
 }) => {
   return (
     <>
-      <div className="navigation-controls">
+      <View style={styles.navigationControls}>
         <Button
-          onClick={onBack}
-          className="nav-button"
-          title="Back"
-          aria-label="Back"
+          onPress={onBack}
+          variant="nav"
+          size="medium"
           disabled={disabled}
         >
           <Icon name="←" />
         </Button>
         <Button
-          onClick={onForward}
-          className="nav-button"
-          title="Forward"
-          aria-label="Forward"
+          onPress={onForward}
+          variant="nav"
+          size="medium"
           disabled={disabled}
         >
           <Icon name="→" />
         </Button>
         <Button
-          onClick={onReload}
-          className="nav-button"
-          title="Reload"
-          aria-label="Reload"
+          onPress={onReload}
+          variant="nav"
+          size="medium"
           disabled={disabled}
         >
           <Icon name="↻" />
         </Button>
-      </div>
+      </View>
       <Button
-        onClick={onHome}
-        className="nav-button home-button"
-        title="Home"
-        aria-label="Home"
+        onPress={onHome}
+        variant="nav"
+        size="medium"
         disabled={disabled}
+        style={styles.homeButton}
       >
         <Icon name="⌂" />
       </Button>
     </>
   );
 };
+
+const styles = StyleSheet.create({
+  navigationControls: {
+    flexDirection: 'row',
+    gap: 6,
+    marginRight: 4,
+  },
+  homeButton: {
+    marginLeft: -4,
+  },
+});
 
 export default NavigationControls;

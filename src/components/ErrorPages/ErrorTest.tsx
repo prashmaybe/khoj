@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, FlatList } from 'react-native';
 import ErrorPage from './ErrorPage';
-import './ErrorTest.scss';
 
 interface ErrorTestProps {
   onClose: () => void;
@@ -23,49 +23,145 @@ const ErrorTest: React.FC<ErrorTestProps> = ({ onClose }) => {
 
   if (selectedError) {
     return (
-      <div className="error-test-container">
-        <div className="error-test-header">
-          <button onClick={() => setSelectedError(null)} className="back-to-tests">
-            ← Back to Error Tests
-          </button>
-          <button onClick={onClose} className="close-test">
-            × Close
-          </button>
-        </div>
+      <View style={styles.errorTestContainer}>
+        <View style={styles.errorTestHeader}>
+          <TouchableOpacity onPress={() => setSelectedError(null)} style={styles.backToTests}>
+            <Text style={styles.backToTestsText}>← Back to Error Tests</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={onClose} style={styles.closeTest}>
+            <Text style={styles.closeTestText}>× Close</Text>
+          </TouchableOpacity>
+        </View>
         <ErrorPage
           errorCode={selectedError.code}
           errorDescription={selectedError.description}
           url={selectedError.url}
           onRetry={() => console.log('Retry clicked')}
         />
-      </div>
+      </View>
     );
   }
 
+  const renderScenario = ({ item, index }: { item: typeof errorScenarios[0]; index: number }) => (
+    <TouchableOpacity
+      key={index}
+      onPress={() => setSelectedError(item)}
+      style={styles.scenarioButton}
+    >
+      <Text style={styles.scenarioCode}>ERR_{item.code}</Text>
+      <Text style={styles.scenarioDesc}>{item.description}</Text>
+      <Text style={styles.scenarioUrl}>{item.url}</Text>
+    </TouchableOpacity>
+  );
+
   return (
-    <div className="error-test">
-      <div className="error-test-header">
-        <h2>Browser Error Page Tests</h2>
-        <button onClick={onClose} className="close-test">×</button>
-      </div>
-      <div className="error-scenarios">
-        <h3>Select an error scenario to test:</h3>
-        <div className="scenario-grid">
-          {errorScenarios.map((scenario, index) => (
-            <button
-              key={index}
-              onClick={() => setSelectedError(scenario)}
-              className="scenario-button"
-            >
-              <div className="scenario-code">ERR_{scenario.code}</div>
-              <div className="scenario-desc">{scenario.description}</div>
-              <div className="scenario-url">{scenario.url}</div>
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
+    <View style={styles.errorTest}>
+      <View style={styles.errorTestHeader}>
+        <Text style={styles.title}>Browser Error Page Tests</Text>
+        <TouchableOpacity onPress={onClose} style={styles.closeTest}>
+          <Text style={styles.closeTestText}>×</Text>
+        </TouchableOpacity>
+      </View>
+      <View style={styles.errorScenarios}>
+        <Text style={styles.scenariosTitle}>Select an error scenario to test:</Text>
+        <FlatList
+          data={errorScenarios}
+          renderItem={renderScenario}
+          keyExtractor={(_, index) => index.toString()}
+          numColumns={2}
+          columnWrapperStyle={styles.scenarioGrid}
+          contentContainerStyle={styles.scenariosList}
+        />
+      </View>
+    </View>
   );
 };
+
+const styles = StyleSheet.create({
+  errorTestContainer: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+  },
+  errorTestHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  backToTests: {
+    padding: 8,
+  },
+  backToTestsText: {
+    fontSize: 14,
+    color: '#1a73e8',
+  },
+  closeTest: {
+    padding: 8,
+  },
+  closeTestText: {
+    fontSize: 18,
+    color: '#666666',
+  },
+  errorTest: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#202124',
+  },
+  errorScenarios: {
+    flex: 1,
+    padding: 16,
+  },
+  scenariosTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#202124',
+    marginBottom: 16,
+  },
+  scenariosList: {
+    gap: 16,
+  },
+  scenarioGrid: {
+    justifyContent: 'space-between',
+  },
+  scenarioButton: {
+    flex: 1,
+    margin: 4,
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#dadce0',
+    borderRadius: 8,
+    padding: 16,
+    minHeight: 120,
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  scenarioCode: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#1a73e8',
+    marginBottom: 8,
+  },
+  scenarioDesc: {
+    fontSize: 14,
+    color: '#202124',
+    marginBottom: 8,
+    fontWeight: '500',
+  },
+  scenarioUrl: {
+    fontSize: 12,
+    color: '#5f6368',
+    fontStyle: 'italic',
+  },
+});
 
 export default ErrorTest;

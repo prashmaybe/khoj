@@ -1,4 +1,5 @@
 import React from 'react';
+import { View, StyleSheet } from 'react-native';
 import { Input, Button, Icon } from '../atoms';
 
 interface SearchBarProps {
@@ -21,31 +22,67 @@ const SearchBar: React.FC<SearchBarProps> = ({
   disabled = false
 }) => {
   return (
-    <div className="url-bar">
-      <div className={`omnibox ${isLoading ? 'is-loading' : ''}`}>
-        <Icon name="🔒" className="omnibox-lock" />
+    <View style={styles.urlBar}>
+      <View style={[styles.omnibox, isLoading && styles.omniboxLoading]}>
+        <Icon name="🔒" style={styles.omniboxLock} />
         <Input
-          type="text"
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChangeText={onChange}
           onKeyPress={onKeyPress}
           placeholder={placeholder}
-          className="url-input"
           variant="url"
           disabled={disabled || isLoading}
         />
         <Button
-          onClick={onNavigate}
-          className="navigate-button"
+          onPress={onNavigate}
+          variant="secondary"
+          size="medium"
           disabled={disabled || isLoading}
-          aria-label="Go"
-          title="Go"
+          style={styles.navigateButton}
         >
           {isLoading ? '⟳' : '→'}
         </Button>
-      </div>
-    </div>
+      </View>
+    </View>
   );
 };
+
+const styles = StyleSheet.create({
+  urlBar: {
+    flexDirection: 'row',
+    flex: 1,
+    maxWidth: 980,
+    marginHorizontal: 'auto',
+    width: '100%',
+  },
+  omnibox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.12)',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  omniboxLoading: {
+    opacity: 0.7,
+  },
+  omniboxLock: {
+    fontSize: 12,
+    opacity: 0.65,
+    width: 18,
+    textAlign: 'center',
+  },
+  navigateButton: {
+    width: 34,
+    height: 28,
+    borderRadius: 999,
+    backgroundColor: 'rgba(0, 0, 0, 0.04)',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.06)',
+  },
+});
 
 export default SearchBar;

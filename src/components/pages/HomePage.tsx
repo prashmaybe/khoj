@@ -1,4 +1,5 @@
 import React from 'react';
+import { View, StyleSheet } from 'react-native';
 import { Browser } from '../organisms';
 
 interface HomePageProps {
@@ -20,10 +21,16 @@ interface HomePageProps {
 
 const HomePage: React.FC<HomePageProps> = (props) => {
   return (
-    <div className="home-page">
+    <View style={styles.homePage}>
       <Browser {...props} />
-    </div>
+    </View>
   );
 };
+
+const styles = StyleSheet.create({
+  homePage: {
+    flex: 1,
+  },
+});
 
 export default HomePage;

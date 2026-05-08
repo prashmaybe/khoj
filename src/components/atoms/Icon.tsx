@@ -1,26 +1,45 @@
 import React from 'react';
+import { Text, StyleSheet } from 'react-native';
 
 interface IconProps {
   name: string;
   size?: 'small' | 'medium' | 'large';
-  className?: string;
+  style?: any;
 }
 
-const Icon: React.FC<IconProps> = ({ name, size = 'medium', className = '' }) => {
-  const baseClasses = 'icon';
-  const sizeClasses = {
-    small: 'icon-small',
-    medium: 'icon-medium',
-    large: 'icon-large'
+const Icon: React.FC<IconProps> = ({ name, size = 'medium', style }) => {
+  const getIconStyle = () => {
+    const baseStyle = styles.icon;
+    
+    const sizeStyles = {
+      small: styles.iconSmall,
+      medium: styles.iconMedium,
+      large: styles.iconLarge
+    };
+    
+    return [
+      baseStyle,
+      sizeStyles[size],
+      style
+    ];
   };
 
-  const classes = [
-    baseClasses,
-    sizeClasses[size],
-    className
-  ].filter(Boolean).join(' ');
-
-  return <span className={classes} aria-hidden="true">{name}</span>;
+  return <Text style={getIconStyle()}>{name}</Text>;
 };
+
+const styles = StyleSheet.create({
+  icon: {
+    textAlign: 'center',
+  },
+  iconSmall: {
+    fontSize: 12,
+  },
+  iconMedium: {
+    fontSize: 14,
+  },
+  iconLarge: {
+    fontSize: 18,
+  },
+});
 
 export default Icon;
