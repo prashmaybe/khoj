@@ -5,6 +5,21 @@ let mainWindow: BrowserWindow | null = null;
 let browserViews: Map<string, BrowserView> = new Map();
 let activeViewId: string | null = null;
 
+function updateActiveViewBounds(): void {
+  if (!mainWindow || !activeViewId) return;
+  const view = browserViews.get(activeViewId);
+  if (!view) return;
+
+  const { width, height } = mainWindow.getContentBounds();
+  const topBarHeight = 100;
+  view.setBounds({
+    x: 0,
+    y: topBarHeight,
+    width,
+    height: Math.max(0, height - topBarHeight),
+  });
+}
+
 function createWindow(): void {
   // `process.cwd()` is not stable (depends on how Electron is launched).
   // Resolve preload relative to the compiled main process file.
@@ -40,6 +55,11 @@ function createWindow(): void {
 
   mainWindow.on('closed', () => {
     mainWindow = null;
+  });
+
+  // Keep BrowserView in sync with window size.
+  mainWindow.on('resize', () => {
+    updateActiveViewBounds();
   });
 }
 
@@ -79,7 +99,7 @@ function setupIpcHandlers() {
     if (!activeViewId) {
       activeViewId = tabId;
       mainWindow.addBrowserView(view);
-      view.setBounds({ x: 0, y: 100, width: mainWindow.getBounds().width, height: mainWindow.getBounds().height - 100 });
+      updateActiveViewBounds();
     }
     
     return tabId;
@@ -104,7 +124,7 @@ function setupIpcHandlers() {
     if (newView) {
       activeViewId = tabId;
       mainWindow.addBrowserView(newView);
-      newView.setBounds({ x: 0, y: 100, width: mainWindow.getBounds().width, height: mainWindow.getBounds().height - 100 });
+      updateActiveViewBounds();
     }
   });
   
@@ -123,7 +143,7 @@ function setupIpcHandlers() {
           if (newView && mainWindow) {
             activeViewId = newActiveTab;
             mainWindow.addBrowserView(newView);
-            newView.setBounds({ x: 0, y: 100, width: mainWindow.getBounds().width, height: mainWindow.getBounds().height - 100 });
+            updateActiveViewBounds();
           }
         }
       }

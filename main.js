@@ -39,6 +39,21 @@ const fs = require("fs");
 let mainWindow = null;
 let browserViews = new Map();
 let activeViewId = null;
+function updateActiveViewBounds() {
+    if (!mainWindow || !activeViewId)
+        return;
+    const view = browserViews.get(activeViewId);
+    if (!view)
+        return;
+    const { width, height } = mainWindow.getContentBounds();
+    const topBarHeight = 100;
+    view.setBounds({
+        x: 0,
+        y: topBarHeight,
+        width,
+        height: Math.max(0, height - topBarHeight),
+    });
+}
 function createWindow() {
     const preloadPath = path.join(__dirname, "preload.js");
     console.log("Preload script path:", preloadPath);
@@ -64,6 +79,9 @@ function createWindow() {
     }
     mainWindow.on("closed", () => {
         mainWindow = null;
+    });
+    mainWindow.on("resize", () => {
+        updateActiveViewBounds();
     });
 }
 function setupIpcHandlers() {
@@ -94,8 +112,7 @@ function setupIpcHandlers() {
         if (!activeViewId) {
             activeViewId = tabId;
             mainWindow.addBrowserView(view);
-            const b = mainWindow.getBounds();
-            view.setBounds({ x: 0, y: 100, width: b.width, height: b.height - 100 });
+            updateActiveViewBounds();
         }
         return tabId;
     });
@@ -116,8 +133,7 @@ function setupIpcHandlers() {
         if (newView) {
             activeViewId = tabId;
             mainWindow.addBrowserView(newView);
-            const b = mainWindow.getBounds();
-            newView.setBounds({ x: 0, y: 100, width: b.width, height: b.height - 100 });
+            updateActiveViewBounds();
         }
     });
     electron_1.ipcMain.handle("close-tab", (_, tabId) => {
@@ -137,8 +153,7 @@ function setupIpcHandlers() {
                 if (newView) {
                     activeViewId = newActiveTab;
                     mainWindow.addBrowserView(newView);
-                    const b = mainWindow.getBounds();
-                    newView.setBounds({ x: 0, y: 100, width: b.width, height: b.height - 100 });
+                    updateActiveViewBounds();
                 }
             }
         }
