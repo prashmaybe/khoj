@@ -3,6 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import TabBar from './TabBar';
 import BrowserToolbar from './BrowserToolbar';
+import BookmarksBar from './BookmarksBar';
 import { ErrorPage } from '../ErrorPages';
 
 interface TabData {
@@ -32,6 +33,9 @@ interface BrowserProps {
   onHome: () => void;
   onRetryLoad: () => void;
   searchBarRef?: React.RefObject<any>;
+  showBookmarksBar?: boolean;
+  onBookmarkClick?: (bookmark: { id: string; title: string; url: string; favicon?: string }) => void;
+  onAddBookmark?: () => void;
 }
 
 const Browser: React.FC<BrowserProps> = React.memo(({
@@ -49,7 +53,10 @@ const Browser: React.FC<BrowserProps> = React.memo(({
   onReload,
   onHome,
   onRetryLoad,
-  searchBarRef
+  searchBarRef,
+  showBookmarksBar = false,
+  onBookmarkClick,
+  onAddBookmark
 }) => {
   const { colors } = useTheme();
   const activeTab = tabs.find(tab => tab.id === activeTabId);
@@ -62,6 +69,12 @@ const Browser: React.FC<BrowserProps> = React.memo(({
         onTabClick={onTabClick}
         onTabClose={onTabClose}
         onNewTab={onNewTab}
+      />
+      
+      <BookmarksBar
+        visible={showBookmarksBar}
+        onBookmarkClick={onBookmarkClick || (() => {})}
+        onAddBookmark={onAddBookmark}
       />
       
       <BrowserToolbar

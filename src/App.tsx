@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { SafeAreaView, StyleSheet, View } from 'react-native';
 import { Browser } from './components/organisms';
 import KeyboardShortcutsHelp from './components/organisms/KeyboardShortcutsHelp';
+import { DownloadsPage, HistoryPage, BookmarksPage } from './components';
 import { KeyboardShortcuts } from './services/KeyboardShortcuts';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 
@@ -25,6 +26,8 @@ const AppContent: React.FC = React.memo(() => {
   const [url, setUrl] = useState<string>(HOME_URL);
   const [closedTabs, setClosedTabs] = useState<Tab[]>([]);
   const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
+  const [currentPage, setCurrentPage] = useState<'browser' | 'downloads' | 'history' | 'bookmarks'>('browser');
+  const [showBookmarksBar, setShowBookmarksBar] = useState(true);
   const searchBarRef = useRef<any>(null);
 
   const activeTab = tabs.find(tab => tab.id === activeTabId);
@@ -99,20 +102,16 @@ const AppContent: React.FC = React.memo(() => {
         reload();
       },
       onBookmarkPage: () => {
-        // TODO: Implement bookmark functionality
-        console.log('Bookmark page functionality not yet implemented');
+        setCurrentPage('bookmarks');
       },
       onToggleBookmarksBar: () => {
-        // TODO: Implement bookmarks bar toggle
-        console.log('Toggle bookmarks bar functionality not yet implemented');
+        setShowBookmarksBar(prev => !prev);
       },
       onOpenHistory: () => {
-        // TODO: Implement history functionality
-        console.log('Open history functionality not yet implemented');
+        setCurrentPage('history');
       },
       onOpenDownloads: () => {
-        // TODO: Implement downloads functionality
-        console.log('Open downloads functionality not yet implemented');
+        setCurrentPage('downloads');
       },
       onViewPageSource: () => {
         // TODO: Implement view page source functionality
@@ -357,25 +356,76 @@ const AppContent: React.FC = React.memo(() => {
     );
   };
 
+  const handleDownloadAction = (action: string, downloadId: string) => {
+    console.log('Download action:', action, downloadId);
+  };
+
+  const handleHistoryAction = (action: string, historyId: string, data?: any) => {
+    console.log('History action:', action, historyId, data);
+    if (action === 'open' || action === 'newTab') {
+      // Navigate to the history item URL
+      const historyItem = { url: 'https://example.com' }; // This would come from actual history data
+      setUrl(historyItem.url);
+      setCurrentPage('browser');
+    }
+  };
+
+  const handleBookmarkAction = (action: string, bookmarkId: string, data?: any) => {
+    console.log('Bookmark action:', action, bookmarkId, data);
+    if (action === 'open' || action === 'newTab') {
+      // Navigate to the bookmark URL
+      const bookmark = { url: 'https://example.com' }; // This would come from actual bookmark data
+      setUrl(bookmark.url);
+      setCurrentPage('browser');
+    }
+  };
+
+  const handleBookmarkBarClick = (bookmark: { id: string; title: string; url: string; favicon?: string }) => {
+    setUrl(bookmark.url);
+    setCurrentPage('browser');
+  };
+
+  const handleAddBookmark = () => {
+    setCurrentPage('bookmarks');
+  };
+
+  const renderCurrentPage = () => {
+    switch (currentPage) {
+      case 'downloads':
+        return <DownloadsPage onDownloadAction={handleDownloadAction} />;
+      case 'history':
+        return <HistoryPage onHistoryAction={handleHistoryAction} />;
+      case 'bookmarks':
+        return <BookmarksPage onBookmarkAction={handleBookmarkAction} />;
+      default:
+        return (
+          <Browser
+            tabs={tabs}
+            activeTabId={activeTabId}
+            url={url}
+            onUrlChange={setUrl}
+            onNavigate={handleNavigate}
+            onKeyPress={handleKeyPress}
+            onTabClick={switchTab}
+            onTabClose={closeTab}
+            onNewTab={addNewTab}
+            onBack={goBack}
+            onForward={goForward}
+            onReload={reload}
+            onHome={goHome}
+            onRetryLoad={retryLoad}
+            searchBarRef={searchBarRef}
+            showBookmarksBar={showBookmarksBar}
+            onBookmarkClick={handleBookmarkBarClick}
+            onAddBookmark={handleAddBookmark}
+          />
+        );
+    }
+  };
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <Browser
-        tabs={tabs}
-        activeTabId={activeTabId}
-        url={url}
-        onUrlChange={setUrl}
-        onNavigate={handleNavigate}
-        onKeyPress={handleKeyPress}
-        onTabClick={switchTab}
-        onTabClose={closeTab}
-        onNewTab={addNewTab}
-        onBack={goBack}
-        onForward={goForward}
-        onReload={reload}
-        onHome={goHome}
-        onRetryLoad={retryLoad}
-        searchBarRef={searchBarRef}
-      />
+      {renderCurrentPage()}
       <KeyboardShortcutsHelp
         visible={showShortcutsHelp}
         onClose={() => setShowShortcutsHelp(false)}

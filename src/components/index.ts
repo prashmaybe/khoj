@@ -14,3 +14,6 @@ export { ErrorPage } from './ErrorPages';
 export { default as HomePage } from './pages/HomePage';
 export { default as AboutPage } from './pages/AboutPage';
 export { default as SettingsPage } from './pages/SettingsPage';
+export { default as DownloadsPage } from './pages/DownloadsPage';
+export { default as HistoryPage } from './pages/HistoryPage';
+export { default as BookmarksPage } from './pages/BookmarksPage';
