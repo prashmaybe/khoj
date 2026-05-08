@@ -14,7 +14,7 @@ interface TabProps {
   showCloseButton?: boolean;
 }
 
-const Tab: React.FC<TabProps> = ({
+const Tab: React.FC<TabProps> = React.memo(({
   id,
   title,
   faviconUrl,
@@ -55,7 +55,7 @@ const Tab: React.FC<TabProps> = ({
       )}
     </TouchableOpacity>
   );
-};
+});
 
 const styles = StyleSheet.create({
   tab: {

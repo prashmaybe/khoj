@@ -11,7 +11,7 @@ interface NavigationControlsProps {
   disabled?: boolean;
 }
 
-const NavigationControls: React.FC<NavigationControlsProps> = ({
+const NavigationControls: React.FC<NavigationControlsProps> = React.memo(({
   onBack,
   onForward,
   onReload,
@@ -57,7 +57,7 @@ const NavigationControls: React.FC<NavigationControlsProps> = ({
       </Button>
     </>
   );
-};
+});
 
 const styles = StyleSheet.create({
   navigationControls: {

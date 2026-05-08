@@ -6,7 +6,7 @@ interface ErrorTestProps {
   onClose: () => void;
 }
 
-const ErrorTest: React.FC<ErrorTestProps> = ({ onClose }) => {
+const ErrorTest: React.FC<ErrorTestProps> = React.memo(({ onClose }) => {
   const [selectedError, setSelectedError] = useState<{ code: number; description: string; url: string } | null>(null);
 
   const errorScenarios = [
@@ -75,7 +75,7 @@ const ErrorTest: React.FC<ErrorTestProps> = ({ onClose }) => {
       </View>
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   errorTestContainer: {

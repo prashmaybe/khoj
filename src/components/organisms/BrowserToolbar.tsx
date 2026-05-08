@@ -16,7 +16,7 @@ interface BrowserToolbarProps {
   searchBarRef?: React.RefObject<any>;
 }
 
-const BrowserToolbar: React.FC<BrowserToolbarProps> = ({
+const BrowserToolbar: React.FC<BrowserToolbarProps> = React.memo(({
   url,
   onUrlChange,
   onNavigate,
@@ -49,7 +49,7 @@ const BrowserToolbar: React.FC<BrowserToolbarProps> = ({
       />
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   browserToolbar: {

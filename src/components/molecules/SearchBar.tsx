@@ -12,7 +12,7 @@ interface SearchBarProps {
   disabled?: boolean;
 }
 
-const SearchBar = forwardRef<any, SearchBarProps>(({
+const SearchBar = React.memo(forwardRef<any, SearchBarProps>(({
   value,
   onChange,
   onNavigate,
@@ -46,7 +46,7 @@ const SearchBar = forwardRef<any, SearchBarProps>(({
       </View>
     </View>
   );
-});
+}));
 
 const styles = StyleSheet.create({
   urlBar: {

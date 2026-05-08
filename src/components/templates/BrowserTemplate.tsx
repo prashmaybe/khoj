@@ -6,13 +6,13 @@ interface BrowserTemplateProps {
   children?: React.ReactNode;
 }
 
-const BrowserTemplate: React.FC<BrowserTemplateProps> = ({ children }) => {
+const BrowserTemplate: React.FC<BrowserTemplateProps> = React.memo(({ children }) => {
   return (
     <View style={styles.browserTemplate}>
       {children}
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   browserTemplate: {

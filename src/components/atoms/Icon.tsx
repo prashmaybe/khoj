@@ -7,7 +7,7 @@ interface IconProps {
   style?: any;
 }
 
-const Icon: React.FC<IconProps> = ({ name, size = 'medium', style }) => {
+const Icon: React.FC<IconProps> = React.memo(({ name, size = 'medium', style }) => {
   const getIconStyle = () => {
     const baseStyle = styles.icon;
     
@@ -25,7 +25,7 @@ const Icon: React.FC<IconProps> = ({ name, size = 'medium', style }) => {
   };
 
   return <Text style={getIconStyle()}>{name}</Text>;
-};
+});
 
 const styles = StyleSheet.create({
   icon: {

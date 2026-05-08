@@ -17,7 +17,7 @@ interface Tab {
 
 const HOME_URL = 'khoj://home';
 
-const App: React.FC = () => {
+const App: React.FC = React.memo(() => {
   const [tabs, setTabs] = useState<Tab[]>([]);
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
   const [url, setUrl] = useState<string>(HOME_URL);
@@ -380,7 +380,7 @@ const App: React.FC = () => {
       />
     </SafeAreaView>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {

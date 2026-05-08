@@ -10,7 +10,7 @@ interface ButtonProps {
   style?: ViewStyle;
 }
 
-const Button: React.FC<ButtonProps> = ({ 
+const Button: React.FC<ButtonProps> = React.memo(({ 
   variant = 'primary', 
   size = 'medium', 
   children, 
@@ -72,7 +72,7 @@ const Button: React.FC<ButtonProps> = ({
       <Text style={getTextStyle()}>{children}</Text>
     </TouchableOpacity>
   );
-};
+});
 
 const styles = StyleSheet.create({
   button: {

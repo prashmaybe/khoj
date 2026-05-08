@@ -19,13 +19,13 @@ interface HomePageProps {
   onRetryLoad: () => void;
 }
 
-const HomePage: React.FC<HomePageProps> = (props) => {
+const HomePage: React.FC<HomePageProps> = React.memo((props) => {
   return (
     <View style={styles.homePage}>
       <Browser {...props} />
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   homePage: {

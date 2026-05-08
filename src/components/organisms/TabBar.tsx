@@ -18,7 +18,7 @@ interface TabBarProps {
   onNewTab: () => void;
 }
 
-const TabBar: React.FC<TabBarProps> = ({
+const TabBar: React.FC<TabBarProps> = React.memo(({
   tabs,
   activeTabId,
   onTabClick,
@@ -40,12 +40,12 @@ const TabBar: React.FC<TabBarProps> = ({
           showCloseButton={tabs.length > 1}
         />
       ))}
-      <Button style={styles.newTabButton} onClick={onNewTab}>
+      <Button style={styles.newTabButton} onPress={onNewTab}>
         +
       </Button>
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   tabBar: {

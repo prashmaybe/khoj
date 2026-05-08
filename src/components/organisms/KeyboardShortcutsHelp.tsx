@@ -7,7 +7,7 @@ interface KeyboardShortcutsHelpProps {
   onClose: () => void;
 }
 
-const KeyboardShortcutsHelp: React.FC<KeyboardShortcutsHelpProps> = ({ visible, onClose }) => {
+const KeyboardShortcutsHelp: React.FC<KeyboardShortcutsHelpProps> = React.memo(({ visible, onClose }) => {
   const [shortcuts] = useState(() => {
     const ks = new KeyboardShortcuts({});
     return ks.getAllShortcuts();
@@ -45,7 +45,7 @@ const KeyboardShortcutsHelp: React.FC<KeyboardShortcutsHelpProps> = ({ visible, 
       </View>
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   overlay: {

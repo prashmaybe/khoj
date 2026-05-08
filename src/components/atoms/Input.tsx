@@ -12,7 +12,7 @@ interface InputProps {
   onKeyPress?: (e: any) => void;
 }
 
-const Input = forwardRef<any, InputProps>(({ 
+const Input = React.memo(forwardRef<any, InputProps>(({ 
   variant = 'default', 
   inputSize = 'medium', 
   style,
@@ -49,7 +49,7 @@ const Input = forwardRef<any, InputProps>(({
       {...props}
     />
   );
-});
+}));
 
 const styles = StyleSheet.create({
   input: {

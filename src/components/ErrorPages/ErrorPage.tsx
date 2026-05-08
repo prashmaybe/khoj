@@ -8,7 +8,7 @@ interface ErrorPageProps {
   onRetry?: () => void;
 }
 
-const ErrorPage: React.FC<ErrorPageProps> = ({ 
+const ErrorPage: React.FC<ErrorPageProps> = React.memo(({ 
   errorCode, 
   errorDescription, 
   url, 
@@ -152,7 +152,7 @@ const ErrorPage: React.FC<ErrorPageProps> = ({
       </View>
     </ScrollView>
   );
-};
+});
 
 const styles = StyleSheet.create({
   errorPage: {

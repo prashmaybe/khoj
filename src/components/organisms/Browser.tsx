@@ -33,7 +33,7 @@ interface BrowserProps {
   searchBarRef?: React.RefObject<any>;
 }
 
-const Browser: React.FC<BrowserProps> = ({
+const Browser: React.FC<BrowserProps> = React.memo(({
   tabs,
   activeTabId,
   url,
@@ -101,7 +101,7 @@ const Browser: React.FC<BrowserProps> = ({
       </View>
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   browser: {
