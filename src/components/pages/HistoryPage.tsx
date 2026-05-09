@@ -78,15 +78,16 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ onHistoryAction }) => {
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'today' | 'week' | 'month'>('all');
 
   const handleHistoryAction = (historyId: string, action: 'open' | 'delete' | 'copy' | 'newTab') => {
+    const item = history.find(entry => entry.id === historyId);
     switch (action) {
       case 'open':
-        onHistoryAction?.('open', historyId);
+        onHistoryAction?.('open', historyId, item);
         break;
       case 'newTab':
-        onHistoryAction?.('newTab', historyId);
+        onHistoryAction?.('newTab', historyId, item);
         break;
       case 'copy':
-        onHistoryAction?.('copy', historyId);
+        onHistoryAction?.('copy', historyId, item);
         break;
       case 'delete':
         Alert.alert(

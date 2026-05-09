@@ -167,13 +167,13 @@ const AppContent: React.FC = React.memo(() => {
   }, [tabs, activeTabId, closedTabs, url]);
 
   
-  const createTab = async (tabId?: string, initialUrl?: string) => {
+  const createTab = async (tabId?: string, initialUrl?: string, initialTitle?: string) => {
     const newTabId = tabId || Date.now().toString();
     const targetUrl = initialUrl || HOME_URL;
     
     const newTab: Tab = {
       id: newTabId,
-      title: targetUrl === HOME_URL ? 'New Tab' : 'New Tab',
+      title: initialTitle || (targetUrl === HOME_URL ? 'New Tab' : targetUrl),
       url: targetUrl,
       faviconUrl: null,
       isLoading: false,
@@ -219,59 +219,47 @@ const AppContent: React.FC = React.memo(() => {
     return `https://www.google.com/search?q=${encodedQuery}`;
   };
 
+  const navigateCurrentTab = (targetUrl: string, title?: string) => {
+    if (!activeTabId) return;
+
+    setTabs(prevTabs =>
+      prevTabs.map(tab =>
+        tab.id === activeTabId
+          ? {
+              ...tab,
+              url: targetUrl,
+              title: title || targetUrl,
+              hasError: false,
+              errorCode: undefined,
+              errorDescription: undefined,
+            }
+          : tab
+      )
+    );
+    setUrl(targetUrl);
+    setCurrentPage('browser');
+  };
+
   const handleNavigate = async () => {
     if (!activeTabId) return;
     
     let formattedUrl = url.trim();
     if (formattedUrl === HOME_URL) {
-      setTabs(prevTabs => 
-        prevTabs.map(tab => 
-          tab.id === activeTabId ? { ...tab, url: HOME_URL } : tab
-        )
-      );
-      setUrl(HOME_URL);
+      navigateCurrentTab(HOME_URL, 'New Tab');
       return;
     }
     
     // Check if this is a search query
     if (isSearchQuery(formattedUrl)) {
       const searchUrl = createGoogleSearchUrl(formattedUrl);
-      setTabs(prevTabs => 
-        prevTabs.map(tab => 
-          tab.id === activeTabId 
-            ? { 
-                ...tab, 
-                url: searchUrl, 
-                title: formattedUrl,
-                hasError: false,
-                errorCode: undefined,
-                errorDescription: undefined
-              }
-            : tab
-        )
-      );
-      setUrl(searchUrl);
+      navigateCurrentTab(searchUrl, formattedUrl);
     } else {
       // It's a URL, format it properly
       if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
         formattedUrl = 'https://' + formattedUrl;
       }
-      
-      setTabs(prevTabs => 
-        prevTabs.map(tab => 
-          tab.id === activeTabId 
-            ? { 
-                ...tab, 
-                url: formattedUrl, 
-                title: formattedUrl,
-                hasError: false,
-                errorCode: undefined,
-                errorDescription: undefined
-              }
-            : tab
-        )
-      );
-      setUrl(formattedUrl);
+
+      navigateCurrentTab(formattedUrl, formattedUrl);
     }
   };
 
@@ -329,12 +317,7 @@ const AppContent: React.FC = React.memo(() => {
 
   const goHome = async () => {
     if (!activeTabId) return;
-    setTabs(prevTabs => 
-      prevTabs.map(tab => 
-        tab.id === activeTabId ? { ...tab, url: HOME_URL } : tab
-      )
-    );
-    setUrl(HOME_URL);
+    navigateCurrentTab(HOME_URL, 'New Tab');
   };
 
   const retryLoad = async () => {
@@ -362,27 +345,44 @@ const AppContent: React.FC = React.memo(() => {
 
   const handleHistoryAction = (action: string, historyId: string, data?: any) => {
     console.log('History action:', action, historyId, data);
-    if (action === 'open' || action === 'newTab') {
-      // Navigate to the history item URL
-      const historyItem = { url: 'https://example.com' }; // This would come from actual history data
-      setUrl(historyItem.url);
-      setCurrentPage('browser');
+    if (action === 'open') {
+      const historyUrl = typeof data?.url === 'string' ? data.url : '';
+      if (historyUrl) {
+        navigateCurrentTab(historyUrl, data?.title);
+      }
+      return;
+    }
+
+    if (action === 'newTab') {
+      const historyUrl = typeof data?.url === 'string' ? data.url : '';
+      if (historyUrl) {
+        createTab(undefined, historyUrl, data?.title);
+        setCurrentPage('browser');
+      }
     }
   };
 
   const handleBookmarkAction = (action: string, bookmarkId: string, data?: any) => {
     console.log('Bookmark action:', action, bookmarkId, data);
-    if (action === 'open' || action === 'newTab') {
-      // Navigate to the bookmark URL
-      const bookmark = { url: 'https://example.com' }; // This would come from actual bookmark data
-      setUrl(bookmark.url);
-      setCurrentPage('browser');
+    if (action === 'open') {
+      const bookmarkUrl = typeof data?.url === 'string' ? data.url : '';
+      if (bookmarkUrl) {
+        navigateCurrentTab(bookmarkUrl, data?.title);
+      }
+      return;
+    }
+
+    if (action === 'newTab') {
+      const bookmarkUrl = typeof data?.url === 'string' ? data.url : '';
+      if (bookmarkUrl) {
+        createTab(undefined, bookmarkUrl, data?.title);
+        setCurrentPage('browser');
+      }
     }
   };
 
   const handleBookmarkBarClick = (bookmark: { id: string; title: string; url: string; favicon?: string }) => {
-    setUrl(bookmark.url);
-    setCurrentPage('browser');
+    navigateCurrentTab(bookmark.url, bookmark.title);
   };
 
   const handleAddBookmark = () => {

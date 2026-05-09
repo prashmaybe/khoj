@@ -94,18 +94,19 @@ const BookmarksPage: React.FC<BookmarksPageProps> = ({ onBookmarkAction }) => {
   const [newBookmark, setNewBookmark] = useState({ title: '', url: '', folder: 'Development' });
 
   const handleBookmarkAction = (bookmarkId: string, action: 'open' | 'edit' | 'delete' | 'copy' | 'newTab') => {
+    const item = bookmarks.find(entry => entry.id === bookmarkId);
     switch (action) {
       case 'open':
-        onBookmarkAction?.('open', bookmarkId);
+        onBookmarkAction?.('open', bookmarkId, item);
         break;
       case 'newTab':
-        onBookmarkAction?.('newTab', bookmarkId);
+        onBookmarkAction?.('newTab', bookmarkId, item);
         break;
       case 'copy':
-        onBookmarkAction?.('copy', bookmarkId);
+        onBookmarkAction?.('copy', bookmarkId, item);
         break;
       case 'edit':
-        onBookmarkAction?.('edit', bookmarkId);
+        onBookmarkAction?.('edit', bookmarkId, item);
         break;
       case 'delete':
         Alert.alert(
