@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, FlatList } from 'react-native';
 import ErrorPage from './ErrorPage';
-import { Icon } from '../atoms';
+import { Icon } from '../../atoms';
 
 interface ErrorTestProps {
   onClose: () => void;

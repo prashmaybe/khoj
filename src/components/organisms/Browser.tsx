@@ -174,7 +174,6 @@ const styles = StyleSheet.create({
   },
   iframe: {
     borderWidth: 0,
-    borderStyle: 'none',
     position: 'absolute',
     left: 0,
     top: 0,
@@ -182,7 +181,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     width: '100%',
     height: '100%',
-    display: 'block',
   },
   contentPlaceholder: {
     flex: 1,

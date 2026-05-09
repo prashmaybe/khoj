@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-import { useTheme } from '../../contexts/ThemeContext';
-import { Icon } from '../atoms';
+import { useTheme } from '../../../contexts/ThemeContext';
+import { Icon } from '../../atoms';
 
 interface ErrorPageProps {
   errorCode: number;

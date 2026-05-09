@@ -8,7 +8,7 @@ export { Tab, NavigationControls, SearchBar } from './molecules';
 export { TabBar, BrowserToolbar, Browser } from './organisms';
 
 // Error Pages
-export { ErrorPage } from './ErrorPages';
+export { ErrorPage } from './pages/ErrorPages';
 
 // Pages
 export { default as HomePage } from './pages/HomePage';
