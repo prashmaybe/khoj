@@ -117,7 +117,7 @@
           ]
         }
       ],
-      "icon": "assets/icon.ico",
+      "icon": "assets/khoj_platform_assets/windows/khoj.ico",
       "requestedExecutionLevel": "asInvoker",
       "publisherName": "Khoj"
     },

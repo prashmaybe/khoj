@@ -2,7 +2,7 @@ module.exports = {
   packagerConfig: {
     name: 'Khoj Browser',
     executableName: 'khoj-browser',
-    icon: 'assets/icon',
+    icon: 'assets/khoj_platform_assets/windows/khoj',
     extraResource: [
       'assets'
     ],
@@ -23,7 +23,7 @@ module.exports = {
         name: 'khoj_browser',
         authors: 'Khoj Team',
         description: 'Cross-platform browser application',
-        iconUrl: 'https://raw.githubusercontent.com/prashmaybe/khoj/main/assets/icon.ico'
+        iconUrl: 'https://raw.githubusercontent.com/prashmaybe/khoj/main/assets/khoj_platform_assets/windows/khoj.ico'
       }
     },
     {
