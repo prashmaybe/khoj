@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import TabBar from './TabBar';
@@ -61,6 +61,57 @@ const Browser: React.FC<BrowserProps> = React.memo(({
   const { colors } = useTheme();
   const activeTab = tabs.find(tab => tab.id === activeTabId);
   const isHomeTab = activeTab?.url.startsWith('khoj://');
+  const isElectronRuntime = typeof window !== 'undefined' && !!window.electronAPI;
+  const embedContainerRef = useRef<HTMLDivElement | null>(null);
+  const embedRef = useRef<any>(null);
+  const webviewStyle: React.CSSProperties = {
+    border: 'none',
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
+    minHeight: '100%',
+    display: 'block',
+  };
+
+  useEffect(() => {
+    const applyEmbedSize = () => {
+      const container = embedContainerRef.current;
+      const embed = embedRef.current as HTMLElement | null;
+      if (!container || !embed) return;
+
+      const rect = container.getBoundingClientRect();
+      const height = Math.max(0, Math.floor(rect.height));
+      if (height === 0) return;
+
+      embed.style.setProperty('height', `${height}px`, 'important');
+      embed.style.setProperty('min-height', `${height}px`, 'important');
+      embed.style.setProperty('max-height', `${height}px`, 'important');
+      embed.style.setProperty('width', '100%', 'important');
+      embed.style.setProperty('display', 'block', 'important');
+
+      // Best-effort fix: when available, force the internal guest iframe to fill host height.
+      const shadowRoot = (embed as any).shadowRoot as ShadowRoot | null;
+      const guestFrame = shadowRoot?.querySelector('iframe') as HTMLIFrameElement | null;
+      if (guestFrame) {
+        guestFrame.style.setProperty('height', '100%', 'important');
+        guestFrame.style.setProperty('min-height', '100%', 'important');
+        guestFrame.style.setProperty('width', '100%', 'important');
+        guestFrame.style.setProperty('display', 'block', 'important');
+      }
+    };
+
+    applyEmbedSize();
+    const delayed = window.setTimeout(applyEmbedSize, 100);
+    window.addEventListener('resize', applyEmbedSize);
+    return () => {
+      window.clearTimeout(delayed);
+      window.removeEventListener('resize', applyEmbedSize);
+    };
+  }, [activeTab?.id, activeTab?.url, isElectronRuntime]);
 
   return (
     <View style={styles.browser}>
@@ -146,12 +197,23 @@ const Browser: React.FC<BrowserProps> = React.memo(({
             </View>
           </View>
         ) : (
-          <View style={styles.iframeWrap}>
-            <iframe
-              title={activeTab.title || activeTab.url}
-              src={activeTab.url}
-              style={styles.iframe as any}
-            />
+          <View style={styles.iframeWrap} ref={embedContainerRef as any}>
+            {isElectronRuntime ? (
+              <webview
+                key={activeTab.id}
+                src={activeTab.url}
+                ref={embedRef}
+                style={webviewStyle as any}
+                allowpopups={true}
+              />
+            ) : (
+              <iframe
+                title={activeTab.title || activeTab.url}
+                src={activeTab.url}
+                ref={embedRef}
+                style={webviewStyle as any}
+              />
+            )}
           </View>
         )}
       </View>
@@ -162,25 +224,19 @@ const Browser: React.FC<BrowserProps> = React.memo(({
 const styles = StyleSheet.create({
   browser: {
     flex: 1,
+    height: '100%',
   },
   browserContent: {
     flex: 1,
     minHeight: 0,
+    height: '100%',
   },
   iframeWrap: {
     flex: 1,
     minHeight: 0,
     position: 'relative',
-  },
-  iframe: {
-    borderWidth: 0,
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    right: 0,
-    bottom: 0,
-    width: '100%',
-    height: '100%',
+    display: 'flex',
+    overflow: 'hidden',
   },
   contentPlaceholder: {
     flex: 1,

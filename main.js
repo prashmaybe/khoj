@@ -105,6 +105,7 @@ function createWindow() {
             contextIsolation: true,
             webSecurity: true,
             allowRunningInsecureContent: false,
+            webviewTag: true,
             preload: preloadPath,
         },
     });

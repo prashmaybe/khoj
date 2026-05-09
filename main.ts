@@ -202,6 +202,7 @@ function createWindow(): void {
       contextIsolation: true,
       webSecurity: true,
       allowRunningInsecureContent: false,
+      webviewTag: true,
       preload: preloadPath,
     },
   });
