@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Image, FlatList, TextInput } from 'react-native';
+import { Icon } from '../atoms';
 
 interface HistoryItem {
   id: string;
   title: string;
   url: string;
-  favicon?: string;
+  icon?: string;
   visitCount: number;
   lastVisited: string;
   timestamp: number;
@@ -21,7 +22,7 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ onHistoryAction }) => {
       id: '1',
       title: 'React Native Documentation',
       url: 'https://reactnative.dev/docs/getting-started',
-      favicon: '📱',
+      icon: 'globe',
       visitCount: 12,
       lastVisited: '2026-05-08 16:45',
       timestamp: 1715179500000
@@ -30,7 +31,7 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ onHistoryAction }) => {
       id: '2',
       title: 'GitHub - prashmaybe/khoj',
       url: 'https://github.com/prashmaybe/khoj',
-      favicon: '🐙',
+      icon: 'globe',
       visitCount: 8,
       lastVisited: '2026-05-08 15:30',
       timestamp: 1715175000000
@@ -39,7 +40,7 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ onHistoryAction }) => {
       id: '3',
       title: 'TypeScript Handbook',
       url: 'https://www.typescriptlang.org/docs/handbook/intro.html',
-      favicon: '📘',
+      icon: 'globe',
       visitCount: 5,
       lastVisited: '2026-05-08 14:20',
       timestamp: 1715170800000
@@ -48,7 +49,7 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ onHistoryAction }) => {
       id: '4',
       title: 'Electron Documentation',
       url: 'https://www.electronjs.org/docs/latest',
-      favicon: '⚡',
+      icon: 'globe',
       visitCount: 3,
       lastVisited: '2026-05-08 13:15',
       timestamp: 1715166900000
@@ -57,7 +58,7 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ onHistoryAction }) => {
       id: '5',
       title: 'Stack Overflow - React Native',
       url: 'https://stackoverflow.com/questions/tagged/react-native',
-      favicon: '📚',
+      icon: 'globe',
       visitCount: 7,
       lastVisited: '2026-05-08 12:00',
       timestamp: 1715162400000
@@ -66,7 +67,7 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ onHistoryAction }) => {
       id: '6',
       title: 'MDN Web Docs',
       url: 'https://developer.mozilla.org/en-US/',
-      favicon: '🌐',
+      icon: 'globe',
       visitCount: 15,
       lastVisited: '2026-05-08 11:30',
       timestamp: 1715160600000
@@ -194,7 +195,7 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ onHistoryAction }) => {
         onPress={() => handleHistoryAction(item.id, 'open')}
       >
         <View style={styles.faviconContainer}>
-          <Text style={styles.favicon}>{item.favicon || '🌐'}</Text>
+          <Icon name={item.icon || 'globe'} size="small" />
         </View>
         <View style={styles.historyInfo}>
           <Text style={styles.pageTitle} numberOfLines={1}>{item.title}</Text>
@@ -209,19 +210,19 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ onHistoryAction }) => {
           style={styles.actionButton} 
           onPress={() => handleHistoryAction(item.id, 'newTab')}
         >
-          <Text style={styles.actionButtonText}>🪟</Text>
+          <Icon name="open" />
         </TouchableOpacity>
         <TouchableOpacity 
           style={styles.actionButton} 
           onPress={() => handleHistoryAction(item.id, 'copy')}
         >
-          <Text style={styles.actionButtonText}>📋</Text>
+          <Icon name="copy" />
         </TouchableOpacity>
         <TouchableOpacity 
           style={styles.actionButton} 
           onPress={() => handleHistoryAction(item.id, 'delete')}
         >
-          <Text style={styles.actionButtonText}>🗑️</Text>
+          <Icon name="trash" />
         </TouchableOpacity>
       </View>
     </View>
@@ -245,7 +246,9 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ onHistoryAction }) => {
 
       <View style={styles.searchSection}>
         <View style={styles.searchContainer}>
-          <Text style={styles.searchIcon}>🔍</Text>
+          <View style={styles.searchIcon}>
+            <Icon name="search" size="small" />
+          </View>
           <TextInput
             style={styles.searchInput}
             placeholder="Search history..."
@@ -363,9 +366,12 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   searchIcon: {
-    fontSize: 16,
+    width: 16,
+    height: 16,
     marginRight: 10,
     color: '#7f8c8d',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   searchInput: {
     flex: 1,
@@ -441,9 +447,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 12,
   },
-  favicon: {
-    fontSize: 16,
-  },
   historyInfo: {
     flex: 1,
   },
@@ -474,9 +477,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: 8,
-  },
-  actionButtonText: {
-    fontSize: 14,
   },
   emptyState: {
     alignItems: 'center',

@@ -28,7 +28,7 @@ const NavigationControls: React.FC<NavigationControlsProps> = React.memo(({
           size="medium"
           disabled={disabled}
         >
-          <Icon name="←" />
+          <Icon name="arrow-back" />
         </Button>
         <Button
           onPress={onForward}
@@ -36,7 +36,7 @@ const NavigationControls: React.FC<NavigationControlsProps> = React.memo(({
           size="medium"
           disabled={disabled}
         >
-          <Icon name="→" />
+          <Icon name="arrow-forward" />
         </Button>
         <Button
           onPress={onReload}
@@ -44,7 +44,7 @@ const NavigationControls: React.FC<NavigationControlsProps> = React.memo(({
           size="medium"
           disabled={disabled}
         >
-          <Icon name="↻" />
+          <Icon name="refresh" />
         </Button>
       </View>
       <Button
@@ -54,7 +54,7 @@ const NavigationControls: React.FC<NavigationControlsProps> = React.memo(({
         disabled={disabled}
         style={styles.homeButton}
       >
-        <Icon name="⌂" />
+        <Icon name="home" />
       </Button>
       <ThemeToggle style={styles.themeToggle} />
     </>

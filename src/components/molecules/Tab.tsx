@@ -1,6 +1,5 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
-import { Button } from '../atoms';
 import { Icon } from '../atoms';
 import { useTheme } from '../../contexts/ThemeContext';
 
@@ -72,7 +71,7 @@ const Tab: React.FC<TabProps> = React.memo(({
           onPress={handleClose}
           style={getCloseStyle()}
         >
-          <Text style={[styles.closeText, { color: colors.textSecondary }]}>×</Text>
+          <Icon name="close" />
         </TouchableOpacity>
       )}
     </TouchableOpacity>
@@ -85,13 +84,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     paddingHorizontal: 10,
-    paddingVertical: 7,
-    borderWidth: 1,
+    paddingVertical: 8,
+    borderWidth: 0,
     minWidth: 140,
     maxWidth: 240,
-    borderRadius: 10,
-    borderTopLeftRadius: 10,
-    borderTopRightRadius: 10,
+    borderRadius: 12,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
     shadowRadius: 1,
@@ -131,9 +130,6 @@ const styles = StyleSheet.create({
     height: 22,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  closeText: {
-    fontSize: 14,
   },
 });
 

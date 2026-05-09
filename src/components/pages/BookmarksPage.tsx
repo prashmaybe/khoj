@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Image, FlatList, TextInput } from 'react-native';
+import { Icon } from '../atoms';
 
 interface BookmarkItem {
   id: string;
   title: string;
   url: string;
-  favicon?: string;
+  icon?: string;
   folder: string;
   dateAdded: string;
   tags: string[];
@@ -28,7 +29,7 @@ const BookmarksPage: React.FC<BookmarksPageProps> = ({ onBookmarkAction }) => {
       id: '1',
       title: 'React Native Documentation',
       url: 'https://reactnative.dev/docs/getting-started',
-      favicon: '📱',
+      icon: 'globe',
       folder: 'Development',
       dateAdded: '2026-05-08',
       tags: ['react', 'mobile', 'documentation']
@@ -37,7 +38,7 @@ const BookmarksPage: React.FC<BookmarksPageProps> = ({ onBookmarkAction }) => {
       id: '2',
       title: 'GitHub - prashmaybe/khoj',
       url: 'https://github.com/prashmaybe/khoj',
-      favicon: '🐙',
+      icon: 'globe',
       folder: 'Development',
       dateAdded: '2026-05-07',
       tags: ['github', 'browser', 'project']
@@ -46,7 +47,7 @@ const BookmarksPage: React.FC<BookmarksPageProps> = ({ onBookmarkAction }) => {
       id: '3',
       title: 'TypeScript Handbook',
       url: 'https://www.typescriptlang.org/docs/handbook/intro.html',
-      favicon: '📘',
+      icon: 'globe',
       folder: 'Learning',
       dateAdded: '2026-05-06',
       tags: ['typescript', 'programming', 'handbook']
@@ -55,7 +56,7 @@ const BookmarksPage: React.FC<BookmarksPageProps> = ({ onBookmarkAction }) => {
       id: '4',
       title: 'Electron Documentation',
       url: 'https://www.electronjs.org/docs/latest',
-      favicon: '⚡',
+      icon: 'globe',
       folder: 'Development',
       dateAdded: '2026-05-05',
       tags: ['electron', 'desktop', 'documentation']
@@ -64,7 +65,7 @@ const BookmarksPage: React.FC<BookmarksPageProps> = ({ onBookmarkAction }) => {
       id: '5',
       title: 'Stack Overflow',
       url: 'https://stackoverflow.com/',
-      favicon: '📚',
+      icon: 'globe',
       folder: 'Resources',
       dateAdded: '2026-05-04',
       tags: ['programming', 'qa', 'community']
@@ -73,7 +74,7 @@ const BookmarksPage: React.FC<BookmarksPageProps> = ({ onBookmarkAction }) => {
       id: '6',
       title: 'MDN Web Docs',
       url: 'https://developer.mozilla.org/en-US/',
-      favicon: '🌐',
+      icon: 'globe',
       folder: 'Resources',
       dateAdded: '2026-05-03',
       tags: ['web', 'documentation', 'reference']
@@ -81,10 +82,10 @@ const BookmarksPage: React.FC<BookmarksPageProps> = ({ onBookmarkAction }) => {
   ]);
 
   const [folders] = useState<BookmarkFolder[]>([
-    { id: '1', name: 'All Bookmarks', color: '#3498db', icon: '📂' },
-    { id: '2', name: 'Development', color: '#27ae60', icon: '💻' },
-    { id: '3', name: 'Learning', color: '#f39c12', icon: '📖' },
-    { id: '4', name: 'Resources', color: '#9b59b6', icon: '🔗' },
+    { id: '1', name: 'All Bookmarks', color: '#3498db', icon: 'folder' },
+    { id: '2', name: 'Development', color: '#27ae60', icon: 'laptop' },
+    { id: '3', name: 'Learning', color: '#f39c12', icon: 'reader' },
+    { id: '4', name: 'Resources', color: '#9b59b6', icon: 'globe' },
   ]);
 
   const [selectedFolder, setSelectedFolder] = useState('All Bookmarks');
@@ -174,7 +175,7 @@ const BookmarksPage: React.FC<BookmarksPageProps> = ({ onBookmarkAction }) => {
         onPress={() => handleBookmarkAction(item.id, 'open')}
       >
         <View style={styles.faviconContainer}>
-          <Text style={styles.favicon}>{item.favicon || '🌐'}</Text>
+          <Icon name={item.icon || 'globe'} size="small" />
         </View>
         <View style={styles.bookmarkInfo}>
           <Text style={styles.bookmarkTitle} numberOfLines={1}>{item.title}</Text>
@@ -199,25 +200,25 @@ const BookmarksPage: React.FC<BookmarksPageProps> = ({ onBookmarkAction }) => {
           style={styles.actionButton} 
           onPress={() => handleBookmarkAction(item.id, 'newTab')}
         >
-          <Text style={styles.actionButtonText}>🪟</Text>
+          <Icon name="open" />
         </TouchableOpacity>
         <TouchableOpacity 
           style={styles.actionButton} 
           onPress={() => handleBookmarkAction(item.id, 'copy')}
         >
-          <Text style={styles.actionButtonText}>📋</Text>
+          <Icon name="copy" />
         </TouchableOpacity>
         <TouchableOpacity 
           style={styles.actionButton} 
           onPress={() => handleBookmarkAction(item.id, 'edit')}
         >
-          <Text style={styles.actionButtonText}>✏️</Text>
+          <Icon name="pencil" />
         </TouchableOpacity>
         <TouchableOpacity 
           style={styles.actionButton} 
           onPress={() => handleBookmarkAction(item.id, 'delete')}
         >
-          <Text style={styles.actionButtonText}>🗑️</Text>
+          <Icon name="trash" />
         </TouchableOpacity>
       </View>
     </View>
@@ -233,7 +234,9 @@ const BookmarksPage: React.FC<BookmarksPageProps> = ({ onBookmarkAction }) => {
       ]}
       onPress={() => setSelectedFolder(folder.name)}
     >
-      <Text style={styles.folderIcon}>{folder.icon}</Text>
+      <View style={styles.folderIcon}>
+        <Icon name={folder.icon} size="small" />
+      </View>
       <Text style={[
         styles.folderButtonText,
         selectedFolder === folder.name && styles.folderButtonTextActive
@@ -267,7 +270,10 @@ const BookmarksPage: React.FC<BookmarksPageProps> = ({ onBookmarkAction }) => {
           style={styles.addButton}
           onPress={() => setShowAddBookmark(true)}
         >
-          <Text style={styles.addButtonText}>+ Add</Text>
+          <View style={styles.addButtonRow}>
+            <Icon name="add" size="small" />
+            <Text style={styles.addButtonText}>Add</Text>
+          </View>
         </TouchableOpacity>
       </View>
 
@@ -281,7 +287,9 @@ const BookmarksPage: React.FC<BookmarksPageProps> = ({ onBookmarkAction }) => {
         <View style={styles.mainContent}>
           <View style={styles.searchSection}>
             <View style={styles.searchContainer}>
-              <Text style={styles.searchIcon}>🔍</Text>
+              <View style={styles.searchIcon}>
+                <Icon name="search" size="small" />
+              </View>
               <TextInput
                 style={styles.searchInput}
                 placeholder="Search bookmarks..."
@@ -422,6 +430,11 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 6,
   },
+  addButtonRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   addButtonText: {
     color: '#ffffff',
     fontSize: 14,
@@ -450,8 +463,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8f9fa',
   },
   folderIcon: {
-    fontSize: 16,
+    width: 16,
+    height: 16,
     marginRight: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   folderButtonText: {
     flex: 1,
@@ -489,9 +505,12 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   searchIcon: {
-    fontSize: 16,
+    width: 16,
+    height: 16,
     marginRight: 10,
     color: '#7f8c8d',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   searchInput: {
     flex: 1,
@@ -529,9 +548,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 12,
     marginTop: 2,
-  },
-  favicon: {
-    fontSize: 16,
   },
   bookmarkInfo: {
     flex: 1,
@@ -595,9 +611,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: 4,
-  },
-  actionButtonText: {
-    fontSize: 12,
   },
   emptyState: {
     alignItems: 'center',

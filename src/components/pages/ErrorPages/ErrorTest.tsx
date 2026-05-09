@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, FlatList } from 'react-native';
 import ErrorPage from './ErrorPage';
+import { Icon } from '../atoms';
 
 interface ErrorTestProps {
   onClose: () => void;
@@ -26,10 +27,16 @@ const ErrorTest: React.FC<ErrorTestProps> = React.memo(({ onClose }) => {
       <View style={styles.errorTestContainer}>
         <View style={styles.errorTestHeader}>
           <TouchableOpacity onPress={() => setSelectedError(null)} style={styles.backToTests}>
-            <Text style={styles.backToTestsText}>← Back to Error Tests</Text>
+            <View style={styles.backToTestsRow}>
+              <Icon name="arrow-back" size="small" style={{ color: '#1a73e8' }} />
+              <Text style={styles.backToTestsText}>Back to Error Tests</Text>
+            </View>
           </TouchableOpacity>
           <TouchableOpacity onPress={onClose} style={styles.closeTest}>
-            <Text style={styles.closeTestText}>× Close</Text>
+            <View style={styles.closeRow}>
+              <Icon name="close" />
+              <Text style={styles.closeTestText}>Close</Text>
+            </View>
           </TouchableOpacity>
         </View>
         <ErrorPage
@@ -59,7 +66,7 @@ const ErrorTest: React.FC<ErrorTestProps> = React.memo(({ onClose }) => {
       <View style={styles.errorTestHeader}>
         <Text style={styles.title}>Browser Error Page Tests</Text>
         <TouchableOpacity onPress={onClose} style={styles.closeTest}>
-          <Text style={styles.closeTestText}>×</Text>
+          <Icon name="close" />
         </TouchableOpacity>
       </View>
       <View style={styles.errorScenarios}>
@@ -93,12 +100,22 @@ const styles = StyleSheet.create({
   backToTests: {
     padding: 8,
   },
+  backToTestsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   backToTestsText: {
     fontSize: 14,
     color: '#1a73e8',
   },
   closeTest: {
     padding: 8,
+  },
+  closeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   closeTestText: {
     fontSize: 18,

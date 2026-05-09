@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
+import { Icon } from '../atoms';
 
 interface ErrorPageProps {
   errorCode: number;
@@ -21,7 +22,7 @@ const ErrorPage: React.FC<ErrorPageProps> = React.memo(({
     switch (code) {
       case -105: // ERR_NAME_NOT_RESOLVED
         return {
-          icon: '🌐',
+          icon: 'globe',
           title: "This site can't be reached",
           description: "The server at " + url + " can't be found because the DNS lookup failed.",
           suggestions: [
@@ -32,7 +33,7 @@ const ErrorPage: React.FC<ErrorPageProps> = React.memo(({
         };
       case -106: // ERR_INTERNET_DISCONNECTED
         return {
-          icon: '📡',
+          icon: 'globe',
           title: "No internet",
           description: "You are not connected to the internet. Check your network connection and try again.",
           suggestions: [
@@ -43,7 +44,7 @@ const ErrorPage: React.FC<ErrorPageProps> = React.memo(({
         };
       case -107: // ERR_SSL_PROTOCOL_ERROR
         return {
-          icon: '🔒',
+          icon: 'lock',
           title: "Your connection is not private",
           description: "Attackers might be trying to steal your information from " + url,
           suggestions: [
@@ -54,7 +55,7 @@ const ErrorPage: React.FC<ErrorPageProps> = React.memo(({
         };
       case -108: // ERR_CONNECTION_TIMED_OUT
         return {
-          icon: '⏰',
+          icon: 'globe',
           title: "Request Timeout",
           description: "The server at " + url + " took too long to respond.",
           suggestions: [
@@ -65,7 +66,7 @@ const ErrorPage: React.FC<ErrorPageProps> = React.memo(({
         };
       case -109: // ERR_CONNECTION_REFUSED
         return {
-          icon: '🚫',
+          icon: 'globe',
           title: "This site can't be reached",
           description: "The connection to " + url + " was refused.",
           suggestions: [
@@ -76,7 +77,7 @@ const ErrorPage: React.FC<ErrorPageProps> = React.memo(({
         };
       case -310: // ERR_TOO_MANY_REDIRECTS
         return {
-          icon: '🔄',
+          icon: 'refresh',
           title: "This page isn't working",
           description: url + " redirected you too many times.",
           suggestions: [
@@ -87,7 +88,7 @@ const ErrorPage: React.FC<ErrorPageProps> = React.memo(({
         };
       case -6: // ERR_FILE_NOT_FOUND
         return {
-          icon: '📁',
+          icon: 'globe',
           title: "File not found",
           description: "The file at " + url + " could not be found.",
           suggestions: [
@@ -98,7 +99,7 @@ const ErrorPage: React.FC<ErrorPageProps> = React.memo(({
         };
       case -10: // ERR_ACCESS_DENIED
         return {
-          icon: '🔐',
+          icon: 'lock',
           title: "Access denied",
           description: "You don't have permission to access " + url,
           suggestions: [
@@ -109,7 +110,7 @@ const ErrorPage: React.FC<ErrorPageProps> = React.memo(({
         };
       default:
         return {
-          icon: '⚠️',
+          icon: 'globe',
           title: "Something went wrong",
           description: errorDescription || "An unexpected error occurred while loading " + url,
           suggestions: [
@@ -126,7 +127,9 @@ const ErrorPage: React.FC<ErrorPageProps> = React.memo(({
   return (
     <ScrollView style={[styles.errorPage, { backgroundColor: colors.background }]}>
       <View style={styles.errorContainer}>
-        <Text style={styles.errorIcon}>{errorDetails.icon}</Text>
+        <View style={styles.errorIcon}>
+          <Icon name={errorDetails.icon} size="large" />
+        </View>
         <Text style={[styles.errorTitle, { color: colors.text }]}>{errorDetails.title}</Text>
         <Text style={[styles.errorDescription, { color: colors.textSecondary }]}>{errorDetails.description}</Text>
         
@@ -168,8 +171,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   errorIcon: {
-    fontSize: 64,
+    width: 64,
+    height: 64,
     marginBottom: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   errorTitle: {
     fontSize: 24,

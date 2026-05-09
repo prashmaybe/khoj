@@ -31,7 +31,7 @@ const SearchBar = React.memo(forwardRef<any, SearchBarProps>(({
         { backgroundColor: colors.inputBackground, borderColor: colors.borderSecondary },
         isLoading && { opacity: 0.7 }
       ]}>
-        <Icon name="🔒" style={[styles.omniboxLock, { color: colors.textSecondary }]} />
+        <Icon name="lock" style={[styles.omniboxLock, { color: colors.textSecondary }]} />
         <Input
           ref={ref}
           value={value}
@@ -48,7 +48,7 @@ const SearchBar = React.memo(forwardRef<any, SearchBarProps>(({
           disabled={disabled || isLoading}
           style={styles.navigateButton}
         >
-          {isLoading ? '⟳' : '→'}
+          <Icon name={isLoading ? 'refresh' : 'arrow-forward'} />
         </Button>
       </View>
     </View>

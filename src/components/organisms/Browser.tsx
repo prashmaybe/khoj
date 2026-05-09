@@ -4,7 +4,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import TabBar from './TabBar';
 import BrowserToolbar from './BrowserToolbar';
 import BookmarksBar from './BookmarksBar';
-import { ErrorPage } from '../ErrorPages';
+import { ErrorPage } from '../pages/ErrorPages';
 
 interface TabData {
   id: string;
@@ -146,11 +146,13 @@ const Browser: React.FC<BrowserProps> = React.memo(({
             </View>
           </View>
         ) : (
-          <iframe
-            title={activeTab.title || activeTab.url}
-            src={activeTab.url}
-            style={{ border: 'none', width: '100%', height: '100%' }}
-          />
+          <View style={styles.iframeWrap}>
+            <iframe
+              title={activeTab.title || activeTab.url}
+              src={activeTab.url}
+              style={styles.iframe as any}
+            />
+          </View>
         )}
       </View>
     </View>
@@ -163,6 +165,24 @@ const styles = StyleSheet.create({
   },
   browserContent: {
     flex: 1,
+    minHeight: 0,
+  },
+  iframeWrap: {
+    flex: 1,
+    minHeight: 0,
+    position: 'relative',
+  },
+  iframe: {
+    borderWidth: 0,
+    borderStyle: 'none',
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    height: '100%',
+    display: 'block',
   },
   contentPlaceholder: {
     flex: 1,

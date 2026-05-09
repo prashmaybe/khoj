@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
+import { Icon } from '../atoms';
 
 interface BookmarkItem {
   id: string;
   title: string;
   url: string;
-  favicon?: string;
+  icon?: string;
 }
 
 interface BookmarksBarProps {
@@ -31,37 +32,37 @@ const BookmarksBar: React.FC<BookmarksBarProps> = ({
       id: '1',
       title: 'React Native',
       url: 'https://reactnative.dev',
-      favicon: '📱'
+      icon: 'globe'
     },
     {
       id: '2',
       title: 'GitHub',
       url: 'https://github.com',
-      favicon: '🐙'
+      icon: 'globe'
     },
     {
       id: '3',
       title: 'Stack Overflow',
       url: 'https://stackoverflow.com',
-      favicon: '📚'
+      icon: 'globe'
     },
     {
       id: '4',
       title: 'MDN Web Docs',
       url: 'https://developer.mozilla.org',
-      favicon: '🌐'
+      icon: 'globe'
     },
     {
       id: '5',
       title: 'TypeScript',
       url: 'https://www.typescriptlang.org',
-      favicon: '📘'
+      icon: 'globe'
     },
     {
       id: '6',
       title: 'Electron',
       url: 'https://www.electronjs.org',
-      favicon: '⚡'
+      icon: 'globe'
     }
   ]);
 
@@ -129,7 +130,9 @@ const BookmarksBar: React.FC<BookmarksBarProps> = ({
       onPressIn={() => setHoveredBookmark(bookmark.id)}
       onPressOut={() => setHoveredBookmark(null)}
     >
-      <Text style={styles.favicon}>{bookmark.favicon || '🌐'}</Text>
+      <View style={styles.favicon}>
+        <Icon name={bookmark.icon || 'globe'} size="small" />
+      </View>
       <Text 
         style={[
           styles.bookmarkText,
@@ -147,7 +150,7 @@ const BookmarksBar: React.FC<BookmarksBarProps> = ({
   }
 
   return (
-    <View style={[styles.container, { borderBottomColor: colors.border }]}>
+    <View style={[styles.container, { borderBottomColor: colors.border, backgroundColor: colors.toolbar }]}>
       <ScrollView 
         horizontal 
         showsHorizontalScrollIndicator={false}
@@ -168,7 +171,9 @@ const BookmarksBar: React.FC<BookmarksBarProps> = ({
           onPressIn={() => setHoveredBookmark('add')}
           onPressOut={() => setHoveredBookmark(null)}
         >
-          <Text style={styles.addIcon}>+</Text>
+          <View style={styles.addIcon}>
+            <Icon name="add" size="small" />
+          </View>
           <Text 
             style={[
               styles.bookmarkText,
@@ -188,9 +193,7 @@ const BookmarksBar: React.FC<BookmarksBarProps> = ({
 
         {/* More Bookmarks Indicator */}
         <TouchableOpacity style={styles.moreBookmarks}>
-          <Text style={[styles.moreText, { color: colors.textSecondary }]}>
-            »
-          </Text>
+          <Icon name="ellipsis" size="medium" style={{ color: colors.textSecondary }} />
         </TouchableOpacity>
       </ScrollView>
     </View>
@@ -201,7 +204,6 @@ const styles = StyleSheet.create({
   container: {
     height: 32,
     borderBottomWidth: 1,
-    backgroundColor: '#ffffff',
   },
   scrollContent: {
     alignItems: 'center',
@@ -221,17 +223,22 @@ const styles = StyleSheet.create({
     minWidth: 80,
   },
   favicon: {
-    fontSize: 12,
-    marginRight: 4,
+    width: 14,
+    height: 14,
+    marginRight: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   bookmarkText: {
     fontSize: 11,
     fontWeight: '500',
   },
   addIcon: {
-    fontSize: 14,
-    marginRight: 4,
-    color: '#7f8c8d',
+    width: 14,
+    height: 14,
+    marginRight: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   addText: {
     fontStyle: 'italic',
@@ -244,10 +251,6 @@ const styles = StyleSheet.create({
   moreBookmarks: {
     paddingHorizontal: 8,
     paddingVertical: 4,
-  },
-  moreText: {
-    fontSize: 16,
-    fontWeight: 'bold',
   },
 });
 

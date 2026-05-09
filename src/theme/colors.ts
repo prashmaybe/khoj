@@ -71,12 +71,13 @@ export const lightColors: ColorPalette = {
   borderFocus: '#6b46c1',
   
   // Button colors
+  // Keep brand color for primary actions, but make browser chrome neutral.
   buttonPrimary: '#6b46c1',
   buttonPrimaryText: '#ffffff',
   buttonSecondary: '#fafbff',
   buttonSecondaryText: '#1a1a2e',
-  buttonNav: 'rgba(107, 70, 193, 0.05)',
-  buttonNavText: 'rgba(107, 70, 193, 0.8)',
+  buttonNav: 'rgba(60, 64, 67, 0.08)',
+  buttonNavText: '#3c4043',
   
   // Input colors
   inputBackground: '#ffffff',
@@ -90,11 +91,11 @@ export const lightColors: ColorPalette = {
   success: '#10b981',
   info: '#3b82f6',
   
-  // Navigation colors
-  tabBar: '#fafbff',
-  toolbar: '#ffffff',
-  activeTab: '#6b46c1',
-  inactiveTab: 'rgba(107, 70, 193, 0.3)',
+  // Navigation colors (Chrome-like)
+  tabBar: '#f1f3f4',
+  toolbar: '#f1f3f4',
+  activeTab: '#ffffff',
+  inactiveTab: '#e8eaed',
   
   // Shadow colors
   shadow: 'rgba(107, 70, 193, 0.15)',
@@ -129,8 +130,8 @@ export const darkColors: ColorPalette = {
   buttonPrimaryText: '#0f0f0f',
   buttonSecondary: '#16213e',
   buttonSecondaryText: '#ffffff',
-  buttonNav: 'rgba(167, 139, 250, 0.1)',
-  buttonNavText: 'rgba(167, 139, 250, 0.8)',
+  buttonNav: 'rgba(232, 234, 237, 0.10)',
+  buttonNavText: '#e8eaed',
   
   // Input colors
   inputBackground: '#16213e',
@@ -144,11 +145,11 @@ export const darkColors: ColorPalette = {
   success: '#34d399',
   info: '#60a5fa',
   
-  // Navigation colors
-  tabBar: '#1a1a2e',
-  toolbar: '#16213e',
-  activeTab: '#a78bfa',
-  inactiveTab: 'rgba(167, 139, 250, 0.3)',
+  // Navigation colors (Chrome-like)
+  tabBar: '#202124',
+  toolbar: '#202124',
+  activeTab: '#303134',
+  inactiveTab: '#202124',
   
   // Shadow colors
   shadow: 'rgba(167, 139, 250, 0.25)',

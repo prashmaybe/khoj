@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { KeyboardShortcuts } from '../../services/KeyboardShortcuts';
+import { Icon } from '../atoms';
 
 interface KeyboardShortcutsHelpProps {
   visible: boolean;
@@ -23,7 +24,7 @@ const KeyboardShortcutsHelp: React.FC<KeyboardShortcutsHelpProps> = React.memo((
         <View style={styles.header}>
           <Text style={styles.title}>Keyboard Shortcuts</Text>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <Text style={styles.closeButtonText}>×</Text>
+            <Icon name="close" />
           </TouchableOpacity>
         </View>
         

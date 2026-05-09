@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Tab } from '../molecules';
-import { Button } from '../atoms';
+import { Button, Icon } from '../atoms';
 import { useTheme } from '../../contexts/ThemeContext';
 
 interface TabData {
@@ -44,7 +44,7 @@ const TabBar: React.FC<TabBarProps> = React.memo(({
         />
       ))}
       <Button style={styles.newTabButton} onPress={onNewTab}>
-        +
+        <Icon name="add" />
       </Button>
     </View>
   );
@@ -53,15 +53,16 @@ const TabBar: React.FC<TabBarProps> = React.memo(({
 const styles = StyleSheet.create({
   tabBar: {
     flexDirection: 'row',
-    paddingVertical: 8,
-    paddingHorizontal: 4,
+    alignItems: 'flex-end',
+    paddingVertical: 6,
+    paddingHorizontal: 8,
     borderBottomWidth: 1,
   },
   newTabButton: {
-    marginLeft: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 4,
+    marginLeft: 6,
+    width: 32,
+    height: 28,
+    borderRadius: 999,
     justifyContent: 'center',
     alignItems: 'center',
   },
