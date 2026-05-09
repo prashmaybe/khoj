@@ -301,18 +301,39 @@ const AppContent: React.FC = React.memo(() => {
   };
 
   const goBack = () => {
-    // Navigation history would need to be implemented for React Native
-    console.log('Go back functionality');
+    if (!activeTabId) return;
+    
+    // Check if running in Electron
+    if (typeof window !== 'undefined' && window.electronAPI) {
+      window.electronAPI.goBack(activeTabId);
+    } else {
+      // For React Native, would need to implement WebView navigation history
+      console.log('Go back functionality - React Native implementation needed');
+    }
   };
 
   const goForward = () => {
-    // Navigation history would need to be implemented for React Native
-    console.log('Go forward functionality');
+    if (!activeTabId) return;
+    
+    // Check if running in Electron
+    if (typeof window !== 'undefined' && window.electronAPI) {
+      window.electronAPI.goForward(activeTabId);
+    } else {
+      // For React Native, would need to implement WebView navigation history
+      console.log('Go forward functionality - React Native implementation needed');
+    }
   };
 
   const reload = () => {
-    // WebView reload would need to be implemented for React Native
-    console.log('Reload functionality');
+    if (!activeTabId) return;
+    
+    // Check if running in Electron
+    if (typeof window !== 'undefined' && window.electronAPI) {
+      window.electronAPI.reload(activeTabId);
+    } else {
+      // For React Native, would need to implement WebView reload
+      console.log('Reload functionality - React Native implementation needed');
+    }
   };
 
   const goHome = async () => {
