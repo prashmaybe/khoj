@@ -10,6 +10,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   goBack: (tabId: string) => ipcRenderer.invoke('go-back', tabId),
   goForward: (tabId: string) => ipcRenderer.invoke('go-forward', tabId),
   reload: (tabId: string) => ipcRenderer.invoke('reload', tabId),
+  toggleDevTools: () => ipcRenderer.invoke('toggle-devtools'),
   
   onTabLoading: (callback: (tabId: string) => void) => {
     ipcRenderer.on('tab-loading', (_, tabId) => callback(tabId));
@@ -42,6 +43,7 @@ declare global {
       goBack: (tabId: string) => Promise<void>;
       goForward: (tabId: string) => Promise<void>;
       reload: (tabId: string) => Promise<void>;
+      toggleDevTools: () => Promise<void>;
       
       onTabLoading: (callback: (tabId: string) => void) => void;
       onTabLoaded: (callback: (tabId: string, url: string) => void) => void;

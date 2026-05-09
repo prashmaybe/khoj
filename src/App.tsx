@@ -1,10 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { SafeAreaView, StyleSheet, View } from 'react-native';
-import { Browser } from './components/organisms';
-import KeyboardShortcutsHelp from './components/organisms/KeyboardShortcutsHelp';
-import { DownloadsPage, HistoryPage, BookmarksPage } from './components';
 import { KeyboardShortcuts } from './services/KeyboardShortcuts';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
+import { useOrganisms, ComponentsProvider } from './hooks';
 
 interface Tab {
   id: string;
@@ -18,15 +16,19 @@ interface Tab {
 }
 
 const HOME_URL = 'khoj://home';
+const DOWNLOADS_URL = 'khoj://downloads';
+const HISTORY_URL = 'khoj://history';
+const BOOKMARKS_URL = 'khoj://bookmarks';
+const NAV_EVENT_NAME = 'khoj-browser-nav-command';
 
 const AppContent: React.FC = React.memo(() => {
   const { colors } = useTheme();
+  const { Browser, KeyboardShortcutsHelp } = useOrganisms();
   const [tabs, setTabs] = useState<Tab[]>([]);
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
   const [url, setUrl] = useState<string>(HOME_URL);
   const [closedTabs, setClosedTabs] = useState<Tab[]>([]);
   const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
-  const [currentPage, setCurrentPage] = useState<'browser' | 'downloads' | 'history' | 'bookmarks'>('browser');
   const [showBookmarksBar, setShowBookmarksBar] = useState(true);
   const searchBarRef = useRef<any>(null);
 
@@ -102,24 +104,25 @@ const AppContent: React.FC = React.memo(() => {
         reload();
       },
       onBookmarkPage: () => {
-        setCurrentPage('bookmarks');
+        openInternalTab(BOOKMARKS_URL, 'Bookmarks');
       },
       onToggleBookmarksBar: () => {
         setShowBookmarksBar(prev => !prev);
       },
       onOpenHistory: () => {
-        setCurrentPage('history');
+        openInternalTab(HISTORY_URL, 'History');
       },
       onOpenDownloads: () => {
-        setCurrentPage('downloads');
+        openInternalTab(DOWNLOADS_URL, 'Downloads');
       },
       onViewPageSource: () => {
         // TODO: Implement view page source functionality
         console.log('View page source functionality not yet implemented');
       },
       onOpenDevTools: () => {
-        // TODO: Implement dev tools functionality
-        console.log('Open dev tools functionality not yet implemented');
+        if (typeof window !== 'undefined' && window.electronAPI) {
+          window.electronAPI.toggleDevTools();
+        }
       },
       
       // Editing & General
@@ -219,6 +222,16 @@ const AppContent: React.FC = React.memo(() => {
     return `https://www.google.com/search?q=${encodedQuery}`;
   };
 
+  const openInternalTab = (routeUrl: string, title: string) => {
+    const existingTab = tabs.find(tab => tab.url === routeUrl);
+    if (existingTab) {
+      switchTab(existingTab.id);
+      return;
+    }
+
+    createTab(undefined, routeUrl, title);
+  };
+
   const navigateCurrentTab = (targetUrl: string, title?: string) => {
     if (!activeTabId) return;
 
@@ -237,7 +250,6 @@ const AppContent: React.FC = React.memo(() => {
       )
     );
     setUrl(targetUrl);
-    setCurrentPage('browser');
   };
 
   const handleNavigate = async () => {
@@ -300,40 +312,28 @@ const AppContent: React.FC = React.memo(() => {
     }
   };
 
+  const dispatchNavCommand = (action: 'back' | 'forward' | 'reload') => {
+    if (!activeTabId || typeof window === 'undefined') return;
+    window.dispatchEvent(
+      new CustomEvent(NAV_EVENT_NAME, {
+        detail: { action, tabId: activeTabId },
+      })
+    );
+  };
+
   const goBack = () => {
     if (!activeTabId) return;
-    
-    // Check if running in Electron
-    if (typeof window !== 'undefined' && window.electronAPI) {
-      window.electronAPI.goBack(activeTabId);
-    } else {
-      // For React Native, would need to implement WebView navigation history
-      console.log('Go back functionality - React Native implementation needed');
-    }
+    dispatchNavCommand('back');
   };
 
   const goForward = () => {
     if (!activeTabId) return;
-    
-    // Check if running in Electron
-    if (typeof window !== 'undefined' && window.electronAPI) {
-      window.electronAPI.goForward(activeTabId);
-    } else {
-      // For React Native, would need to implement WebView navigation history
-      console.log('Go forward functionality - React Native implementation needed');
-    }
+    dispatchNavCommand('forward');
   };
 
   const reload = () => {
     if (!activeTabId) return;
-    
-    // Check if running in Electron
-    if (typeof window !== 'undefined' && window.electronAPI) {
-      window.electronAPI.reload(activeTabId);
-    } else {
-      // For React Native, would need to implement WebView reload
-      console.log('Reload functionality - React Native implementation needed');
-    }
+    dispatchNavCommand('reload');
   };
 
   const goHome = async () => {
@@ -378,7 +378,6 @@ const AppContent: React.FC = React.memo(() => {
       const historyUrl = typeof data?.url === 'string' ? data.url : '';
       if (historyUrl) {
         createTab(undefined, historyUrl, data?.title);
-        setCurrentPage('browser');
       }
     }
   };
@@ -397,7 +396,6 @@ const AppContent: React.FC = React.memo(() => {
       const bookmarkUrl = typeof data?.url === 'string' ? data.url : '';
       if (bookmarkUrl) {
         createTab(undefined, bookmarkUrl, data?.title);
-        setCurrentPage('browser');
       }
     }
   };
@@ -407,46 +405,34 @@ const AppContent: React.FC = React.memo(() => {
   };
 
   const handleAddBookmark = () => {
-    setCurrentPage('bookmarks');
-  };
-
-  const renderCurrentPage = () => {
-    switch (currentPage) {
-      case 'downloads':
-        return <DownloadsPage onDownloadAction={handleDownloadAction} />;
-      case 'history':
-        return <HistoryPage onHistoryAction={handleHistoryAction} />;
-      case 'bookmarks':
-        return <BookmarksPage onBookmarkAction={handleBookmarkAction} />;
-      default:
-        return (
-          <Browser
-            tabs={tabs}
-            activeTabId={activeTabId}
-            url={url}
-            onUrlChange={setUrl}
-            onNavigate={handleNavigate}
-            onKeyPress={handleKeyPress}
-            onTabClick={switchTab}
-            onTabClose={closeTab}
-            onNewTab={addNewTab}
-            onBack={goBack}
-            onForward={goForward}
-            onReload={reload}
-            onHome={goHome}
-            onRetryLoad={retryLoad}
-            searchBarRef={searchBarRef}
-            showBookmarksBar={showBookmarksBar}
-            onBookmarkClick={handleBookmarkBarClick}
-            onAddBookmark={handleAddBookmark}
-          />
-        );
-    }
+    openInternalTab(BOOKMARKS_URL, 'Bookmarks');
   };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      {renderCurrentPage()}
+      <Browser
+        tabs={tabs}
+        activeTabId={activeTabId}
+        url={url}
+        onUrlChange={setUrl}
+        onNavigate={handleNavigate}
+        onKeyPress={handleKeyPress}
+        onTabClick={switchTab}
+        onTabClose={closeTab}
+        onNewTab={addNewTab}
+        onBack={goBack}
+        onForward={goForward}
+        onReload={reload}
+        onHome={goHome}
+        onRetryLoad={retryLoad}
+        searchBarRef={searchBarRef}
+        showBookmarksBar={showBookmarksBar}
+        onBookmarkClick={handleBookmarkBarClick}
+        onAddBookmark={handleAddBookmark}
+        onDownloadAction={handleDownloadAction}
+        onHistoryAction={handleHistoryAction}
+        onBookmarkAction={handleBookmarkAction}
+      />
       <KeyboardShortcutsHelp
         visible={showShortcutsHelp}
         onClose={() => setShowShortcutsHelp(false)}
@@ -457,9 +443,11 @@ const AppContent: React.FC = React.memo(() => {
 
 const App: React.FC = () => {
   return (
-    <ThemeProvider>
-      <AppContent />
-    </ThemeProvider>
+    <ComponentsProvider>
+      <ThemeProvider>
+        <AppContent />
+      </ThemeProvider>
+    </ComponentsProvider>
   );
 };
 

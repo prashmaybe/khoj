@@ -5,6 +5,16 @@ import TabBar from './TabBar';
 import BrowserToolbar from './BrowserToolbar';
 import BookmarksBar from './BookmarksBar';
 import { ErrorPage } from '../pages/ErrorPages';
+import DownloadsPage from '../pages/DownloadsPage';
+import HistoryPage from '../pages/HistoryPage';
+import BookmarksPage from '../pages/BookmarksPage';
+
+const NAV_EVENT_NAME = 'khoj-browser-nav-command';
+
+interface BrowserNavCommandDetail {
+  action: 'back' | 'forward' | 'reload';
+  tabId: string;
+}
 
 interface TabData {
   id: string;
@@ -36,6 +46,9 @@ interface BrowserProps {
   showBookmarksBar?: boolean;
   onBookmarkClick?: (bookmark: { id: string; title: string; url: string; favicon?: string }) => void;
   onAddBookmark?: () => void;
+  onDownloadAction?: (action: string, downloadId: string) => void;
+  onHistoryAction?: (action: string, historyId: string, data?: any) => void;
+  onBookmarkAction?: (action: string, bookmarkId: string, data?: any) => void;
 }
 
 const Browser: React.FC<BrowserProps> = React.memo(({
@@ -56,11 +69,17 @@ const Browser: React.FC<BrowserProps> = React.memo(({
   searchBarRef,
   showBookmarksBar = false,
   onBookmarkClick,
-  onAddBookmark
+  onAddBookmark,
+  onDownloadAction,
+  onHistoryAction,
+  onBookmarkAction
 }) => {
   const { colors } = useTheme();
   const activeTab = tabs.find(tab => tab.id === activeTabId);
   const isHomeTab = activeTab?.url.startsWith('khoj://');
+  const isDownloadsTab = activeTab?.url === 'khoj://downloads';
+  const isHistoryTab = activeTab?.url === 'khoj://history';
+  const isBookmarksTab = activeTab?.url === 'khoj://bookmarks';
   const isElectronRuntime = typeof window !== 'undefined' && !!window.electronAPI;
   const embedContainerRef = useRef<HTMLDivElement | null>(null);
   const embedRef = useRef<any>(null);
@@ -112,6 +131,38 @@ const Browser: React.FC<BrowserProps> = React.memo(({
       window.removeEventListener('resize', applyEmbedSize);
     };
   }, [activeTab?.id, activeTab?.url, isElectronRuntime]);
+
+  useEffect(() => {
+    if (!isElectronRuntime || typeof window === 'undefined') return;
+
+    const handleNavCommand = (event: Event) => {
+      const customEvent = event as CustomEvent<BrowserNavCommandDetail>;
+      const command = customEvent.detail;
+      if (!command || command.tabId !== activeTabId) return;
+
+      const webview = embedRef.current as any;
+      if (!webview) return;
+
+      if (command.action === 'back' && typeof webview.canGoBack === 'function' && webview.canGoBack()) {
+        webview.goBack();
+        return;
+      }
+
+      if (command.action === 'forward' && typeof webview.canGoForward === 'function' && webview.canGoForward()) {
+        webview.goForward();
+        return;
+      }
+
+      if (command.action === 'reload' && typeof webview.reload === 'function') {
+        webview.reload();
+      }
+    };
+
+    window.addEventListener(NAV_EVENT_NAME, handleNavCommand as EventListener);
+    return () => {
+      window.removeEventListener(NAV_EVENT_NAME, handleNavCommand as EventListener);
+    };
+  }, [activeTabId, isElectronRuntime]);
 
   return (
     <View style={styles.browser}>
@@ -166,6 +217,12 @@ const Browser: React.FC<BrowserProps> = React.memo(({
               No tabs open
             </Text>
           </View>
+        ) : isDownloadsTab ? (
+          <DownloadsPage onDownloadAction={onDownloadAction} />
+        ) : isHistoryTab ? (
+          <HistoryPage onHistoryAction={onHistoryAction} />
+        ) : isBookmarksTab ? (
+          <BookmarksPage onBookmarkAction={onBookmarkAction} />
         ) : isHomeTab ? (
           <View style={[styles.contentPlaceholder, { backgroundColor: colors.background }]}>
             <View style={styles.tabInfo}>

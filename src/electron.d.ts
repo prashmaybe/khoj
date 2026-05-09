@@ -6,6 +6,7 @@ export interface ElectronAPI {
   goBack: (tabId: string) => Promise<void>;
   goForward: (tabId: string) => Promise<void>;
   reload: (tabId: string) => Promise<void>;
+  toggleDevTools: () => Promise<void>;
   
   onTabLoading: (callback: (tabId: string) => void) => void;
   onTabLoaded: (callback: (tabId: string, url: string) => void) => void;

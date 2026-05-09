@@ -347,6 +347,19 @@ function setupIpcHandlers() {
       view.webContents.reload();
     }
   });
+
+  ipcMain.handle('toggle-devtools', () => {
+    const activeView = activeViewId ? browserViews.get(activeViewId) : null;
+
+    if (activeView) {
+      activeView.webContents.toggleDevTools();
+      return;
+    }
+
+    if (mainWindow) {
+      mainWindow.webContents.toggleDevTools();
+    }
+  });
 }
 
 app.on('window-all-closed', () => {

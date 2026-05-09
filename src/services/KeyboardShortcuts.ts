@@ -173,6 +173,12 @@ export class KeyboardShortcuts {
       this.handlers.onReload?.();
       handled = true;
     }
+
+    // F12 for Developer Tools (common on Windows/Linux)
+    if (key === 'F12' && !modifierKey && !shiftKey && !altKey) {
+      this.handlers.onOpenDevTools?.();
+      handled = true;
+    }
     
     // F4 for close tab (Windows)
     if (key === 'F4' && !modifierKey && !shiftKey && !altKey && !this.isMac) {
@@ -254,6 +260,7 @@ export class KeyboardShortcuts {
       { shortcut: `${ctrl}+J`, description: 'Open downloads', category: 'Navigation' },
       { shortcut: `${ctrl}+U`, description: 'View page source', category: 'Navigation' },
       { shortcut: `${ctrl}+Shift+I`, description: 'Open Developer Tools', category: 'Navigation' },
+      { shortcut: 'F12', description: 'Open Developer Tools', category: 'Navigation' },
       
       // Editing & General
       { shortcut: `${ctrl}+F`, description: 'Find text', category: 'General' },
