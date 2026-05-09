@@ -1,13 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
-import TabBar from './TabBar';
-import BrowserToolbar from './BrowserToolbar';
-import BookmarksBar from './BookmarksBar';
-import { ErrorPage } from '../pages/ErrorPages';
-import DownloadsPage from '../pages/DownloadsPage';
-import HistoryPage from '../pages/HistoryPage';
-import BookmarksPage from '../pages/BookmarksPage';
+import { useOrganisms, useMolecules, usePages } from '../../hooks';
 
 const NAV_EVENT_NAME = 'khoj-browser-nav-command';
 
@@ -67,14 +61,16 @@ const Browser: React.FC<BrowserProps> = React.memo(({
   onHome,
   onRetryLoad,
   searchBarRef,
-  showBookmarksBar = false,
+  showBookmarksBar,
   onBookmarkClick,
   onAddBookmark,
   onDownloadAction,
   onHistoryAction,
-  onBookmarkAction
+  onBookmarkAction,
 }) => {
   const { colors } = useTheme();
+  const { TabBar, BrowserToolbar, BookmarksBar } = useOrganisms();
+  const { ErrorPage, DownloadsPage, HistoryPage, BookmarksPage } = usePages();
   const activeTab = tabs.find(tab => tab.id === activeTabId);
   const isHomeTab = activeTab?.url.startsWith('khoj://');
   const isDownloadsTab = activeTab?.url === 'khoj://downloads';
@@ -175,7 +171,7 @@ const Browser: React.FC<BrowserProps> = React.memo(({
       />
       
       <BookmarksBar
-        visible={showBookmarksBar}
+        visible={showBookmarksBar || false}
         onBookmarkClick={onBookmarkClick || (() => {})}
         onAddBookmark={onAddBookmark}
       />

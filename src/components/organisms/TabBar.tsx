@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Tab } from '../molecules';
-import { Button, Icon } from '../atoms';
+import { useMolecules, useAtoms } from '../../hooks';
 import { useTheme } from '../../contexts/ThemeContext';
 
 interface TabData {
@@ -27,6 +26,8 @@ const TabBar: React.FC<TabBarProps> = React.memo(({
   onNewTab
 }) => {
   const { colors } = useTheme();
+  const { Tab } = useMolecules();
+  const { Button, Icon } = useAtoms();
 
   return (
     <View style={[styles.tabBar, { backgroundColor: colors.tabBar, borderBottomColor: colors.border }]}>

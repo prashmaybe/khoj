@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Image, FlatList, TextInput } from 'react-native';
-import { Icon } from '../atoms';
+import { useAtoms } from '../../hooks';
+import { useTheme } from '../../contexts/ThemeContext';
 import { KHOJ_LOGO_DEFAULT } from '../../constants/logos';
 
 interface BookmarkItem {
@@ -22,9 +23,18 @@ interface BookmarkFolder {
 
 interface BookmarksPageProps {
   onBookmarkAction?: (action: string, bookmarkId: string, data?: any) => void;
+  onNavigateToBookmark?: (bookmarkId: string) => void;
+  onNewTab?: (bookmarkId: string) => void;
 }
 
-const BookmarksPage: React.FC<BookmarksPageProps> = ({ onBookmarkAction }) => {
+const BookmarksPage: React.FC<BookmarksPageProps> = ({
+  onBookmarkAction,
+  onNavigateToBookmark,
+  onNewTab,
+}) => {
+  const { colors } = useTheme();
+  const { Icon } = useAtoms();
+
   const [bookmarks, setBookmarks] = useState<BookmarkItem[]>([
     {
       id: '1',

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
-import { Icon } from '../atoms';
+import { useAtoms } from '../../hooks';
 
 interface BookmarkItem {
   id: string;
@@ -24,6 +24,7 @@ const BookmarksBar: React.FC<BookmarksBarProps> = ({
   onAddBookmark
 }) => {
   const { colors } = useTheme();
+  const { Icon } = useAtoms();
   const [hoveredBookmark, setHoveredBookmark] = useState<string | null>(null);
 
   // Sample bookmarks - in a real app, this would come from state/storage

@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
-import { Icon } from '../atoms';
+import { useAtoms } from '../../hooks';
 import { useTheme } from '../../contexts/ThemeContext';
 
 interface TabProps {
@@ -22,9 +22,10 @@ const Tab: React.FC<TabProps> = React.memo(({
   isLoading = false,
   onClick,
   onClose,
-  showCloseButton = false
+  showCloseButton = true,
 }) => {
   const { colors } = useTheme();
+  const { Icon } = useAtoms();
 
   const handlePress = () => {
     onClick();

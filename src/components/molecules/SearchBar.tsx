@@ -1,6 +1,6 @@
 import React, { forwardRef } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Input, Button, Icon } from '../atoms';
+import { useAtoms } from '../../hooks';
 import { useTheme } from '../../contexts/ThemeContext';
 
 interface SearchBarProps {
@@ -19,10 +19,11 @@ const SearchBar = React.memo(forwardRef<any, SearchBarProps>(({
   onNavigate,
   onKeyPress,
   isLoading = false,
-  placeholder = 'Search or type a URL',
+  placeholder = 'Enter URL or search...',
   disabled = false
 }, ref) => {
   const { colors } = useTheme();
+  const { Input, Button, Icon } = useAtoms();
 
   return (
     <View style={styles.urlBar}>

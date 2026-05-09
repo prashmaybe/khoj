@@ -1,8 +1,6 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Button } from '../atoms';
-import { Icon } from '../atoms';
-import ThemeToggle from '../atoms/ThemeToggle';
+import { useAtoms } from '../../hooks';
 
 interface NavigationControlsProps {
   onBack: () => void;
@@ -19,6 +17,7 @@ const NavigationControls: React.FC<NavigationControlsProps> = React.memo(({
   onHome,
   disabled = false
 }) => {
+  const { Button, Icon, ThemeToggle } = useAtoms();
   return (
     <>
       <View style={styles.navigationControls}>

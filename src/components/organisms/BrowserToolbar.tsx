@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { NavigationControls, SearchBar } from '../molecules';
+import { useMolecules } from '../../hooks';
 import { useTheme } from '../../contexts/ThemeContext';
 
 interface BrowserToolbarProps {
@@ -28,9 +28,10 @@ const BrowserToolbar: React.FC<BrowserToolbarProps> = React.memo(({
   onHome,
   isLoading = false,
   disabled = false,
-  searchBarRef
+  searchBarRef,
 }) => {
   const { colors } = useTheme();
+  const { NavigationControls, SearchBar } = useMolecules();
 
   return (
     <View style={[styles.browserToolbar, { backgroundColor: colors.toolbar, borderBottomColor: colors.border }]}>
