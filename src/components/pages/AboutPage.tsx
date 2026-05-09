@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, Image } from 'react-native';
+import { KHOJ_LOGO_LARGE } from '../../constants/logos';
 
 interface AboutPageProps {
   version?: string;
@@ -10,7 +11,7 @@ const AboutPage: React.FC<AboutPageProps> = ({ version = "0.0.1" }) => {
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
       <View style={styles.header}>
         <Image 
-          source={require('../../../assets/khoj_platform_assets/windows/khoj_128x128.png')} 
+          source={KHOJ_LOGO_LARGE}
           style={styles.logo}
           resizeMode="contain"
         />

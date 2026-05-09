@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Switch, TouchableOpacity, Alert, Image } from 'react-native';
 import { Input } from '../atoms';
+import { KHOJ_LOGO_DEFAULT } from '../../constants/logos';
 
 interface SettingsPageProps {
   onThemeChange?: (theme: 'light' | 'dark' | 'system') => void;
@@ -84,7 +85,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onThemeChange, onSettingsUp
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
       <View style={styles.header}>
         <Image 
-          source={require('../../../assets/khoj_platform_assets/windows/khoj_64x64.png')} 
+          source={KHOJ_LOGO_DEFAULT}
           style={styles.logo}
           resizeMode="contain"
         />

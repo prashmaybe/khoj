@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Image, FlatList } from 'react-native';
+import { KHOJ_LOGO_DEFAULT } from '../../constants/logos';
 
 interface DownloadItem {
   id: string;
@@ -253,7 +254,7 @@ const DownloadsPage: React.FC<DownloadsPageProps> = ({ onDownloadAction }) => {
     <View style={styles.container}>
       <View style={styles.header}>
         <Image 
-          source={require('../../../assets/khoj_platform_assets/windows/khoj_64x64.png')} 
+          source={KHOJ_LOGO_DEFAULT}
           style={styles.logo}
           resizeMode="contain"
         />

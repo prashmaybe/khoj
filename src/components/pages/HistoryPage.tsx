@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Image, FlatList, TextInput } from 'react-native';
 import { Icon } from '../atoms';
+import { KHOJ_LOGO_DEFAULT } from '../../constants/logos';
 
 interface HistoryItem {
   id: string;
@@ -235,7 +236,7 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ onHistoryAction }) => {
     <View style={styles.container}>
       <View style={styles.header}>
         <Image 
-          source={require('../../../assets/khoj_platform_assets/windows/khoj_64x64.png')} 
+          source={KHOJ_LOGO_DEFAULT}
           style={styles.logo}
           resizeMode="contain"
         />
