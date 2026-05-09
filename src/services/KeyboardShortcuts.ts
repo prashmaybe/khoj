@@ -211,7 +211,8 @@ export class KeyboardShortcuts {
     };
     
     let result = shortcut;
-    Object.entries(replacements).forEach(([from, to]) => {
+    Object.keys(replacements).forEach((from) => {
+      const to = replacements[from as keyof typeof replacements];
       result = result.replace(new RegExp(from, 'g'), to);
     });
     

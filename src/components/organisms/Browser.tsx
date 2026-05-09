@@ -60,6 +60,7 @@ const Browser: React.FC<BrowserProps> = React.memo(({
 }) => {
   const { colors } = useTheme();
   const activeTab = tabs.find(tab => tab.id === activeTabId);
+  const isHomeTab = activeTab?.url.startsWith('khoj://');
 
   return (
     <View style={styles.browser}>
@@ -99,47 +100,57 @@ const Browser: React.FC<BrowserProps> = React.memo(({
             url={activeTab.url}
             onRetry={onRetryLoad}
           />
-        ) : (
-          /* Content would be rendered by WebView in React Native */
+        ) : !activeTab ? (
           <View style={[styles.contentPlaceholder, { backgroundColor: colors.background }]}>
-            {activeTab ? (
-              <View style={styles.tabInfo}>
-                <Text style={[styles.text, { 
-                  color: colors.text, 
+            <Text
+              style={[
+                styles.text,
+                {
+                  color: colors.textSecondary,
                   fontSize: colors.fontSize.base,
                   fontFamily: colors.fontFamily,
-                  fontWeight: colors.fontWeight.medium
-                }]}>
-                  Active Tab: {activeTab.title}
-                </Text>
-                <Text style={[styles.text, { 
-                  color: colors.textSecondary, 
-                  fontSize: colors.fontSize.sm,
-                  fontFamily: colors.fontFamily
-                }]}>
-                  URL: {activeTab.url}
-                </Text>
-                {activeTab.isLoading && (
-                  <Text style={[styles.text, { 
-                    color: colors.buttonPrimary, 
+                },
+              ]}
+            >
+              No tabs open
+            </Text>
+          </View>
+        ) : isHomeTab ? (
+          <View style={[styles.contentPlaceholder, { backgroundColor: colors.background }]}>
+            <View style={styles.tabInfo}>
+              <Text
+                style={[
+                  styles.text,
+                  {
+                    color: colors.text,
+                    fontSize: 32,
+                    fontFamily: colors.fontFamily,
+                    fontWeight: '700',
+                  },
+                ]}
+              >
+                Khoj
+              </Text>
+              <Text
+                style={[
+                  styles.text,
+                  {
+                    color: colors.textSecondary,
                     fontSize: colors.fontSize.sm,
                     fontFamily: colors.fontFamily,
-                    fontWeight: colors.fontWeight.medium
-                  }]}>
-                    Loading...
-                  </Text>
-                )}
-              </View>
-            ) : (
-              <Text style={[styles.text, { 
-                color: colors.textSecondary, 
-                fontSize: colors.fontSize.base,
-                fontFamily: colors.fontFamily
-              }]}>
-                No tabs open
+                  },
+                ]}
+              >
+                Search or type a URL in the address bar to get started.
               </Text>
-            )}
+            </View>
           </View>
+        ) : (
+          <iframe
+            title={activeTab.title || activeTab.url}
+            src={activeTab.url}
+            style={{ border: 'none', width: '100%', height: '100%' }}
+          />
         )}
       </View>
     </View>
