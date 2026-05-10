@@ -522,6 +522,7 @@ const AppContent: React.FC = React.memo(() => {
         tabs={tabs}
         activeTabId={activeTabId}
         url={url}
+        bookmarks={bookmarks}
         onUrlChange={setUrl}
         onNavigate={handleNavigate}
         onKeyPress={handleKeyPress}

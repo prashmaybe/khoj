@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAtoms } from '../../hooks';
-import { preferencesStorage, BookmarkItem } from '../../services/PreferencesStorage';
+import { BookmarkItem } from '../../services/PreferencesStorage';
 
 interface BookmarksBarProps {
   visible: boolean;
+  bookmarks: BookmarkItem[];
   onBookmarkClick: (bookmark: BookmarkItem) => void;
   onBookmarkRightClick?: (bookmark: BookmarkItem) => void;
   onAddBookmark?: () => void;
@@ -13,6 +14,7 @@ interface BookmarksBarProps {
 
 const BookmarksBar: React.FC<BookmarksBarProps> = ({
   visible,
+  bookmarks,
   onBookmarkClick,
   onBookmarkRightClick,
   onAddBookmark
@@ -21,13 +23,8 @@ const BookmarksBar: React.FC<BookmarksBarProps> = ({
   const { Icon } = useAtoms();
   const [hoveredBookmark, setHoveredBookmark] = useState<string | null>(null);
 
-  const [bookmarks, setBookmarks] = useState<BookmarkItem[]>([]);
-
-  useEffect(() => {
-    // Load bookmarks from storage
-    const loadedBookmarks = preferencesStorage.loadBookmarks();
-    setBookmarks(loadedBookmarks.slice(0, 6)); // Show first 6 bookmarks in bar
-  }, []);
+  // Show first 6 bookmarks in bar
+  const displayBookmarks = bookmarks.slice(0, 6);
 
   const handleBookmarkPress = (bookmark: BookmarkItem) => {
     onBookmarkClick(bookmark);
@@ -152,7 +149,7 @@ const BookmarksBar: React.FC<BookmarksBarProps> = ({
         <View style={[styles.separator, { backgroundColor: colors.border }]} />
 
         {/* Bookmarks */}
-        {bookmarks.map(renderBookmark)}
+        {displayBookmarks.map(renderBookmark)}
 
         {/* More Bookmarks Indicator */}
         <TouchableOpacity style={styles.moreBookmarks}>

@@ -25,6 +25,7 @@ interface BrowserProps {
   tabs: TabData[];
   activeTabId: string | null;
   url: string;
+  bookmarks?: { id: string; title: string; url: string; favicon?: string }[];
   onUrlChange: (url: string) => void;
   onNavigate: () => void;
   onKeyPress: (e: React.KeyboardEvent) => void;
@@ -53,6 +54,7 @@ const Browser: React.FC<BrowserProps> = React.memo(({
   tabs,
   activeTabId,
   url,
+  bookmarks = [],
   onUrlChange,
   onNavigate,
   onKeyPress,
@@ -242,6 +244,7 @@ const Browser: React.FC<BrowserProps> = React.memo(({
       
       <BookmarksBar
         visible={showBookmarksBar || false}
+        bookmarks={bookmarks}
         onBookmarkClick={onBookmarkClick || (() => {})}
         onAddBookmark={onAddBookmark}
       />
