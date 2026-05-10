@@ -31,13 +31,13 @@ const DownloadsPage: React.FC<DownloadsPageProps> = ({ onDownloadAction }) => {
     },
     {
       id: '2',
-      filename: 'khoj-browser-source.zip',
+      filename: 'khoj-source.zip',
       url: 'https://github.com/prashmaybe/khoj/archive/main.zip',
       size: '15.7 MB',
       progress: 65,
       status: 'downloading',
       date: '2026-05-08 15:45',
-      filePath: '/Users/prash/Downloads/khoj-browser-source.zip'
+      filePath: '/Users/prash/Downloads/khoj-source.zip'
     },
     {
       id: '3',

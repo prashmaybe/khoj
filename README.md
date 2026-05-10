@@ -142,9 +142,9 @@ npm run dist               # Build current platform only
 npm install -g electron-packager
 
 # Package for specific platform
-electron-packager . khoj-browser --platform=win32 --arch=x64
-electron-packager . khoj-browser --platform=darwin --arch=x64
-electron-packager . khoj-browser --platform=linux --arch=x64
+electron-packager . khoj --platform=win32 --arch=x64
+electron-packager . khoj --platform=darwin --arch=x64
+electron-packager . khoj --platform=linux --arch=x64
 ```
 
 ### Build Outputs
@@ -152,23 +152,23 @@ electron-packager . khoj-browser --platform=linux --arch=x64
 #### Windows
 - **Location**: `dist/win/`
 - **Files**: 
-  - `Khoj Browser Setup x.x.x.exe` (NSIS installer)
-  - `khoj-browser-win32-x64/` (Portable version)
+  - `Khoj Setup x.x.x.exe` (NSIS installer)
+  - `khoj-win32-x64/` (Portable version)
 - **Architecture**: x64, ia32
 
 #### macOS
 - **Location**: `dist/mac/`
 - **Files**:
-  - `Khoj Browser-x.x.x.dmg` (DMG installer)
-  - `khoj-browser-mac-x64.zip` (ZIP archive)
+  - `Khoj-x.x.x.dmg` (DMG installer)
+  - `khoj-mac-x64.zip` (ZIP archive)
 - **Architecture**: x64, arm64 (Apple Silicon)
 
 #### Linux
 - **Location**: `dist/linux/`
 - **Files**:
-  - `khoj-browser-x.x.x.AppImage` (Portable AppImage)
-  - `khoj-browser_x.x.x_amd64.deb` (Debian/Ubuntu)
-  - `khoj-browser-x.x.x.x86_64.rpm` (RedHat/Fedora)
+  - `khoj-x.x.x.AppImage` (Portable AppImage)
+  - `khoj_x.x.x_amd64.deb` (Debian/Ubuntu)
+  - `khoj-x.x.x.x86_64.rpm` (RedHat/Fedora)
 - **Architecture**: x64
 
 #### Android

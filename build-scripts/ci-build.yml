@@ -1,7 +1,7 @@
-# GitHub Actions CI/CD Pipeline for Khoj Browser
+# GitHub Actions CI/CD Pipeline for Khoj
 # This file defines the complete build process for all platforms
 
-name: Build Khoj Browser
+name: Build Khoj
 
 on:
   push:

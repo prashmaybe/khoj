@@ -1,6 +1,6 @@
 # Application Assets
 
-This folder contains icons and other assets needed for building the cross-platform Khoj Browser application.
+This folder contains icons and other assets needed for building the cross-platform Khoj application.
 
 ## Required Icons
 

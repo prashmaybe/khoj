@@ -1,7 +1,7 @@
 module.exports = {
   packagerConfig: {
-    name: 'Khoj Browser',
-    executableName: 'khoj-browser',
+    name: 'Khoj',
+    executableName: 'khoj',
     icon: 'assets/khoj_platform_assets/windows/khoj',
     extraResource: [
       'assets'
@@ -20,8 +20,8 @@ module.exports = {
     {
       name: '@electron-forge/maker-squirrel',
       config: {
-        name: 'khoj_browser',
-        authors: 'Khoj Team',
+        name: 'khoj',
+        authors: 'Prashant Kapoor',
         description: 'Cross-platform browser application',
         iconUrl: 'https://raw.githubusercontent.com/prashmaybe/khoj/main/assets/khoj_platform_assets/windows/khoj.ico'
       }
@@ -34,7 +34,7 @@ module.exports = {
       name: '@electron-forge/maker-deb',
       config: {
         options: {
-          maintainer: 'Khoj Team',
+          maintainer: 'Prashant Kapoor',
           homepage: 'https://github.com/prashmaybe/khoj'
         }
       }
@@ -43,7 +43,7 @@ module.exports = {
       name: '@electron-forge/maker-rpm',
       config: {
         options: {
-          maintainer: 'Khoj Team',
+          maintainer: 'Prashant Kapoor',
           homepage: 'https://github.com/prashmaybe/khoj'
         }
       }

@@ -1,5 +1,5 @@
 {
-  "name": "Khoj Browser",
+  "name": "Khoj",
   "short_name": "Khoj",
   "description": "A modern browser built with React Native and Electron",
   "start_url": "/",

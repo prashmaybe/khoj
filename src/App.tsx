@@ -19,7 +19,7 @@ const HOME_URL = 'khoj://home';
 const DOWNLOADS_URL = 'khoj://downloads';
 const HISTORY_URL = 'khoj://history';
 const BOOKMARKS_URL = 'khoj://bookmarks';
-const NAV_EVENT_NAME = 'khoj-browser-nav-command';
+const NAV_EVENT_NAME = 'khoj-nav-command';
 
 const AppContent: React.FC = React.memo(() => {
   const { colors } = useTheme();

@@ -82,7 +82,7 @@
   },
   "build": {
     "appId": "com.khoj.browser",
-    "productName": "Khoj Browser",
+    "productName": "Khoj",
     "directories": {
       "output": "dist",
       "buildResources": "build"
@@ -128,7 +128,7 @@
       "allowElevation": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Khoj Browser"
+      "shortcutName": "Khoj"
     },
     "mac": {
       "target": [

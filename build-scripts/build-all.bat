@@ -1,8 +1,8 @@
 @echo off
-REM Khoj Browser - Complete Build Script for Windows
+REM Khoj - Complete Build Script for Windows
 REM This script builds the application for all platforms
 
-echo 🚀 Starting complete build process for Khoj Browser...
+echo 🚀 Starting complete build process for Khoj...
 
 REM Clean previous builds
 echo 🧹 Cleaning previous builds...

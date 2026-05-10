@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# Khoj Browser - Complete Build Script
+# Khoj - Complete Build Script
 # This script builds the application for all platforms
 
 set -e
 
-echo "🚀 Starting complete build process for Khoj Browser..."
+echo "🚀 Starting complete build process for Khoj..."
 
 # Clean previous builds
 echo "🧹 Cleaning previous builds..."

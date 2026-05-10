@@ -15,7 +15,7 @@ const AboutPage: React.FC<AboutPageProps> = ({ version = "0.0.1" }) => {
           style={styles.logo}
           resizeMode="contain"
         />
-        <Text style={styles.title}>Khoj Browser</Text>
+        <Text style={styles.title}>Khoj</Text>
         <Text style={styles.version}>Version {version}</Text>
       </View>
       
@@ -45,7 +45,7 @@ const AboutPage: React.FC<AboutPageProps> = ({ version = "0.0.1" }) => {
 
       <View style={styles.footer}>
         <Text style={styles.footerText}>
-          © 2026 Khoj Browser. Open source project.
+          © 2026 Khoj. Open source project.
         </Text>
         <Text style={styles.footerText}>
           GitHub: github.com/prashmaybe/khoj

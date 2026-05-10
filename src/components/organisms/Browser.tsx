@@ -3,7 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useOrganisms, useMolecules, usePages } from '../../hooks';
 
-const NAV_EVENT_NAME = 'khoj-browser-nav-command';
+const NAV_EVENT_NAME = 'khoj-nav-command';
 
 interface BrowserNavCommandDetail {
   action: 'back' | 'forward' | 'reload';
