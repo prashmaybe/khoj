@@ -7,6 +7,7 @@ export interface UserPreferences {
   activeTabId: string | null;
   bookmarks: BookmarkItem[];
   closedTabs: TabState[];
+  isIncognito: boolean;
 }
 
 export interface TabState {
@@ -86,7 +87,8 @@ class PreferencesStorage {
       tabs: [],
       activeTabId: null,
       bookmarks: [],
-      closedTabs: []
+      closedTabs: [],
+      isIncognito: false
     };
   }
 
@@ -98,6 +100,16 @@ class PreferencesStorage {
 
   saveTheme(theme: Theme): void {
     this.savePreferences({ theme });
+  }
+
+  // Incognito mode management
+  loadIncognitoMode(): boolean {
+    const preferences = this.loadPreferences();
+    return preferences.isIncognito;
+  }
+
+  saveIncognitoMode(isIncognito: boolean): void {
+    this.savePreferences({ isIncognito });
   }
 
   // Bookmarks bar visibility

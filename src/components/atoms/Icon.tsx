@@ -22,6 +22,7 @@ import {
   IoRefreshOutline,
   IoSearchOutline,
   IoTrashOutline,
+  IoShieldOutline,
 } from 'react-icons/io5';
 
 interface IconProps {
@@ -71,6 +72,8 @@ const Icon: React.FC<IconProps> = React.memo(({ name, size = 'medium', style }) 
         return <IoGlobeOutline style={webIconStyle} />;
       case 'home':
         return <IoHomeOutline style={webIconStyle} />;
+      case 'incognito':
+        return <IoShieldOutline style={webIconStyle} />;
       case 'laptop':
         return <IoLaptopOutline style={webIconStyle} />;
       case 'lock':

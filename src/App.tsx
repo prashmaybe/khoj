@@ -23,7 +23,7 @@ const BOOKMARKS_URL = 'khoj://bookmarks';
 const NAV_EVENT_NAME = 'khoj-nav-command';
 
 const AppContent: React.FC = React.memo(() => {
-  const { colors } = useTheme();
+  const { colors, isIncognito } = useTheme();
   const { Browser, KeyboardShortcutsHelp } = useOrganisms();
   const [tabs, setTabs] = useState<Tab[]>([]);
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
@@ -40,7 +40,7 @@ const AppContent: React.FC = React.memo(() => {
 
   // Check if current page is bookmarked
   const isCurrentPageBookmarked = (): boolean => {
-    if (!activeTab || !activeTab.url || activeTab.url.startsWith('khoj://')) {
+    if (isIncognito || !activeTab || !activeTab.url || activeTab.url.startsWith('khoj://')) {
       return false;
     }
     return bookmarks.some(bookmark => bookmark.url === activeTab.url);
@@ -206,15 +206,19 @@ const AppContent: React.FC = React.memo(() => {
     }
   }, [tabs, activeTabId, closedTabs, url]);
 
-  // Save tabs state when it changes
+  // Save tabs state when it changes (only in non-incognito mode)
   useEffect(() => {
-    preferencesStorage.saveTabs(tabs, activeTabId);
-  }, [tabs, activeTabId]);
+    if (!isIncognito) {
+      preferencesStorage.saveTabs(tabs, activeTabId);
+    }
+  }, [tabs, activeTabId, isIncognito]);
 
-  // Save closed tabs when they change
+  // Save closed tabs when they change (only in non-incognito mode)
   useEffect(() => {
-    preferencesStorage.saveClosedTabs(closedTabs);
-  }, [closedTabs]);
+    if (!isIncognito) {
+      preferencesStorage.saveClosedTabs(closedTabs);
+    }
+  }, [closedTabs, isIncognito]);
 
   
   const createTab = async (tabId?: string, initialUrl?: string, initialTitle?: string) => {
@@ -486,7 +490,7 @@ const AppContent: React.FC = React.memo(() => {
   };
 
   const handleBookmarkToggle = () => {
-    if (!activeTab || !activeTab.url || activeTab.url.startsWith('khoj://')) {
+    if (isIncognito || !activeTab || !activeTab.url || activeTab.url.startsWith('khoj://')) {
       return;
     }
 
@@ -545,6 +549,7 @@ const AppContent: React.FC = React.memo(() => {
         onUpdateTabFavicon={handleUpdateTabFavicon}
         isBookmarked={isCurrentPageBookmarked()}
         onBookmarkToggle={handleBookmarkToggle}
+        isIncognito={isIncognito}
       />
       <KeyboardShortcutsHelp
         visible={showShortcutsHelp}

@@ -160,3 +160,57 @@ export const darkColors: ColorPalette = {
   gradientSecondary: ['#fb923c', '#f472b6'],
   gradientAccent: ['#c084fc', '#fbbf24'],
 };
+
+export const incognitoColors: ColorPalette = {
+  // Background colors (Chrome incognito dark gray)
+  background: '#1e1e1e',
+  surface: '#2d2d30',
+  card: '#252526',
+  overlay: 'rgba(0, 0, 0, 0.9)',
+  
+  // Text colors
+  text: '#ffffff',
+  textSecondary: '#cccccc',
+  textTertiary: '#888888',
+  textInverse: '#000000',
+  
+  // Border colors
+  border: '#3e3e42',
+  borderSecondary: '#2d2d30',
+  borderFocus: '#0078d4',
+  
+  // Button colors
+  buttonPrimary: '#0078d4',
+  buttonPrimaryText: '#ffffff',
+  buttonSecondary: '#2d2d30',
+  buttonSecondaryText: '#ffffff',
+  buttonNav: 'rgba(255, 255, 255, 0.08)',
+  buttonNavText: '#ffffff',
+  
+  // Input colors
+  inputBackground: '#2d2d30',
+  inputBorder: '#3e3e42',
+  inputText: '#ffffff',
+  inputPlaceholder: '#888888',
+  
+  // Status colors
+  error: '#f48771',
+  warning: '#f9c74f',
+  success: '#90ee90',
+  info: '#74b9ff',
+  
+  // Navigation colors (Chrome incognito style)
+  tabBar: '#2d2d30',
+  toolbar: '#2d2d30',
+  activeTab: '#3e3e42',
+  inactiveTab: '#252526',
+  
+  // Shadow colors
+  shadow: 'rgba(0, 0, 0, 0.3)',
+  shadowLight: 'rgba(0, 0, 0, 0.1)',
+  
+  // Gradient colors (subtle for incognito)
+  gradientPrimary: ['#0078d4', '#40e0d0'],
+  gradientSecondary: ['#667eea', '#764ba2'],
+  gradientAccent: ['#f093fb', '#f5576c'],
+};

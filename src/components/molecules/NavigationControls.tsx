@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useAtoms } from '../../hooks';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface NavigationControlsProps {
   onBack: () => void;
@@ -18,6 +19,7 @@ const NavigationControls: React.FC<NavigationControlsProps> = React.memo(({
   disabled = false
 }) => {
   const { Button, Icon, ThemeToggle } = useAtoms();
+  const { isIncognito, setIncognito, colors } = useTheme();
   return (
     <>
       <View style={styles.navigationControls}>
@@ -54,6 +56,17 @@ const NavigationControls: React.FC<NavigationControlsProps> = React.memo(({
         style={styles.homeButton}
       >
         <Icon name="home" />
+      </Button>
+      <Button
+        onPress={() => setIncognito(!isIncognito)}
+        variant="nav"
+        size="medium"
+        style={{
+          marginLeft: -4,
+          backgroundColor: isIncognito ? colors.buttonPrimary : undefined
+        }}
+      >
+        <Icon name="incognito" />
       </Button>
       <ThemeToggle style={styles.themeToggle} />
     </>

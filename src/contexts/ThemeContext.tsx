@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Appearance, useColorScheme } from 'react-native';
-import { lightColors, darkColors, ColorPalette } from '../theme/colors';
+import { lightColors, darkColors, incognitoColors, ColorPalette } from '../theme/colors';
 import { typography, TypographyConfig } from '../theme/typography';
 import { preferencesStorage } from '../services/PreferencesStorage';
 
@@ -18,11 +18,18 @@ const darkTheme: ThemeColors = {
   ...typography,
 };
 
+const incognitoTheme: ThemeColors = {
+  ...incognitoColors,
+  ...typography,
+};
+
 interface ThemeContextType {
   theme: Theme;
   colors: ThemeColors;
   isDark: boolean;
+  isIncognito: boolean;
   setTheme: (theme: Theme) => void;
+  setIncognito: (incognito: boolean) => void;
   systemTheme: 'light' | 'dark';
 }
 
@@ -45,6 +52,9 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = React.memo(({ childre
   const [theme, setTheme] = useState<Theme>(() => {
     return preferencesStorage.loadTheme();
   });
+  const [isIncognito, setIsIncognito] = useState<boolean>(() => {
+    return preferencesStorage.loadIncognitoMode();
+  });
   const [systemTheme, setSystemTheme] = useState<'light' | 'dark'>(
     systemColorScheme === 'dark' || systemColorScheme === 'light' ? systemColorScheme : 'light'
   );
@@ -66,7 +76,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = React.memo(({ childre
   };
 
   const effectiveTheme = getEffectiveTheme();
-  const colors = effectiveTheme === 'dark' ? darkTheme : lightTheme;
+  const colors = isIncognito ? incognitoTheme : (effectiveTheme === 'dark' ? darkTheme : lightTheme);
   const isDark = effectiveTheme === 'dark';
 
   const handleSetTheme = (newTheme: Theme) => {
@@ -74,11 +84,18 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = React.memo(({ childre
     preferencesStorage.saveTheme(newTheme);
   };
 
+  const handleSetIncognito = (newIncognito: boolean) => {
+    setIsIncognito(newIncognito);
+    preferencesStorage.saveIncognitoMode(newIncognito);
+  };
+
   const value: ThemeContextType = {
     theme,
     colors,
     isDark,
+    isIncognito,
     setTheme: handleSetTheme,
+    setIncognito: handleSetIncognito,
     systemTheme,
   };
 

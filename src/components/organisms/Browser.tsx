@@ -48,6 +48,7 @@ interface BrowserProps {
   onUpdateTabFavicon?: (tabId: string, faviconUrl: string | null) => void;
   isBookmarked?: boolean;
   onBookmarkToggle?: () => void;
+  isIncognito?: boolean;
 }
 
 const Browser: React.FC<BrowserProps> = React.memo(({
@@ -77,6 +78,7 @@ const Browser: React.FC<BrowserProps> = React.memo(({
   onUpdateTabFavicon,
   isBookmarked = false,
   onBookmarkToggle,
+  isIncognito = false,
 }) => {
   const { colors } = useTheme();
   const { TabBar, BrowserToolbar, BookmarksBar } = useOrganisms();
@@ -234,6 +236,13 @@ const Browser: React.FC<BrowserProps> = React.memo(({
 
   return (
     <View style={styles.browser}>
+      {isIncognito && (
+        <View style={[styles.incognitoIndicator, { backgroundColor: colors.buttonPrimary }]}>
+          <Text style={[styles.incognitoText, { color: colors.buttonPrimaryText }]}>
+            🔒 Incognito Mode
+          </Text>
+        </View>
+      )}
       <TabBar
         tabs={tabs}
         activeTabId={activeTabId}
@@ -243,7 +252,7 @@ const Browser: React.FC<BrowserProps> = React.memo(({
       />
       
       <BookmarksBar
-        visible={showBookmarksBar || false}
+        visible={!isIncognito && (showBookmarksBar || false)}
         bookmarks={bookmarks}
         onBookmarkClick={onBookmarkClick || (() => {})}
         onAddBookmark={onAddBookmark}
@@ -360,6 +369,8 @@ const Browser: React.FC<BrowserProps> = React.memo(({
                     src={tab.url}
                     style={webviewStyle as any}
                     allowpopups={true}
+                    partition={isIncognito ? 'incognito' : ''}
+                    webpreferences={`contextIsolation=true,nodeIntegration=false,enableRemoteModule=false,${isIncognito ? 'incognito=true' : ''}`}
                   />
                 ) : (
                   <iframe
@@ -397,6 +408,16 @@ const styles = StyleSheet.create({
   browser: {
     flex: 1,
     height: '100%',
+  },
+  incognitoIndicator: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  incognitoText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
   browserContent: {
     flex: 1,
