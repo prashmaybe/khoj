@@ -27,6 +27,11 @@ const Tab: React.FC<TabProps> = React.memo(({
   const { colors } = useTheme();
   const { Icon } = useAtoms();
 
+  // Debug: log favicon URL when it changes
+  React.useEffect(() => {
+    console.log('Tab component - faviconUrl for tab', id, ':', faviconUrl);
+  }, [faviconUrl, id]);
+
   const handlePress = () => {
     onClick();
   };
@@ -61,7 +66,16 @@ const Tab: React.FC<TabProps> = React.memo(({
     >
       <View style={styles.tabFavicon}>
         {faviconUrl ? (
-          <Image source={{ uri: faviconUrl }} style={styles.faviconImage} />
+          <Image 
+            source={{ uri: faviconUrl }} 
+            style={styles.faviconImage}
+            onError={(error) => {
+              console.error('Failed to load favicon for tab', id, ':', error.nativeEvent.error);
+            }}
+            onLoad={() => {
+              console.log('Successfully loaded favicon for tab', id, ':', faviconUrl);
+            }}
+          />
         ) : (
           <View style={[styles.tabFaviconFallback, { backgroundColor: colors.textTertiary }]} />
         )}

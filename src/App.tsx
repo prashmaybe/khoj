@@ -408,6 +408,35 @@ const AppContent: React.FC = React.memo(() => {
     openInternalTab(BOOKMARKS_URL, 'Bookmarks');
   };
 
+  const handleUpdateTabError = (tabId: string, hasError: boolean, errorCode?: number, errorDescription?: string) => {
+    setTabs(prevTabs =>
+      prevTabs.map(tab =>
+        tab.id === tabId
+          ? {
+              ...tab,
+              hasError,
+              errorCode,
+              errorDescription,
+              isLoading: false
+            }
+          : tab
+      )
+    );
+  };
+
+  const handleUpdateTabFavicon = (tabId: string, faviconUrl: string | null) => {
+    setTabs(prevTabs =>
+      prevTabs.map(tab =>
+        tab.id === tabId
+          ? {
+              ...tab,
+              faviconUrl
+            }
+          : tab
+      )
+    );
+  };
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <Browser
@@ -432,6 +461,8 @@ const AppContent: React.FC = React.memo(() => {
         onDownloadAction={handleDownloadAction}
         onHistoryAction={handleHistoryAction}
         onBookmarkAction={handleBookmarkAction}
+        onUpdateTabError={handleUpdateTabError}
+        onUpdateTabFavicon={handleUpdateTabFavicon}
       />
       <KeyboardShortcutsHelp
         visible={showShortcutsHelp}

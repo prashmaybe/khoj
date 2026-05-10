@@ -43,6 +43,8 @@ interface BrowserProps {
   onDownloadAction?: (action: string, downloadId: string) => void;
   onHistoryAction?: (action: string, historyId: string, data?: any) => void;
   onBookmarkAction?: (action: string, bookmarkId: string, data?: any) => void;
+  onUpdateTabError?: (tabId: string, hasError: boolean, errorCode?: number, errorDescription?: string) => void;
+  onUpdateTabFavicon?: (tabId: string, faviconUrl: string | null) => void;
 }
 
 const Browser: React.FC<BrowserProps> = React.memo(({
@@ -67,6 +69,8 @@ const Browser: React.FC<BrowserProps> = React.memo(({
   onDownloadAction,
   onHistoryAction,
   onBookmarkAction,
+  onUpdateTabError,
+  onUpdateTabFavicon,
 }) => {
   const { colors } = useTheme();
   const { TabBar, BrowserToolbar, BookmarksBar } = useOrganisms();
@@ -78,7 +82,8 @@ const Browser: React.FC<BrowserProps> = React.memo(({
   const isBookmarksTab = activeTab?.url === 'khoj://bookmarks';
   const isElectronRuntime = typeof window !== 'undefined' && !!window.electronAPI;
   const embedContainerRef = useRef<HTMLDivElement | null>(null);
-  const embedRef = useRef<any>(null);
+  const webviewRefs = useRef<Map<string, any>>(new Map());
+  const webviewReadyStates = useRef<Map<string, boolean>>(new Map());
   const webviewStyle: React.CSSProperties = {
     border: 'none',
     position: 'absolute',
@@ -92,10 +97,59 @@ const Browser: React.FC<BrowserProps> = React.memo(({
     display: 'block',
   };
 
+  const tabContainerStyle = {
+    position: 'absolute' as const,
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    display: 'flex' as const,
+  };
+
+  const handleWebviewError = (tabId: string, error: any) => {
+    console.error('Webview error for tab', tabId, error);
+    if (onUpdateTabError) {
+      onUpdateTabError(
+        tabId,
+        true,
+        error?.code || -1,
+        error?.description || error?.message || 'Failed to load page'
+      );
+    }
+  };
+
+  const handleWebviewLoad = (tabId: string) => {
+    if (onUpdateTabError) {
+      onUpdateTabError(tabId, false);
+    }
+  };
+
+  const extractFaviconUrl = (url: string): string | null => {
+    try {
+      const urlObj = new URL(url);
+      // Use Google's favicon service directly - it's reliable and avoids CORS issues
+      const googleFaviconUrl = `https://www.google.com/s2/favicons?domain=${urlObj.origin}&sz=16`;
+      console.log('Using Google favicon service for:', urlObj.origin, '→', googleFaviconUrl);
+      return googleFaviconUrl;
+    } catch (error) {
+      console.error('Error extracting favicon:', error);
+      return null;
+    }
+  };
+
+  const handleFaviconUpdate = (tabId: string, url: string) => {
+    console.log('Updating favicon for tab:', tabId, 'URL:', url);
+    const faviconUrl = extractFaviconUrl(url);
+    console.log('Extracted favicon URL:', faviconUrl);
+    if (onUpdateTabFavicon) {
+      onUpdateTabFavicon(tabId, faviconUrl);
+    }
+  };
+
   useEffect(() => {
     const applyEmbedSize = () => {
       const container = embedContainerRef.current;
-      const embed = embedRef.current as HTMLElement | null;
+      const embed = activeTabId ? webviewRefs.current.get(activeTabId) as HTMLElement | null : null;
       if (!container || !embed) return;
 
       const rect = container.getBoundingClientRect();
@@ -126,7 +180,7 @@ const Browser: React.FC<BrowserProps> = React.memo(({
       window.clearTimeout(delayed);
       window.removeEventListener('resize', applyEmbedSize);
     };
-  }, [activeTab?.id, activeTab?.url, isElectronRuntime]);
+  }, [activeTabId, isElectronRuntime]);
 
   useEffect(() => {
     if (!isElectronRuntime || typeof window === 'undefined') return;
@@ -136,21 +190,33 @@ const Browser: React.FC<BrowserProps> = React.memo(({
       const command = customEvent.detail;
       if (!command || command.tabId !== activeTabId) return;
 
-      const webview = embedRef.current as any;
+      const webview = activeTabId ? webviewRefs.current.get(activeTabId) : null;
       if (!webview) return;
 
-      if (command.action === 'back' && typeof webview.canGoBack === 'function' && webview.canGoBack()) {
-        webview.goBack();
+      // Check if webview is ready (attached to DOM and dom-ready event emitted)
+      const isWebviewReady = isElectronRuntime ? webviewReadyStates.current.get(activeTabId) || false : true;
+      
+      if (!isWebviewReady) {
+        console.warn('Webview not ready for navigation command:', command.action);
         return;
       }
 
-      if (command.action === 'forward' && typeof webview.canGoForward === 'function' && webview.canGoForward()) {
-        webview.goForward();
-        return;
-      }
+      try {
+        if (command.action === 'back' && typeof webview.canGoBack === 'function' && webview.canGoBack()) {
+          webview.goBack();
+          return;
+        }
 
-      if (command.action === 'reload' && typeof webview.reload === 'function') {
-        webview.reload();
+        if (command.action === 'forward' && typeof webview.canGoForward === 'function' && webview.canGoForward()) {
+          webview.goForward();
+          return;
+        }
+
+        if (command.action === 'reload' && typeof webview.reload === 'function') {
+          webview.reload();
+        }
+      } catch (error) {
+        console.error('Error executing navigation command:', command.action, error);
       }
     };
 
@@ -251,22 +317,66 @@ const Browser: React.FC<BrowserProps> = React.memo(({
           </View>
         ) : (
           <View style={styles.iframeWrap} ref={embedContainerRef as any}>
-            {isElectronRuntime ? (
-              <webview
-                key={activeTab.id}
-                src={activeTab.url}
-                ref={embedRef}
-                style={webviewStyle as any}
-                allowpopups={true}
-              />
-            ) : (
-              <iframe
-                title={activeTab.title || activeTab.url}
-                src={activeTab.url}
-                ref={embedRef}
-                style={webviewStyle as any}
-              />
-            )}
+            {tabs.map(tab => (
+              <View
+                key={tab.id}
+                style={{
+                  ...tabContainerStyle,
+                  display: tab.id === activeTabId ? 'flex' : 'none'
+                }}
+              >
+                {isElectronRuntime ? (
+                  <webview
+                    ref={(el) => {
+                      if (el) {
+                        webviewRefs.current.set(tab.id, el);
+                        webviewReadyStates.current.set(tab.id, false);
+                        
+                        // Add error event listener for Electron webview
+                        el.addEventListener('did-fail-load', (event: any) => {
+                          handleWebviewError(tab.id, {
+                            code: event.errorCode,
+                            description: event.errorDescription
+                          });
+                        });
+                        el.addEventListener('did-load', () => {
+                          handleWebviewLoad(tab.id);
+                          handleFaviconUpdate(tab.id, tab.url);
+                        });
+                        el.addEventListener('dom-ready', () => {
+                          webviewReadyStates.current.set(tab.id, true);
+                        });
+                      }
+                    }}
+                    src={tab.url}
+                    style={webviewStyle as any}
+                    allowpopups={true}
+                  />
+                ) : (
+                  <iframe
+                    ref={(el) => {
+                      if (el) {
+                        webviewRefs.current.set(tab.id, el);
+                        // Add error event listener for iframe
+                        el.addEventListener('error', (event: any) => {
+                          handleWebviewError(tab.id, {
+                            code: -1,
+                            description: 'Failed to load page'
+                          });
+                        });
+                        el.addEventListener('load', () => {
+                          handleWebviewLoad(tab.id);
+                          handleFaviconUpdate(tab.id, tab.url);
+                        });
+                      }
+                    }}
+                    title={tab.title || tab.url}
+                    src={tab.url}
+                    style={webviewStyle as any}
+                  />
+                )}
+              </View>
+            ))}
           </View>
         )}
       </View>
