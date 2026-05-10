@@ -3,6 +3,7 @@ import { SafeAreaView, StyleSheet, View } from 'react-native';
 import { KeyboardShortcuts } from './services/KeyboardShortcuts';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { useOrganisms, ComponentsProvider } from './hooks';
+import { preferencesStorage, BookmarkItem } from './services/PreferencesStorage';
 
 interface Tab {
   id: string;
@@ -29,15 +30,47 @@ const AppContent: React.FC = React.memo(() => {
   const [url, setUrl] = useState<string>(HOME_URL);
   const [closedTabs, setClosedTabs] = useState<Tab[]>([]);
   const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
-  const [showBookmarksBar, setShowBookmarksBar] = useState(true);
+  const [showBookmarksBar, setShowBookmarksBar] = useState(() => {
+    return preferencesStorage.loadBookmarksBarVisibility();
+  });
+  const [bookmarks, setBookmarks] = useState<BookmarkItem[]>([]);
   const searchBarRef = useRef<any>(null);
 
   const activeTab = tabs.find(tab => tab.id === activeTabId);
 
+  // Check if current page is bookmarked
+  const isCurrentPageBookmarked = (): boolean => {
+    if (!activeTab || !activeTab.url || activeTab.url.startsWith('khoj://')) {
+      return false;
+    }
+    return bookmarks.some(bookmark => bookmark.url === activeTab.url);
+  };
+
   useEffect(() => {
-    // Create initial tab for React Native
-    const initialTabId = Date.now().toString();
-    createTab(initialTabId, HOME_URL);
+    // Load saved tabs state
+    const savedTabsState = preferencesStorage.loadTabs();
+    
+    if (savedTabsState.tabs.length > 0 && savedTabsState.activeTabId) {
+      // Restore saved tabs
+      setTabs(savedTabsState.tabs);
+      setActiveTabId(savedTabsState.activeTabId);
+      const activeTab = savedTabsState.tabs.find(tab => tab.id === savedTabsState.activeTabId);
+      if (activeTab) {
+        setUrl(activeTab.url);
+      }
+    } else {
+      // Create initial tab for React Native
+      const initialTabId = Date.now().toString();
+      createTab(initialTabId, HOME_URL);
+    }
+    
+    // Load saved closed tabs
+    const savedClosedTabs = preferencesStorage.loadClosedTabs();
+    setClosedTabs(savedClosedTabs);
+    
+    // Load bookmarks
+    const loadedBookmarks = preferencesStorage.loadBookmarks();
+    setBookmarks(loadedBookmarks);
   }, []);
 
   useEffect(() => {
@@ -107,7 +140,11 @@ const AppContent: React.FC = React.memo(() => {
         openInternalTab(BOOKMARKS_URL, 'Bookmarks');
       },
       onToggleBookmarksBar: () => {
-        setShowBookmarksBar(prev => !prev);
+        setShowBookmarksBar(prev => {
+          const newValue = !prev;
+          preferencesStorage.saveBookmarksBarVisibility(newValue);
+          return newValue;
+        });
       },
       onOpenHistory: () => {
         openInternalTab(HISTORY_URL, 'History');
@@ -168,6 +205,16 @@ const AppContent: React.FC = React.memo(() => {
       };
     }
   }, [tabs, activeTabId, closedTabs, url]);
+
+  // Save tabs state when it changes
+  useEffect(() => {
+    preferencesStorage.saveTabs(tabs, activeTabId);
+  }, [tabs, activeTabId]);
+
+  // Save closed tabs when they change
+  useEffect(() => {
+    preferencesStorage.saveClosedTabs(closedTabs);
+  }, [closedTabs]);
 
   
   const createTab = async (tabId?: string, initialUrl?: string, initialTitle?: string) => {
@@ -290,7 +337,8 @@ const AppContent: React.FC = React.memo(() => {
     
     const tabToClose = tabs.find(tab => tab.id === tabId);
     if (tabToClose) {
-      // Save closed tab to history (limit to 10 closed tabs)
+      // Save closed tab to storage (limit to 10 closed tabs)
+      preferencesStorage.addClosedTab(tabToClose);
       setClosedTabs(prev => [...prev.slice(-9), tabToClose]);
     }
     
@@ -437,6 +485,37 @@ const AppContent: React.FC = React.memo(() => {
     );
   };
 
+  const handleBookmarkToggle = () => {
+    if (!activeTab || !activeTab.url || activeTab.url.startsWith('khoj://')) {
+      return;
+    }
+
+    const isBookmarked = isCurrentPageBookmarked();
+    
+    if (isBookmarked) {
+      // Remove bookmark
+      const bookmarkToRemove = bookmarks.find(bookmark => bookmark.url === activeTab.url);
+      if (bookmarkToRemove) {
+        preferencesStorage.removeBookmark(bookmarkToRemove.id);
+        setBookmarks(prev => prev.filter(bookmark => bookmark.id !== bookmarkToRemove.id));
+      }
+    } else {
+      // Add bookmark
+      const newBookmark: BookmarkItem = {
+        id: Date.now().toString(),
+        title: activeTab.title || activeTab.url,
+        url: activeTab.url,
+        icon: 'globe',
+        folder: 'Development',
+        dateAdded: new Date().toISOString().split('T')[0],
+        tags: []
+      };
+      
+      preferencesStorage.addBookmark(newBookmark);
+      setBookmarks(prev => [newBookmark, ...prev]);
+    }
+  };
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <Browser
@@ -463,6 +542,8 @@ const AppContent: React.FC = React.memo(() => {
         onBookmarkAction={handleBookmarkAction}
         onUpdateTabError={handleUpdateTabError}
         onUpdateTabFavicon={handleUpdateTabFavicon}
+        isBookmarked={isCurrentPageBookmarked()}
+        onBookmarkToggle={handleBookmarkToggle}
       />
       <KeyboardShortcutsHelp
         visible={showShortcutsHelp}

@@ -1,14 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAtoms } from '../../hooks';
-
-interface BookmarkItem {
-  id: string;
-  title: string;
-  url: string;
-  icon?: string;
-}
+import { preferencesStorage, BookmarkItem } from '../../services/PreferencesStorage';
 
 interface BookmarksBarProps {
   visible: boolean;
@@ -27,45 +21,13 @@ const BookmarksBar: React.FC<BookmarksBarProps> = ({
   const { Icon } = useAtoms();
   const [hoveredBookmark, setHoveredBookmark] = useState<string | null>(null);
 
-  // Sample bookmarks - in a real app, this would come from state/storage
-  const [bookmarks] = useState<BookmarkItem[]>([
-    {
-      id: '1',
-      title: 'React Native',
-      url: 'https://reactnative.dev',
-      icon: 'globe'
-    },
-    {
-      id: '2',
-      title: 'GitHub',
-      url: 'https://github.com',
-      icon: 'globe'
-    },
-    {
-      id: '3',
-      title: 'Stack Overflow',
-      url: 'https://stackoverflow.com',
-      icon: 'globe'
-    },
-    {
-      id: '4',
-      title: 'MDN Web Docs',
-      url: 'https://developer.mozilla.org',
-      icon: 'globe'
-    },
-    {
-      id: '5',
-      title: 'TypeScript',
-      url: 'https://www.typescriptlang.org',
-      icon: 'globe'
-    },
-    {
-      id: '6',
-      title: 'Electron',
-      url: 'https://www.electronjs.org',
-      icon: 'globe'
-    }
-  ]);
+  const [bookmarks, setBookmarks] = useState<BookmarkItem[]>([]);
+
+  useEffect(() => {
+    // Load bookmarks from storage
+    const loadedBookmarks = preferencesStorage.loadBookmarks();
+    setBookmarks(loadedBookmarks.slice(0, 6)); // Show first 6 bookmarks in bar
+  }, []);
 
   const handleBookmarkPress = (bookmark: BookmarkItem) => {
     onBookmarkClick(bookmark);

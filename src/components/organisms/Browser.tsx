@@ -45,6 +45,8 @@ interface BrowserProps {
   onBookmarkAction?: (action: string, bookmarkId: string, data?: any) => void;
   onUpdateTabError?: (tabId: string, hasError: boolean, errorCode?: number, errorDescription?: string) => void;
   onUpdateTabFavicon?: (tabId: string, faviconUrl: string | null) => void;
+  isBookmarked?: boolean;
+  onBookmarkToggle?: () => void;
 }
 
 const Browser: React.FC<BrowserProps> = React.memo(({
@@ -71,6 +73,8 @@ const Browser: React.FC<BrowserProps> = React.memo(({
   onBookmarkAction,
   onUpdateTabError,
   onUpdateTabFavicon,
+  isBookmarked = false,
+  onBookmarkToggle,
 }) => {
   const { colors } = useTheme();
   const { TabBar, BrowserToolbar, BookmarksBar } = useOrganisms();
@@ -254,6 +258,8 @@ const Browser: React.FC<BrowserProps> = React.memo(({
         isLoading={activeTab?.isLoading}
         disabled={activeTab?.isLoading}
         searchBarRef={searchBarRef}
+        isBookmarked={isBookmarked}
+        onBookmarkToggle={onBookmarkToggle}
       />
       
       <View style={styles.browserContent}>

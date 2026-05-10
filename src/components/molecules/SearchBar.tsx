@@ -11,6 +11,8 @@ interface SearchBarProps {
   isLoading?: boolean;
   placeholder?: string;
   disabled?: boolean;
+  isBookmarked?: boolean;
+  onBookmarkToggle?: () => void;
 }
 
 const SearchBar = React.memo(forwardRef<any, SearchBarProps>(({
@@ -20,7 +22,9 @@ const SearchBar = React.memo(forwardRef<any, SearchBarProps>(({
   onKeyPress,
   isLoading = false,
   placeholder = 'Enter URL or search...',
-  disabled = false
+  disabled = false,
+  isBookmarked = false,
+  onBookmarkToggle
 }, ref) => {
   const { colors } = useTheme();
   const { Input, Button, Icon } = useAtoms();
@@ -42,6 +46,21 @@ const SearchBar = React.memo(forwardRef<any, SearchBarProps>(({
           variant="url"
           disabled={disabled || isLoading}
         />
+        <Button
+          onPress={onBookmarkToggle}
+          variant="secondary"
+          size="medium"
+          disabled={disabled || isLoading}
+          style={styles.bookmarkButton}
+        >
+          <Icon 
+            name={isBookmarked ? 'bookmark-filled' : 'bookmark'} 
+            style={[
+              styles.bookmarkIcon,
+              { color: isBookmarked ? colors.buttonPrimary : colors.textSecondary }
+            ]} 
+          />
+        </Button>
         <Button
           onPress={onNavigate}
           variant="secondary"
@@ -84,6 +103,15 @@ const styles = StyleSheet.create({
     height: 28,
     borderRadius: 999,
     borderWidth: 1,
+  },
+  bookmarkButton: {
+    width: 34,
+    height: 28,
+    borderRadius: 999,
+    marginRight: 4,
+  },
+  bookmarkIcon: {
+    fontSize: 14,
   },
 });
 

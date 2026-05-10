@@ -1,18 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Image, FlatList, TextInput } from 'react-native';
 import { useAtoms } from '../../hooks';
 import { useTheme } from '../../contexts/ThemeContext';
 import { KHOJ_LOGO_DEFAULT } from '../../constants/logos';
-
-interface BookmarkItem {
-  id: string;
-  title: string;
-  url: string;
-  icon?: string;
-  folder: string;
-  dateAdded: string;
-  tags: string[];
-}
+import { preferencesStorage, BookmarkItem } from '../../services/PreferencesStorage';
 
 interface BookmarkFolder {
   id: string;
@@ -35,62 +26,76 @@ const BookmarksPage: React.FC<BookmarksPageProps> = ({
   const { colors } = useTheme();
   const { Icon } = useAtoms();
 
-  const [bookmarks, setBookmarks] = useState<BookmarkItem[]>([
-    {
-      id: '1',
-      title: 'React Native Documentation',
-      url: 'https://reactnative.dev/docs/getting-started',
-      icon: 'globe',
-      folder: 'Development',
-      dateAdded: '2026-05-08',
-      tags: ['react', 'mobile', 'documentation']
-    },
-    {
-      id: '2',
-      title: 'GitHub - prashmaybe/khoj',
-      url: 'https://github.com/prashmaybe/khoj',
-      icon: 'globe',
-      folder: 'Development',
-      dateAdded: '2026-05-07',
-      tags: ['github', 'browser', 'project']
-    },
-    {
-      id: '3',
-      title: 'TypeScript Handbook',
-      url: 'https://www.typescriptlang.org/docs/handbook/intro.html',
-      icon: 'globe',
-      folder: 'Learning',
-      dateAdded: '2026-05-06',
-      tags: ['typescript', 'programming', 'handbook']
-    },
-    {
-      id: '4',
-      title: 'Electron Documentation',
-      url: 'https://www.electronjs.org/docs/latest',
-      icon: 'globe',
-      folder: 'Development',
-      dateAdded: '2026-05-05',
-      tags: ['electron', 'desktop', 'documentation']
-    },
-    {
-      id: '5',
-      title: 'Stack Overflow',
-      url: 'https://stackoverflow.com/',
-      icon: 'globe',
-      folder: 'Resources',
-      dateAdded: '2026-05-04',
-      tags: ['programming', 'qa', 'community']
-    },
-    {
-      id: '6',
-      title: 'MDN Web Docs',
-      url: 'https://developer.mozilla.org/en-US/',
-      icon: 'globe',
-      folder: 'Resources',
-      dateAdded: '2026-05-03',
-      tags: ['web', 'documentation', 'reference']
+  const [bookmarks, setBookmarks] = useState<BookmarkItem[]>([]);
+
+  useEffect(() => {
+    // Load bookmarks from storage
+    const loadedBookmarks = preferencesStorage.loadBookmarks();
+    
+    // If no bookmarks exist, add default ones
+    if (loadedBookmarks.length === 0) {
+      const defaultBookmarks: BookmarkItem[] = [
+        {
+          id: '1',
+          title: 'React Native Documentation',
+          url: 'https://reactnative.dev/docs/getting-started',
+          icon: 'globe',
+          folder: 'Development',
+          dateAdded: '2026-05-08',
+          tags: ['react', 'mobile', 'documentation']
+        },
+        {
+          id: '2',
+          title: 'GitHub - prashmaybe/khoj',
+          url: 'https://github.com/prashmaybe/khoj',
+          icon: 'globe',
+          folder: 'Development',
+          dateAdded: '2026-05-07',
+          tags: ['github', 'browser', 'project']
+        },
+        {
+          id: '3',
+          title: 'TypeScript Handbook',
+          url: 'https://www.typescriptlang.org/docs/handbook/intro.html',
+          icon: 'globe',
+          folder: 'Learning',
+          dateAdded: '2026-05-06',
+          tags: ['typescript', 'programming', 'handbook']
+        },
+        {
+          id: '4',
+          title: 'Electron Documentation',
+          url: 'https://www.electronjs.org/docs/latest',
+          icon: 'globe',
+          folder: 'Development',
+          dateAdded: '2026-05-05',
+          tags: ['electron', 'desktop', 'documentation']
+        },
+        {
+          id: '5',
+          title: 'Stack Overflow',
+          url: 'https://stackoverflow.com/',
+          icon: 'globe',
+          folder: 'Resources',
+          dateAdded: '2026-05-04',
+          tags: ['programming', 'qa', 'community']
+        },
+        {
+          id: '6',
+          title: 'MDN Web Docs',
+          url: 'https://developer.mozilla.org/en-US/',
+          icon: 'globe',
+          folder: 'Resources',
+          dateAdded: '2026-05-03',
+          tags: ['web', 'documentation', 'reference']
+        }
+      ];
+      setBookmarks(defaultBookmarks);
+      preferencesStorage.saveBookmarks(defaultBookmarks);
+    } else {
+      setBookmarks(loadedBookmarks);
     }
-  ]);
+  }, []);
 
   const [folders] = useState<BookmarkFolder[]>([
     { id: '1', name: 'All Bookmarks', color: '#3498db', icon: 'folder' },
@@ -129,6 +134,7 @@ const BookmarksPage: React.FC<BookmarksPageProps> = ({
               text: 'Delete', 
               style: 'destructive',
               onPress: () => {
+                preferencesStorage.removeBookmark(bookmarkId);
                 setBookmarks(prev => prev.filter(item => item.id !== bookmarkId));
                 onBookmarkAction?.('delete', bookmarkId);
               }
@@ -154,6 +160,7 @@ const BookmarksPage: React.FC<BookmarksPageProps> = ({
       tags: []
     };
 
+    preferencesStorage.addBookmark(bookmark);
     setBookmarks(prev => [bookmark, ...prev]);
     setNewBookmark({ title: '', url: '', folder: 'Development' });
     setShowAddBookmark(false);
@@ -173,7 +180,7 @@ const BookmarksPage: React.FC<BookmarksPageProps> = ({
       filtered = filtered.filter(item => 
         item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         item.url.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+        item.tags?.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase())) || false
       );
     }
 
@@ -196,7 +203,7 @@ const BookmarksPage: React.FC<BookmarksPageProps> = ({
             <Text style={styles.folderTag}>{item.folder}</Text>
             <Text style={styles.dateAdded}>Added {item.dateAdded}</Text>
           </View>
-          {item.tags.length > 0 && (
+          {item.tags && item.tags.length > 0 && (
             <View style={styles.tagsContainer}>
               {item.tags.map((tag, index) => (
                 <View key={index} style={styles.tag}>

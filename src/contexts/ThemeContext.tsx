@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Appearance, useColorScheme } from 'react-native';
 import { lightColors, darkColors, ColorPalette } from '../theme/colors';
 import { typography, TypographyConfig } from '../theme/typography';
+import { preferencesStorage } from '../services/PreferencesStorage';
 
 export type Theme = 'light' | 'dark' | 'system';
 
@@ -41,7 +42,9 @@ interface ThemeProviderProps {
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = React.memo(({ children }) => {
   const systemColorScheme = useColorScheme();
-  const [theme, setTheme] = useState<Theme>('system');
+  const [theme, setTheme] = useState<Theme>(() => {
+    return preferencesStorage.loadTheme();
+  });
   const [systemTheme, setSystemTheme] = useState<'light' | 'dark'>(
     systemColorScheme === 'dark' || systemColorScheme === 'light' ? systemColorScheme : 'light'
   );
@@ -68,6 +71,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = React.memo(({ childre
 
   const handleSetTheme = (newTheme: Theme) => {
     setTheme(newTheme);
+    preferencesStorage.saveTheme(newTheme);
   };
 
   const value: ThemeContextType = {

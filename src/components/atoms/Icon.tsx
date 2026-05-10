@@ -5,6 +5,8 @@ import {
   IoAdd,
   IoArrowBack,
   IoArrowForward,
+  IoBookmarkOutline,
+  IoBookmark,
   IoCopyOutline,
   IoChevronDown,
   IoClose,
@@ -51,6 +53,10 @@ const Icon: React.FC<IconProps> = React.memo(({ name, size = 'medium', style }) 
         return <IoArrowBack style={webIconStyle} />;
       case 'arrow-forward':
         return <IoArrowForward style={webIconStyle} />;
+      case 'bookmark':
+        return <IoBookmarkOutline style={webIconStyle} />;
+      case 'bookmark-filled':
+        return <IoBookmark style={webIconStyle} />;
       case 'copy':
         return <IoCopyOutline style={webIconStyle} />;
       case 'chevron-down':

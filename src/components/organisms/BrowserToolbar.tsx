@@ -15,6 +15,8 @@ interface BrowserToolbarProps {
   isLoading?: boolean;
   disabled?: boolean;
   searchBarRef?: React.RefObject<any>;
+  isBookmarked?: boolean;
+  onBookmarkToggle?: () => void;
 }
 
 const BrowserToolbar: React.FC<BrowserToolbarProps> = React.memo(({
@@ -29,6 +31,8 @@ const BrowserToolbar: React.FC<BrowserToolbarProps> = React.memo(({
   isLoading = false,
   disabled = false,
   searchBarRef,
+  isBookmarked = false,
+  onBookmarkToggle,
 }) => {
   const { colors } = useTheme();
   const { NavigationControls, SearchBar } = useMolecules();
@@ -50,6 +54,8 @@ const BrowserToolbar: React.FC<BrowserToolbarProps> = React.memo(({
         onKeyPress={onKeyPress}
         isLoading={isLoading}
         disabled={disabled}
+        isBookmarked={isBookmarked}
+        onBookmarkToggle={onBookmarkToggle}
       />
     </View>
   );
