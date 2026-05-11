@@ -41,6 +41,9 @@ export interface KeyboardShortcutHandlers {
   // Search Engine Selector
   onOpenSearchEngineSelector?: () => void;
   
+  // Image Search
+  onOpenImageSearch?: () => void;
+  
   // Help
   onShowShortcutsHelp?: () => void;
 }

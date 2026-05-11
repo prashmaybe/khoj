@@ -26,7 +26,7 @@ const NAV_EVENT_NAME = 'khoj-nav-command';
 
 const AppContent: React.FC = React.memo(() => {
   const { colors, isIncognito } = useTheme();
-  const { Browser, KeyboardShortcutsHelp, SecuritySettings, ClearBrowsingData, PDFViewer, SearchEngineSelector } = useOrganisms();
+  const { Browser, KeyboardShortcutsHelp, SecuritySettings, ClearBrowsingData, PDFViewer, SearchEngineSelector, ImageSearch } = useOrganisms();
   const [tabs, setTabs] = useState<Tab[]>([]);
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
   const [url, setUrl] = useState<string>(HOME_URL);
@@ -40,6 +40,7 @@ const AppContent: React.FC = React.memo(() => {
   const [showClearData, setShowClearData] = useState(false);
   const [showPDFViewer, setShowPDFViewer] = useState(false);
   const [showSearchEngineSelector, setShowSearchEngineSelector] = useState(false);
+  const [showImageSearch, setShowImageSearch] = useState(false);
   const searchBarRef = useRef<any>(null);
 
   const activeTab = tabs.find(tab => tab.id === activeTabId);
@@ -201,6 +202,11 @@ const AppContent: React.FC = React.memo(() => {
       // Search Engine Selector
       onOpenSearchEngineSelector: () => {
         setShowSearchEngineSelector(true);
+      },
+      
+      // Image Search
+      onOpenImageSearch: () => {
+        setShowImageSearch(true);
       },
       
       // Window Management (Electron-specific)
@@ -598,9 +604,9 @@ const AppContent: React.FC = React.memo(() => {
         visible={showPDFViewer}
         onClose={() => setShowPDFViewer(false)}
       />
-      <SearchEngineSelector
-        visible={showSearchEngineSelector}
-        onClose={() => setShowSearchEngineSelector(false)}
+      <ImageSearch
+        visible={showImageSearch}
+        onClose={() => setShowImageSearch(false)}
       />
     </SafeAreaView>
   );
