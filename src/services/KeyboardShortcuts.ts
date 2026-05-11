@@ -35,6 +35,9 @@ export interface KeyboardShortcutHandlers {
   // Clear Data
   onOpenClearData?: () => void;
   
+  // PDF Viewer
+  onOpenPDFViewer?: () => void;
+  
   // Help
   onShowShortcutsHelp?: () => void;
 }

@@ -25,7 +25,7 @@ const NAV_EVENT_NAME = 'khoj-nav-command';
 
 const AppContent: React.FC = React.memo(() => {
   const { colors, isIncognito } = useTheme();
-  const { Browser, KeyboardShortcutsHelp, SecuritySettings, ClearBrowsingData } = useOrganisms();
+  const { Browser, KeyboardShortcutsHelp, SecuritySettings, ClearBrowsingData, PDFViewer } = useOrganisms();
   const [tabs, setTabs] = useState<Tab[]>([]);
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
   const [url, setUrl] = useState<string>(HOME_URL);
@@ -37,6 +37,7 @@ const AppContent: React.FC = React.memo(() => {
   const [bookmarks, setBookmarks] = useState<BookmarkItem[]>([]);
   const [showSecuritySettings, setShowSecuritySettings] = useState(false);
   const [showClearData, setShowClearData] = useState(false);
+  const [showPDFViewer, setShowPDFViewer] = useState(false);
   const searchBarRef = useRef<any>(null);
 
   const activeTab = tabs.find(tab => tab.id === activeTabId);
@@ -188,6 +189,11 @@ const AppContent: React.FC = React.memo(() => {
       // Clear Data
       onOpenClearData: () => {
         setShowClearData(true);
+      },
+      
+      // PDF Viewer
+      onOpenPDFViewer: () => {
+        setShowPDFViewer(true);
       },
       
       // Window Management (Electron-specific)
@@ -580,6 +586,10 @@ const AppContent: React.FC = React.memo(() => {
       <ClearBrowsingData
         visible={showClearData}
         onClose={() => setShowClearData(false)}
+      />
+      <PDFViewer
+        visible={showPDFViewer}
+        onClose={() => setShowPDFViewer(false)}
       />
     </SafeAreaView>
   );
