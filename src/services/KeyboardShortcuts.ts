@@ -29,6 +29,12 @@ export interface KeyboardShortcutHandlers {
   onFindText?: () => void;
   onPrintPage?: () => void;
   
+  // Security
+  onOpenSecuritySettings?: () => void;
+  
+  // Clear Data
+  onOpenClearData?: () => void;
+  
   // Help
   onShowShortcutsHelp?: () => void;
 }

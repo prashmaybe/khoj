@@ -4,6 +4,7 @@ import { KeyboardShortcuts } from './services/KeyboardShortcuts';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { useOrganisms, ComponentsProvider } from './hooks';
 import { preferencesStorage, BookmarkItem } from './services/PreferencesStorage';
+import { securityService } from './services/SecurityService';
 
 interface Tab {
   id: string;
@@ -24,7 +25,7 @@ const NAV_EVENT_NAME = 'khoj-nav-command';
 
 const AppContent: React.FC = React.memo(() => {
   const { colors, isIncognito } = useTheme();
-  const { Browser, KeyboardShortcutsHelp } = useOrganisms();
+  const { Browser, KeyboardShortcutsHelp, SecuritySettings, ClearBrowsingData } = useOrganisms();
   const [tabs, setTabs] = useState<Tab[]>([]);
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
   const [url, setUrl] = useState<string>(HOME_URL);
@@ -34,6 +35,8 @@ const AppContent: React.FC = React.memo(() => {
     return preferencesStorage.loadBookmarksBarVisibility();
   });
   const [bookmarks, setBookmarks] = useState<BookmarkItem[]>([]);
+  const [showSecuritySettings, setShowSecuritySettings] = useState(false);
+  const [showClearData, setShowClearData] = useState(false);
   const searchBarRef = useRef<any>(null);
 
   const activeTab = tabs.find(tab => tab.id === activeTabId);
@@ -177,6 +180,16 @@ const AppContent: React.FC = React.memo(() => {
         setShowShortcutsHelp(true);
       },
       
+      // Security
+      onOpenSecuritySettings: () => {
+        setShowSecuritySettings(true);
+      },
+      
+      // Clear Data
+      onOpenClearData: () => {
+        setShowClearData(true);
+      },
+      
       // Window Management (Electron-specific)
       onNewWindow: () => {
         // TODO: Implement new window functionality
@@ -317,9 +330,14 @@ const AppContent: React.FC = React.memo(() => {
       const searchUrl = createGoogleSearchUrl(formattedUrl);
       navigateCurrentTab(searchUrl, formattedUrl);
     } else {
-      // It's a URL, format it properly
+      // It's a URL, format it properly and apply HTTPS upgrade if enabled
+      const securitySettings = securityService.loadSecuritySettings();
       if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
-        formattedUrl = 'https://' + formattedUrl;
+        if (securitySettings.httpsOnly) {
+          formattedUrl = 'https://' + formattedUrl;
+        } else {
+          formattedUrl = 'http://' + formattedUrl;
+        }
       }
 
       navigateCurrentTab(formattedUrl, formattedUrl);
@@ -554,6 +572,14 @@ const AppContent: React.FC = React.memo(() => {
       <KeyboardShortcutsHelp
         visible={showShortcutsHelp}
         onClose={() => setShowShortcutsHelp(false)}
+      />
+      <SecuritySettings
+        visible={showSecuritySettings}
+        onClose={() => setShowSecuritySettings(false)}
+      />
+      <ClearBrowsingData
+        visible={showClearData}
+        onClose={() => setShowClearData(false)}
       />
     </SafeAreaView>
   );

@@ -17,6 +17,7 @@ interface BrowserToolbarProps {
   searchBarRef?: React.RefObject<any>;
   isBookmarked?: boolean;
   onBookmarkToggle?: () => void;
+  onPasswordManager?: () => void;
 }
 
 const BrowserToolbar: React.FC<BrowserToolbarProps> = React.memo(({
@@ -33,9 +34,10 @@ const BrowserToolbar: React.FC<BrowserToolbarProps> = React.memo(({
   searchBarRef,
   isBookmarked = false,
   onBookmarkToggle,
+  onPasswordManager,
 }) => {
   const { colors } = useTheme();
-  const { NavigationControls, SearchBar } = useMolecules();
+  const { NavigationControls, SearchBar, PasswordManagerButton } = useMolecules();
 
   return (
     <View style={[styles.browserToolbar, { backgroundColor: colors.toolbar, borderBottomColor: colors.border }]}>
@@ -57,6 +59,13 @@ const BrowserToolbar: React.FC<BrowserToolbarProps> = React.memo(({
         isBookmarked={isBookmarked}
         onBookmarkToggle={onBookmarkToggle}
       />
+      {onPasswordManager && (
+        <PasswordManagerButton
+          currentUrl={url}
+          onPress={onPasswordManager}
+          style={styles.passwordManagerButton}
+        />
+      )}
     </View>
   );
 });
@@ -68,6 +77,9 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderBottomWidth: 1,
+  },
+  passwordManagerButton: {
+    marginLeft: 8,
   },
 });
 

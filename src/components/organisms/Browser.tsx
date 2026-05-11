@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useOrganisms, useMolecules, usePages } from '../../hooks';
+import { passwordAutofill } from '../../services/PasswordAutofill';
 
 const NAV_EVENT_NAME = 'khoj-nav-command';
 
@@ -81,8 +82,9 @@ const Browser: React.FC<BrowserProps> = React.memo(({
   isIncognito = false,
 }) => {
   const { colors } = useTheme();
-  const { TabBar, BrowserToolbar, BookmarksBar } = useOrganisms();
+  const { TabBar, BrowserToolbar, BookmarksBar, PasswordManager } = useOrganisms();
   const { ErrorPage, DownloadsPage, HistoryPage, BookmarksPage } = usePages();
+  const [showPasswordManager, setShowPasswordManager] = React.useState(false);
   const activeTab = tabs.find(tab => tab.id === activeTabId);
   const isHomeTab = activeTab?.url.startsWith('khoj://');
   const isDownloadsTab = activeTab?.url === 'khoj://downloads';
@@ -272,6 +274,7 @@ const Browser: React.FC<BrowserProps> = React.memo(({
         searchBarRef={searchBarRef}
         isBookmarked={isBookmarked}
         onBookmarkToggle={onBookmarkToggle}
+        onPasswordManager={() => setShowPasswordManager(true)}
       />
       
       <View style={styles.browserContent}>
@@ -363,6 +366,8 @@ const Browser: React.FC<BrowserProps> = React.memo(({
                         });
                         el.addEventListener('dom-ready', () => {
                           webviewReadyStates.current.set(tab.id, true);
+                          // Password autofill will be available via the password manager UI
+                          // For full autofill functionality, this would need proper webview integration
                         });
                       }
                     }}
@@ -400,6 +405,12 @@ const Browser: React.FC<BrowserProps> = React.memo(({
           </View>
         )}
       </View>
+      
+      <PasswordManager
+        visible={showPasswordManager}
+        onClose={() => setShowPasswordManager(false)}
+        currentUrl={activeTab?.url}
+      />
     </View>
   );
 });
