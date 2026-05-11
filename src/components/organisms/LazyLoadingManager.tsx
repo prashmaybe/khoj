@@ -340,7 +340,6 @@ const LazyLoadingManager: React.FC<LazyLoadingManagerProps> = ({ visible, onClos
 
           {/* Threshold Settings */}
           {renderThresholdSettings()}
-        </View>
         </ScrollView>
       </View>
     </Modal>
@@ -375,6 +374,9 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   content: {
+    flex: 1,
+  },
+  contentContainer: {
     flex: 1,
   },
   section: {

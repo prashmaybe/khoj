@@ -327,6 +327,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginHorizontal: 4,
   },
+  resultsList: {
+    gap: 8,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#666666',
+  },
 });
 
 export default ImageSearch;

@@ -65,7 +65,7 @@ class LazyLoadingService {
 
   private tabStates: Map<string, TabState> = new Map();
   private loadingQueue: string[] = [];
-  private memoryMonitor: NodeJS.Timeout | null = null;
+  private memoryMonitor: number | null = null;
   private isMonitoring = false;
 
   // Initialize tab state
@@ -215,7 +215,7 @@ class LazyLoadingService {
 
   // Add to loading queue
   private addToLoadingQueue(tabId: string): void {
-    if (!this.loadingQueue.includes(tabId)) {
+    if (this.loadingQueue.indexOf(tabId) === -1) {
       this.loadingQueue.push(tabId);
     }
   }
@@ -330,9 +330,9 @@ class LazyLoadingService {
     if (this.isMonitoring) return;
 
     this.isMonitoring = true;
-    this.memoryMonitor = setInterval(() => {
+    this.memoryMonitor = (setInterval as any)(() => {
       this.checkMemoryPressure();
-    }, 30000); // Check every 30 seconds
+    }, 30000) as any; // Check every 30 seconds
   }
 
   // Stop memory monitoring

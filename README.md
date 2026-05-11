@@ -352,13 +352,66 @@ khoj/
 
 ## Features
 
+### 🌐 Core Browser Functionality
 - ✅ **Universal Cross-Platform Support** (Android, iOS, Windows, macOS, Linux)
-- ✅ **Tab Management System** - Create, close, and switch between tabs
-- ✅ **Navigation Controls** - Back, forward, reload, and home buttons
-- ✅ **Search Functionality** - Smart URL detection and Google search integration
-- ✅ **Error Handling** - Graceful error display and retry functionality
-- ✅ **Responsive Design** - Adapts to different screen sizes and platforms
-- ✅ **Native Performance** - Optimized for each platform
+- ✅ **Advanced Tab Management System** - Create, close, switch, and manage tabs with memory optimization
+- ✅ **Intelligent Navigation Controls** - Back, forward, reload, home, and page source viewing
+- ✅ **Smart Search Functionality** - URL detection, multiple search engines, and intelligent query handling
+- ✅ **Comprehensive Error Handling** - Graceful error display with retry functionality and detailed error codes
+- ✅ **Responsive Design** - Adapts seamlessly to different screen sizes and platforms
+- ✅ **Native Performance** - Optimized for each platform with lazy loading and memory management
+
+### 🔒 Privacy & Security
+- ✅ **Advanced Password Manager** - Master password protection, password generation, autofill, and secure storage
+- ✅ **Security Settings** - HTTPS-only mode, tracker blocking, cookie management, and data clearing
+- ✅ **Incognito Mode** - Private browsing with no history or data persistence
+- ✅ **Clear Browsing Data** - Granular data clearing with time ranges and selective options
+- ✅ **Security Indicators** - Visual warnings for insecure sites and mixed content
+
+### 📚 Content Management
+- ✅ **Advanced Bookmarks System** - Hierarchical organization, tags, search, and import/export
+- ✅ **Comprehensive History Management** - Full browsing history with search and filtering
+- ✅ **Downloads Management** - Download tracking and management interface
+- ✅ **PDF Viewer** - Built-in PDF viewing with annotations, zoom, and search capabilities
+- ✅ **Image Search** - Integrated image search with download and copy functionality
+
+### 🎨 User Experience
+- ✅ **Theme System** - Light and dark themes with customizable colors
+- ✅ **Keyboard Shortcuts** - Comprehensive keyboard shortcuts for all major functions
+- ✅ **Search Engine Selection** - Multiple search engines with easy switching
+- ✅ **Bookmarks Bar** - Quick access to favorite bookmarks
+- ✅ **Tab Suspended State** - Memory optimization through tab suspension
+- ✅ **Performance Monitoring** - Real-time memory and performance metrics
+
+### ⚡ Performance & Optimization
+- ✅ **Lazy Loading Manager** - Intelligent tab suspension for memory efficiency
+- ✅ **Memory Optimization** - Automatic tab management and memory cleanup
+- ✅ **Performance Metrics** - Real-time monitoring of tab utilization and efficiency
+- ✅ **Tab Priority System** - Smart prioritization of active and background tabs
+- ✅ **Resource Management** - Efficient handling of system resources
+
+### 🛠️ Advanced Features
+- ✅ **Developer Tools Integration** - Access to browser developer tools and debugging
+- ✅ **Page Source Viewing** - View HTML source code of any webpage
+- ✅ **Print Functionality** - Print web pages directly from the browser
+- ✅ **Find in Page** - Text search within current page
+- ✅ **Favicon Support** - Automatic favicon detection and display
+- ✅ **Auto-URL Formatting** - Smart URL completion and HTTPS upgrade
+
+### 📱 Platform-Specific Features
+- ✅ **Electron Integration** - Native desktop features for Windows, macOS, and Linux
+- ✅ **React Native WebView** - Optimized web content rendering for mobile
+- ✅ **Cross-Platform Storage** - Unified preferences and data synchronization
+- ✅ **Platform Detection** - Adaptive behavior based on running platform
+
+### ⌨️ Keyboard Shortcuts
+- ✅ **Tab Management** - Ctrl+T (New Tab), Ctrl+W (Close Tab), Ctrl+Tab (Switch Tab)
+- ✅ **Navigation** - Alt+Left (Back), Alt+Right (Forward), F5 (Reload), Ctrl+L (Focus Address Bar)
+- ✅ **Search** - Ctrl+K (Quick Search), Ctrl+F (Find in Page)
+- ✅ **Bookmarks** - Ctrl+D (Bookmark Page), Ctrl+B (Toggle Bookmarks Bar)
+- ✅ **Windows** - Ctrl+N (New Window), Ctrl+Shift+N (Incognito Window)
+- ✅ **Tools** - F12 (Developer Tools), Ctrl+Shift+Delete (Clear Data)
+- ✅ **Help** - F1 (Keyboard Shortcuts Help)
 
 ## Development Notes
 

@@ -36,8 +36,8 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ visible, documentId, onClose }) =
 
   useEffect(() => {
     const updateDimensions = () => setWindowWidth(Dimensions.get('window').width);
-    Dimensions.addEventListener('change', updateDimensions);
-    return () => Dimensions.removeEventListener('change', updateDimensions);
+    const subscription = Dimensions.addEventListener('change', updateDimensions);
+    return () => subscription?.remove();
   }, []);
 
   useEffect(() => {
@@ -550,6 +550,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: 8,
+  },
+  modalButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
   },
   cancelButton: {
     backgroundColor: '#6c757d',

@@ -302,7 +302,7 @@ class SecurityService {
     scripts.forEach(script => {
       const src = script.src || '';
       trackerPatterns.forEach(pattern => {
-        if (pattern.test(src) && !detectedTrackers.includes(pattern.source)) {
+        if (pattern.test(src) && detectedTrackers.indexOf(pattern.source) === -1) {
           detectedTrackers.push(pattern.source);
         }
       });

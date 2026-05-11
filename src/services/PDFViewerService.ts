@@ -326,7 +326,7 @@ class PDFViewerService {
     const validTypes = ['application/pdf'];
     const maxSize = 50 * 1024 * 1024; // 50MB
     
-    return validTypes.includes(file.type) && file.size <= maxSize;
+    return validTypes.indexOf(file.type) !== -1 && file.size <= maxSize;
   }
 
   // PDF text extraction (simplified)

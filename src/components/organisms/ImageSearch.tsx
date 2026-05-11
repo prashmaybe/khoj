@@ -10,6 +10,7 @@ import {
   FlatList,
   Image,
   Dimensions,
+  ScrollView,
 } from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import { imageSearchService, ImageSearchResult, ImageSearchOptions } from '../../services/ImageSearchService';
