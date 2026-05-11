@@ -44,6 +44,12 @@ export interface KeyboardShortcutHandlers {
   // Image Search
   onOpenImageSearch?: () => void;
   
+  // Tab Manager
+  onOpenTabManager?: () => void;
+  
+  // Lazy Loading Manager
+  onOpenLazyLoadingManager?: () => void;
+  
   // Help
   onShowShortcutsHelp?: () => void;
 }
