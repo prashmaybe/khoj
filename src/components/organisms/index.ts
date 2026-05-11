@@ -7,3 +7,4 @@ export { default as PasswordManager } from './PasswordManager';
 export { default as ClearBrowsingData } from './ClearBrowsingData';
 export { default as SecuritySettings } from './SecuritySettings';
 export { default as PDFViewer } from './PDFViewer';
+export { default as SearchEngineSelector } from './SearchEngineSelector';

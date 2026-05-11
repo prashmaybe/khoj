@@ -5,6 +5,7 @@ import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { useOrganisms, ComponentsProvider } from './hooks';
 import { preferencesStorage, BookmarkItem } from './services/PreferencesStorage';
 import { securityService } from './services/SecurityService';
+import { searchEngineService } from './services/SearchEngineService';
 
 interface Tab {
   id: string;
@@ -25,7 +26,7 @@ const NAV_EVENT_NAME = 'khoj-nav-command';
 
 const AppContent: React.FC = React.memo(() => {
   const { colors, isIncognito } = useTheme();
-  const { Browser, KeyboardShortcutsHelp, SecuritySettings, ClearBrowsingData, PDFViewer } = useOrganisms();
+  const { Browser, KeyboardShortcutsHelp, SecuritySettings, ClearBrowsingData, PDFViewer, SearchEngineSelector } = useOrganisms();
   const [tabs, setTabs] = useState<Tab[]>([]);
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
   const [url, setUrl] = useState<string>(HOME_URL);
@@ -38,6 +39,7 @@ const AppContent: React.FC = React.memo(() => {
   const [showSecuritySettings, setShowSecuritySettings] = useState(false);
   const [showClearData, setShowClearData] = useState(false);
   const [showPDFViewer, setShowPDFViewer] = useState(false);
+  const [showSearchEngineSelector, setShowSearchEngineSelector] = useState(false);
   const searchBarRef = useRef<any>(null);
 
   const activeTab = tabs.find(tab => tab.id === activeTabId);
@@ -196,6 +198,11 @@ const AppContent: React.FC = React.memo(() => {
         setShowPDFViewer(true);
       },
       
+      // Search Engine Selector
+      onOpenSearchEngineSelector: () => {
+        setShowSearchEngineSelector(true);
+      },
+      
       // Window Management (Electron-specific)
       onNewWindow: () => {
         // TODO: Implement new window functionality
@@ -333,7 +340,7 @@ const AppContent: React.FC = React.memo(() => {
     
     // Check if this is a search query
     if (isSearchQuery(formattedUrl)) {
-      const searchUrl = createGoogleSearchUrl(formattedUrl);
+      const searchUrl = searchEngineService.search(formattedUrl);
       navigateCurrentTab(searchUrl, formattedUrl);
     } else {
       // It's a URL, format it properly and apply HTTPS upgrade if enabled
@@ -590,6 +597,10 @@ const AppContent: React.FC = React.memo(() => {
       <PDFViewer
         visible={showPDFViewer}
         onClose={() => setShowPDFViewer(false)}
+      />
+      <SearchEngineSelector
+        visible={showSearchEngineSelector}
+        onClose={() => setShowSearchEngineSelector(false)}
       />
     </SafeAreaView>
   );

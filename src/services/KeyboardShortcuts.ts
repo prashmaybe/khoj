@@ -38,6 +38,9 @@ export interface KeyboardShortcutHandlers {
   // PDF Viewer
   onOpenPDFViewer?: () => void;
   
+  // Search Engine Selector
+  onOpenSearchEngineSelector?: () => void;
+  
   // Help
   onShowShortcutsHelp?: () => void;
 }

@@ -8,7 +8,6 @@ import {
   ScrollView,
   TextInput,
   Alert,
-  Switch,
 } from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import { searchEngineService, SearchEngine, CustomSearchEngine } from '../../services/SearchEngineService';
@@ -26,6 +25,7 @@ const SearchEngineSelector: React.FC<SearchEngineSelectorProps> = ({ visible, on
   const [customEngines, setCustomEngines] = useState<CustomSearchEngine[]>([]);
   const [editingCustomEngine, setEditingCustomEngine] = useState<CustomSearchEngine | null>(null);
   const [newCustomEngine, setNewCustomEngine] = useState<CustomSearchEngine>({
+    id: '',
     name: '',
     baseUrl: '',
     searchPath: '/search',
@@ -37,13 +37,13 @@ const SearchEngineSelector: React.FC<SearchEngineSelectorProps> = ({ visible, on
     if (visible) {
       const engine = searchEngineService.getCurrentEngine();
       setCurrentEngine(engine);
-      const engines = SearchEngineService.getCustomEngines();
+      const engines = searchEngineService.getCustomEngines();
       setCustomEngines(engines);
     }
   }, [visible]);
 
   const handleEngineSelect = (engine: SearchEngine) => {
-    SearchEngineService.setCurrentEngine(engine.id);
+    searchEngineService.setCurrentEngine(engine.id);
     setCurrentEngine(engine);
   };
 
@@ -52,16 +52,17 @@ const SearchEngineSelector: React.FC<SearchEngineSelectorProps> = ({ visible, on
   };
 
   const handleSaveCustomEngine = () => {
-    const validation = SearchEngineService.validateCustomEngine(newCustomEngine);
+    const validation = searchEngineService.validateCustomEngine(newCustomEngine);
     
     if (!validation.isValid) {
       Alert.alert('Validation Error', validation.errors.join('\n'));
       return;
     }
 
-    const success = SearchEngineService.addCustomEngine(newCustomEngine);
+    const success = searchEngineService.addCustomEngine(newCustomEngine);
     if (success) {
       setNewCustomEngine({
+        id: '',
         name: '',
         baseUrl: '',
         searchPath: '/search',
@@ -69,45 +70,11 @@ const SearchEngineSelector: React.FC<SearchEngineSelectorProps> = ({ visible, on
         description: '',
       });
       setShowCustomEngineForm(false);
-      const updatedEngines = SearchEngineService.getCustomEngines();
+      const updatedEngines = searchEngineService.getCustomEngines();
       setCustomEngines(updatedEngines);
       Alert.alert('Success', 'Custom search engine added successfully');
     } else {
       Alert.alert('Error', 'Failed to add custom search engine');
-    }
-  };
-
-  const handleEditCustomEngine = (engine: CustomSearchEngine) => {
-    setEditingCustomEngine(engine);
-    setNewCustomEngine(engine);
-  };
-
-  const handleUpdateCustomEngine = () => {
-    if (!editingCustomEngine) return;
-
-    const validation = SearchEngineService.validateCustomEngine(newCustomEngine);
-    
-    if (!validation.isValid) {
-      Alert.alert('Validation Error', validation.errors.join('\n'));
-      return;
-    }
-
-    const success = SearchEngineService.addCustomEngine(newCustomEngine);
-    if (success) {
-      setEditingCustomEngine(null);
-      setNewCustomEngine({
-        name: '',
-        baseUrl: '',
-        searchPath: '/search',
-        icon: '🔍',
-        description: '',
-      });
-      setShowCustomEngineForm(false);
-      const updatedEngines = SearchEngineService.getCustomEngines();
-      setCustomEngines(updatedEngines);
-      Alert.alert('Success', 'Custom search engine updated successfully');
-    } else {
-      Alert.alert('Error', 'Failed to update custom search engine');
     }
   };
 
@@ -121,9 +88,9 @@ const SearchEngineSelector: React.FC<SearchEngineSelectorProps> = ({ visible, on
           text: 'Delete',
           style: 'destructive',
           onPress: () => {
-            const success = SearchEngineService.removeCustomEngine(engineId);
+            const success = searchEngineService.removeCustomEngine(engineId);
             if (success) {
-              const updatedEngines = SearchEngineService.getCustomEngines();
+              const updatedEngines = searchEngineService.getCustomEngines();
               setCustomEngines(updatedEngines);
               Alert.alert('Success', 'Custom search engine deleted successfully');
             } else {
@@ -135,20 +102,7 @@ const SearchEngineSelector: React.FC<SearchEngineSelectorProps> = ({ visible, on
     );
   };
 
-  const handleSetAsDefault = (engineId: string) => {
-    const success = SearchEngineService.setCurrentEngine(engineId);
-    if (success) {
-      const engine = SearchEngineService.getEngineById(engineId);
-      if (engine) {
-        setCurrentEngine(engine);
-        Alert.alert('Success', `${engine.name} set as default search engine`);
-      }
-    } else {
-      Alert.alert('Error', 'Failed to set default search engine');
-    }
-  };
-
-  const renderEngineItem = (engine: SearchEngine | CustomSearchEngine, isCustom: boolean = false) => (
+  const renderEngineItem = (engine: SearchEngine, isCustom: boolean = false) => (
     <TouchableOpacity
       style={[
         styles.engineItem,
@@ -157,7 +111,7 @@ const SearchEngineSelector: React.FC<SearchEngineSelectorProps> = ({ visible, on
           borderColor: currentEngine?.id === engine.id ? colors.buttonPrimary : colors.border,
         }
       ]}
-      onPress={() => !isCustom && handleEngineSelect(engine as SearchEngine)}
+      onPress={() => !isCustom && handleEngineSelect(engine)}
     >
       <View style={styles.engineInfo}>
         <Text style={styles.engineIcon}>{engine.icon}</Text>
@@ -182,13 +136,6 @@ const SearchEngineSelector: React.FC<SearchEngineSelectorProps> = ({ visible, on
         <View style={styles.customEngineActions}>
           <TouchableOpacity
             style={[styles.actionButton, { backgroundColor: colors.buttonSecondary }]}
-            onPress={() => handleEditCustomEngine(engine as CustomSearchEngine)}
-          >
-            <FiEdit3 size={16} color={colors.buttonSecondaryText} />
-          </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={[styles.actionButton, { backgroundColor: colors.buttonSecondary }]}
             onPress={() => handleDeleteCustomEngine(engine.id)}
           >
             <FiTrash2 size={16} color={colors.buttonSecondaryText} />
@@ -196,114 +143,6 @@ const SearchEngineSelector: React.FC<SearchEngineSelectorProps> = ({ visible, on
         </View>
       )}
     </TouchableOpacity>
-  );
-
-  const renderCustomEngineForm = () => (
-    <View style={[styles.formContainer, { backgroundColor: colors.surface }]}>
-      <Text style={[styles.formTitle, { color: colors.text }]}>
-        {editingCustomEngine ? 'Edit Custom Search Engine' : 'Add Custom Search Engine'}
-      </Text>
-      
-      <View style={styles.formGroup}>
-        <Text style={[styles.formLabel, { color: colors.text }]}>
-          Name
-        </Text>
-        <TextInput
-          style={[styles.formInput, { 
-            backgroundColor: colors.background, 
-            borderColor: colors.border,
-            color: colors.text 
-          }]}
-          placeholder="Enter search engine name"
-          placeholderTextColor={colors.textSecondary}
-          value={newCustomEngine.name}
-          onChangeText={(text) => setNewCustomEngine({ ...newCustomEngine, name: text })}
-        />
-      </View>
-
-      <View style={styles.formGroup}>
-        <Text style={[styles.formLabel, { color: colors.text }]}>
-          Base URL
-        </Text>
-        <TextInput
-          style={[styles.formInput, { 
-            backgroundColor: colors.background, 
-            borderColor: colors.border,
-            color: colors.text 
-          }]}
-          placeholder="https://example.com"
-          placeholderTextColor={colors.textSecondary}
-          value={newCustomEngine.baseUrl}
-          onChangeText={(text) => setNewCustomEngine({ ...newCustomEngine, baseUrl: text })}
-        />
-      </View>
-
-      <View style={styles.formGroup}>
-        <Text style={[styles.formLabel, { color: colors.text }]}>
-          Search Path
-        </Text>
-        <TextInput
-          style={[styles.formInput, { 
-            backgroundColor: colors.background, 
-            borderColor: colors.border,
-            color: colors.text 
-          }]}
-          placeholder="/search"
-          placeholderTextColor={colors.textSecondary}
-          value={newCustomEngine.searchPath}
-          onChangeText={(text) => setNewCustomEngine({ ...newCustomEngine, searchPath: text })}
-        />
-      </View>
-
-      <View style={styles.formGroup}>
-        <Text style={[styles.formLabel, { color: colors.text }]}>
-          Description
-        </Text>
-        <TextInput
-          style={[styles.formInput, { 
-            backgroundColor: colors.background, 
-            borderColor: colors.border,
-            color: colors.text 
-          }]}
-          placeholder="Enter a description"
-          placeholderTextColor={colors.textSecondary}
-          value={newCustomEngine.description}
-          onChangeText={(text) => setNewCustomEngine({ ...newCustomEngine, description: text })}
-          multiline
-        />
-      </View>
-    </View>
-
-    <View style={styles.formButtons}>
-      <TouchableOpacity
-        style={[styles.formButton, styles.cancelButton, { backgroundColor: colors.buttonSecondary }]}
-        onPress={() => {
-          setShowCustomEngineForm(false);
-          setEditingCustomEngine(null);
-          setNewCustomEngine({
-            name: '',
-            baseUrl: '',
-            searchPath: '/search',
-            icon: '🔍',
-            description: '',
-          });
-        }}
-      >
-        <Text style={[styles.formButtonText, { color: colors.buttonSecondaryText }]}>
-          Cancel
-        </Text>
-      </TouchableOpacity>
-      
-      <TouchableOpacity
-        style={[styles.formButton, styles.saveButton, { backgroundColor: colors.buttonPrimary }]}
-        onPress={editingCustomEngine ? handleUpdateCustomEngine : handleSaveCustomEngine}
-        disabled={!newCustomEngine.name.trim() || !newCustomEngine.baseUrl.trim()}
-      >
-        <Text style={[styles.formButtonText, { color: colors.buttonPrimaryText }]}>
-          {editingCustomEngine ? 'Update' : 'Add'}
-        </Text>
-      </TouchableOpacity>
-    </View>
   );
 
   if (!visible) return null;
@@ -334,7 +173,7 @@ const SearchEngineSelector: React.FC<SearchEngineSelectorProps> = ({ visible, on
             <Text style={[styles.sectionTitle, { color: colors.text }]}>
               Built-in Search Engines
             </Text>
-            {SearchEngineService.getAvailableEngines().map((engine) => (
+            {searchEngineService.getAvailableEngines().map((engine) => (
               renderEngineItem(engine, false)
             ))}
           </View>
@@ -354,46 +193,10 @@ const SearchEngineSelector: React.FC<SearchEngineSelectorProps> = ({ visible, on
             </View>
             
             {customEngines.map((engine) => (
-              renderEngineItem(engine, true)
+              renderEngineItem(engine as any, true)
             ))}
           </View>
-
-          {/* Quick Actions */}
-          <View style={[styles.section, { backgroundColor: colors.surface }]}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>
-              Quick Actions
-            </Text>
-            
-            <TouchableOpacity
-              style={[styles.actionItem, { backgroundColor: colors.background }]}
-              onPress={() => SearchEngineService.resetToDefault()}
-            >
-              <FiGlobe size={20} color={colors.buttonPrimary} />
-              <Text style={[styles.actionText, { color: colors.text }]}>
-                Reset to Default
-              </Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={[styles.actionItem, { backgroundColor: colors.background }]}
-              onPress={() => {
-                const stats = SearchEngineService.getSearchStats();
-                Alert.alert(
-                  'Search Statistics',
-                  `Total Searches: ${stats.totalSearches}\nMost Used: ${stats.mostUsedEngine}\nLast Search: ${stats.lastSearch}`,
-                  [{ text: 'OK', style: 'default' }]
-                );
-              }}
-            >
-              <FiCheck size={20} color={colors.buttonPrimary} />
-              <Text style={[styles.actionText, { color: colors.text }]}>
-                Search Statistics
-              </Text>
-            </TouchableOpacity>
-          </View>
         </ScrollView>
-
-        {showCustomEngineForm && renderCustomEngineForm()}
       </View>
     </Modal>
   );
@@ -493,10 +296,6 @@ const styles = StyleSheet.create({
     padding: 8,
     borderRadius: 4,
   },
-  actionText: {
-    fontSize: 14,
-    marginLeft: 8,
-  },
   addButton: {
     backgroundColor: '#007AFF',
     paddingHorizontal: 12,
@@ -504,53 +303,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  formContainer: {
-    padding: 16,
-    borderRadius: 8,
-  },
-  formTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 16,
-  },
-  formGroup: {
-    marginBottom: 16,
-  },
-  formLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    marginBottom: 8,
-  },
-  formInput: {
-    height: 44,
-    borderWidth: 1,
-    borderRadius: 6,
-    paddingHorizontal: 12,
-    fontSize: 16,
-  },
-  formButtons: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginTop: 16,
-  },
-  formButton: {
-    height: 44,
-    paddingHorizontal: 16,
-    borderRadius: 6,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 8,
-  },
-  cancelButton: {
-    backgroundColor: '#6c757d',
-  },
-  saveButton: {
-    backgroundColor: '#007AFF',
-  },
-  formButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
   },
 });
 
