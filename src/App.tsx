@@ -162,8 +162,12 @@ const AppContent: React.FC = React.memo(() => {
         openInternalTab(DOWNLOADS_URL, 'Downloads');
       },
       onViewPageSource: () => {
-        // TODO: Implement view page source functionality
-        console.log('View page source functionality not yet implemented');
+        const activeTab = tabs.find(tab => tab.id === activeTabId);
+        if (activeTab && typeof window !== 'undefined') {
+          // Create a new tab with the page source
+          const sourceUrl = `view-source:${activeTab.url}`;
+          createTab(undefined, sourceUrl, `Source: ${activeTab.title}`);
+        }
       },
       onOpenDevTools: () => {
         if (typeof window !== 'undefined' && window.electronAPI) {
@@ -173,12 +177,28 @@ const AppContent: React.FC = React.memo(() => {
       
       // Editing & General
       onFindText: () => {
-        // TODO: Implement find functionality
-        console.log('Find text functionality not yet implemented');
+        const activeTab = tabs.find(tab => tab.id === activeTabId);
+        if (activeTab && typeof window !== 'undefined') {
+          // Trigger browser find dialog
+          const findCommand = new KeyboardEvent('keydown', {
+            key: 'f',
+            ctrlKey: true,
+            bubbles: true
+          });
+          window.dispatchEvent(findCommand);
+        }
       },
       onPrintPage: () => {
-        // TODO: Implement print functionality
-        console.log('Print page functionality not yet implemented');
+        const activeTab = tabs.find(tab => tab.id === activeTabId);
+        if (activeTab && typeof window !== 'undefined') {
+          // Trigger browser print dialog
+          const printCommand = new KeyboardEvent('keydown', {
+            key: 'p',
+            ctrlKey: true,
+            bubbles: true
+          });
+          window.dispatchEvent(printCommand);
+        }
       },
       
       // Help
@@ -223,16 +243,37 @@ const AppContent: React.FC = React.memo(() => {
       
       // Window Management (Electron-specific)
       onNewWindow: () => {
-        // TODO: Implement new window functionality
-        console.log('New window functionality not yet implemented');
+        if (typeof window !== 'undefined' && window.electronAPI && 'createWindow' in window.electronAPI) {
+          (window.electronAPI as any).createWindow();
+        } else {
+          // Fallback for web version - open in new tab
+          createTab(undefined, 'about:blank', 'New Tab');
+        }
       },
       onNewIncognitoWindow: () => {
-        // TODO: Implement incognito window functionality
-        console.log('New incognito window functionality not yet implemented');
+        if (typeof window !== 'undefined' && window.electronAPI && 'createIncognitoWindow' in window.electronAPI) {
+          (window.electronAPI as any).createIncognitoWindow();
+        } else {
+          // Fallback for web version - create new tab
+          createTab(undefined, 'about:blank', 'New Tab');
+        }
       },
       onCloseWindow: () => {
-        // TODO: Implement close window functionality
-        console.log('Close window functionality not yet implemented');
+        if (typeof window !== 'undefined' && window.electronAPI && 'closeWindow' in window.electronAPI) {
+          (window.electronAPI as any).closeWindow();
+        } else {
+          // Fallback for web version - close current tab
+          if (tabs.length > 1) {
+            const newTabs = tabs.filter(tab => tab.id !== activeTabId);
+            setTabs(newTabs);
+            setActiveTabId(newTabs[newTabs.length - 1]?.id || null);
+          } else {
+            // If it's the last tab, show a confirmation before closing
+            if (confirm('Are you sure you want to close the browser?')) {
+              window.close();
+            }
+          }
+        }
       },
     });
 

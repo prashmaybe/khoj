@@ -63,15 +63,17 @@ class PDFViewerService {
         arrayBuffer = await file.arrayBuffer();
       }
 
-      // In a real implementation, this would use PDF.js or similar library
-      // For now, we'll create a mock PDF document structure
+      // Estimate page count based on file size (rough approximation)
+      // Real PDF parsing would require PDF.js library
+      const estimatedPageCount = Math.max(1, Math.floor(arrayBuffer.byteLength / (50 * 1024))); // ~50KB per page average
+      
       const pdfDocument: PDFDocument = {
         id: Date.now().toString(),
         title: file instanceof File ? file.name : 'PDF Document',
         url: URL.createObjectURL(new Blob([arrayBuffer], { type: 'application/pdf' })),
         fileSize: arrayBuffer.byteLength,
-        lastModified: new Date().toISOString(),
-        pageCount: 10, // Mock page count
+        lastModified: file instanceof File ? new Date(file.lastModified).toISOString() : new Date().toISOString(),
+        pageCount: Math.min(estimatedPageCount, 1000), // Cap at 1000 pages to prevent unreasonable estimates
         currentPage: 1,
         zoom: 1.0,
         annotations: [],
@@ -332,12 +334,50 @@ class PDFViewerService {
     try {
       const arrayBuffer = await file.arrayBuffer();
       
-      // In a real implementation, this would use PDF.js to extract text
-      // For now, return a placeholder
-      return `PDF text extraction not yet implemented for file: ${file.name}`;
+      // Basic text extraction from PDF binary data
+      // This is a simplified implementation - real implementation would use PDF.js
+      const uint8Array = new Uint8Array(arrayBuffer);
+      let extractedText = '';
+      
+      // Look for text strings in PDF (very basic approach)
+      const textStrings: string[] = [];
+      let inText = false;
+      let currentText = '';
+      
+      for (let i = 0; i < uint8Array.length - 1; i++) {
+        const char = String.fromCharCode(uint8Array[i]);
+        const nextChar = String.fromCharCode(uint8Array[i + 1]);
+        
+        // Look for text string patterns in PDF
+        if (char === '(' && !inText) {
+          inText = true;
+          currentText = '';
+        } else if (char === ')' && inText) {
+          inText = false;
+          if (currentText.length > 1) {
+            textStrings.push(currentText);
+          }
+        } else if (inText) {
+          currentText += char;
+        }
+      }
+      
+      // Clean up and format extracted text
+      extractedText = textStrings
+        .filter(text => text.trim().length > 0)
+        .join(' ')
+        .replace(/\\([nrt])/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      
+      if (extractedText.length === 0) {
+        return `PDF text extraction completed for file: ${file.name}. No readable text content found or text extraction requires PDF.js library for full functionality.`;
+      }
+      
+      return extractedText.substring(0, 10000); // Limit to first 10k characters
     } catch (error) {
       console.error('Error extracting PDF text:', error);
-      return 'Error extracting text';
+      return `Error extracting text from PDF: ${file.name}. This feature requires PDF.js library for full functionality.`;
     }
   }
 

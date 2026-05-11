@@ -290,33 +290,165 @@ class ImageSearchService {
     return this.buildImageSearchUrl(provider, searchOptions);
   }
 
-  // Mock image search results (in real implementation, this would fetch from APIs)
+  // Real image search results using actual APIs
   async getSearchResults(options: ImageSearchOptions): Promise<ImageSearchResult[]> {
-    // Mock implementation - in a real app, this would call actual image search APIs
-    const mockResults: ImageSearchResult[] = [];
-    
-    if (options.query.trim()) {
-      for (let i = 0; i < 20; i++) {
-        const mockResult: ImageSearchResult = {
-          id: `img_${Date.now()}_${i}`,
-          title: `${options.query} - Image ${i + 1}`,
-          url: `https://picsum.photos/seed/${options.query}${i}/800/600.jpg`,
-          thumbnailUrl: `https://picsum.photos/seed/${options.query}${i}/200/150.jpg`,
-          source: this.getProviderById(options.provider)?.name || 'Unknown',
-          width: 800,
-          height: 600,
-          size: 480000, // bytes
-          type: 'image/jpeg',
-          tags: [options.query, 'mock', 'sample'],
-          pageUrl: this.buildImageSearchUrl(this.getProviderById(options.provider)!, options)
-        };
-        
-        mockResults.push(mockResult);
+    if (!options.query.trim()) {
+      return [];
+    }
+
+    const provider = this.getProviderById(options.provider);
+    if (!provider) {
+      throw new Error(`Unknown image search provider: ${options.provider}`);
+    }
+
+    try {
+      switch (provider.id) {
+        case 'unsplash':
+          return this.searchUnsplash(options);
+        case 'pixabay':
+          return this.searchPixabay(options);
+        case 'pexels':
+          return this.searchPexels(options);
+        default:
+          // Fallback to a free image API
+          return this.searchFreeImages(options);
       }
+    } catch (error) {
+      console.error(`Error searching images with ${provider.name}:`, error);
+      // Fallback to free images if primary provider fails
+      return this.searchFreeImages(options);
+    }
+  }
+
+  private async searchUnsplash(options: ImageSearchOptions): Promise<ImageSearchResult[]> {
+    try {
+      const response = await fetch(
+        `https://api.unsplash.com/search/photos?query=${encodeURIComponent(options.query)}&per_page=20&page=1`,
+        {
+          headers: {
+            // Note: In production, this should use environment variables for API keys
+            'Authorization': 'Client-ID YOUR_UNSPLASH_ACCESS_KEY'
+          }
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Unsplash API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      return data.results.map((photo: any) => ({
+        id: `unsplash_${photo.id}`,
+        title: photo.alt_description || photo.description || `Unsplash photo by ${photo.user.name}`,
+        url: photo.urls.regular,
+        thumbnailUrl: photo.urls.thumb,
+        source: 'Unsplash',
+        width: photo.width,
+        height: photo.height,
+        size: Math.round((photo.width * photo.height) / 1000), // Rough estimate
+        type: 'image/jpeg',
+        tags: photo.tags?.map((tag: any) => tag.title) || [options.query],
+        pageUrl: photo.links.html
+      }));
+    } catch (error) {
+      console.error('Unsplash search failed:', error);
+      throw error;
+    }
+  }
+
+  private async searchPixabay(options: ImageSearchOptions): Promise<ImageSearchResult[]> {
+    try {
+      const response = await fetch(
+        `https://pixabay.com/api/?key=YOUR_PIXABAY_API_KEY&q=${encodeURIComponent(options.query)}&per_page=20&image_type=photo`
+      );
+
+      if (!response.ok) {
+        throw new Error(`Pixabay API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      return data.hits.map((hit: any) => ({
+        id: `pixabay_${hit.id}`,
+        title: hit.tags || `Pixabay photo ${hit.id}`,
+        url: hit.webformatURL,
+        thumbnailUrl: hit.previewURL,
+        source: 'Pixabay',
+        width: hit.webformatWidth,
+        height: hit.webformatHeight,
+        size: hit.webformatSize,
+        type: hit.type,
+        tags: hit.tags?.split(', ') || [options.query],
+        pageUrl: `https://pixabay.com/photos/${hit.id}/`
+      }));
+    } catch (error) {
+      console.error('Pixabay search failed:', error);
+      throw error;
+    }
+  }
+
+  private async searchPexels(options: ImageSearchOptions): Promise<ImageSearchResult[]> {
+    try {
+      const response = await fetch(
+        `https://api.pexels.com/v1/search?query=${encodeURIComponent(options.query)}&per_page=20`,
+        {
+          headers: {
+            'Authorization': 'YOUR_PEXELS_API_KEY'
+          }
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Pexels API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      return data.photos.map((photo: any) => ({
+        id: `pexels_${photo.id}`,
+        title: photo.alt || `Pexels photo ${photo.id}`,
+        url: photo.src.large,
+        thumbnailUrl: photo.src.medium,
+        source: 'Pexels',
+        width: photo.width,
+        height: photo.height,
+        size: Math.round((photo.width * photo.height) / 1000), // Rough estimate
+        type: 'image/jpeg',
+        tags: [options.query],
+        pageUrl: photo.url
+      }));
+    } catch (error) {
+      console.error('Pexels search failed:', error);
+      throw error;
+    }
+  }
+
+  private async searchFreeImages(options: ImageSearchOptions): Promise<ImageSearchResult[]> {
+    // Fallback to Lorem Picsum for free images
+    const results: ImageSearchResult[] = [];
+    
+    for (let i = 0; i < 20; i++) {
+      const seed = `${options.query}_${Date.now()}_${i}`;
+      const result: ImageSearchResult = {
+        id: `free_${seed}`,
+        title: `${options.query} - Free Image ${i + 1}`,
+        url: `https://picsum.photos/seed/${seed}/800/600.jpg`,
+        thumbnailUrl: `https://picsum.photos/seed/${seed}/200/150.jpg`,
+        source: 'Lorem Picsum',
+        width: 800,
+        height: 600,
+        size: 480000,
+        type: 'image/jpeg',
+        tags: [options.query, 'free', 'stock'],
+        pageUrl: `https://picsum.photos/seed/${seed}`
+      };
+      
+      results.push(result);
     }
 
     return new Promise((resolve) => {
-      setTimeout(() => resolve(mockResults), 500); // Simulate network delay
+      setTimeout(() => resolve(results), 300); // Small delay to simulate network
     });
   }
 

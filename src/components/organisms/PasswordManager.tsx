@@ -35,6 +35,11 @@ const PasswordManager: React.FC<PasswordManagerProps> = ({ visible, onClose, cur
   const [autoLockTime, setAutoLockTime] = useState(30); // minutes
   const [enableAutofill, setEnableAutofill] = useState(true);
   const [showPasswordStrength, setShowPasswordStrength] = useState(true);
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showImport, setShowImport] = useState(false);
 
   // Form states
   const [formData, setFormData] = useState({
@@ -211,6 +216,113 @@ const PasswordManager: React.FC<PasswordManagerProps> = ({ visible, onClose, cur
       console.error('Error generating password:', error);
       Alert.alert('Error', 'Failed to generate password');
     }
+  };
+
+  const handleChangeMasterPassword = async () => {
+    try {
+      if (!currentPassword || !newPassword || !confirmPassword) {
+        Alert.alert('Error', 'Please fill in all password fields');
+        return;
+      }
+
+      if (newPassword !== confirmPassword) {
+        Alert.alert('Error', 'New passwords do not match');
+        return;
+      }
+
+      if (newPassword.length < 8) {
+        Alert.alert('Error', 'New password must be at least 8 characters long');
+        return;
+      }
+
+      // Verify current password
+      const isValidCurrent = await passwordManager.verifyMasterPassword(currentPassword);
+      if (!isValidCurrent) {
+        Alert.alert('Error', 'Current password is incorrect');
+        return;
+      }
+
+      // Change master password
+      const success = await passwordManager.changeMasterPassword(newPassword);
+      if (success) {
+        Alert.alert('Success', 'Master password changed successfully');
+        setShowChangePassword(false);
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+        handleLock(); // Lock the manager after password change
+      } else {
+        Alert.alert('Error', 'Failed to change master password');
+      }
+    } catch (error) {
+      console.error('Error changing master password:', error);
+      Alert.alert('Error', 'Failed to change master password');
+    }
+  };
+
+  const handleImportPasswords = async (fileContent: string) => {
+    try {
+      // Parse the imported JSON data
+      const importedData = JSON.parse(fileContent);
+      
+      if (!Array.isArray(importedData)) {
+        Alert.alert('Error', 'Invalid import file format');
+        return;
+      }
+
+      let importCount = 0;
+      let skipCount = 0;
+
+      for (const entry of importedData) {
+        // Validate required fields
+        if (entry.title && entry.username && entry.password) {
+          await passwordManager.addPassword({
+            title: entry.title,
+            username: entry.username,
+            password: entry.password,
+            url: entry.url || '',
+            notes: entry.notes || '',
+            category: entry.category || '',
+            tags: Array.isArray(entry.tags) ? entry.tags : [],
+          });
+          importCount++;
+        } else {
+          skipCount++;
+        }
+      }
+
+      await loadPasswords(); // Refresh the password list
+      setShowImport(false);
+      
+      Alert.alert(
+        'Import Complete',
+        `Successfully imported ${importCount} passwords${skipCount > 0 ? ` (${skipCount} entries skipped due to missing required fields)` : ''}`
+      );
+    } catch (error) {
+      console.error('Error importing passwords:', error);
+      Alert.alert('Error', 'Failed to import passwords. Please check the file format.');
+    }
+  };
+
+  const handleFileSelect = () => {
+    // Create a file input element
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    
+    input.onchange = (event) => {
+      const file = (event.target as HTMLInputElement).files?.[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const content = e.target?.result as string;
+          handleImportPasswords(content);
+        };
+        reader.readAsText(file);
+      }
+    };
+    
+    input.click();
   };
 
   const startEdit = (password: PasswordEntry) => {
@@ -513,19 +625,7 @@ const PasswordManager: React.FC<PasswordManagerProps> = ({ visible, onClose, cur
           
           <TouchableOpacity
             style={[styles.settingRow, { backgroundColor: colors.background }]}
-            onPress={() => {
-              Alert.alert(
-                'Change Master Password',
-                'This will require you to enter your current master password and set a new one.',
-                [
-                  { text: 'Cancel', style: 'cancel' },
-                  { text: 'Continue', onPress: () => {
-                    // TODO: Implement master password change flow
-                    Alert.alert('Info', 'Master password change feature coming soon');
-                  }}
-                ]
-              );
-            }}
+            onPress={() => setShowChangePassword(true)}
           >
             <Text style={[styles.settingLabel, { color: colors.text }]}>Change Master Password</Text>
             <FiChevronRight size={16} color={colors.textSecondary} />
@@ -619,28 +719,107 @@ const PasswordManager: React.FC<PasswordManagerProps> = ({ visible, onClose, cur
           
           <TouchableOpacity
             style={[styles.settingRow, { backgroundColor: colors.background }]}
-            onPress={() => {
-              Alert.alert(
-                'Import Passwords',
-                'Import passwords from a previously exported file.',
-                [
-                  { text: 'Cancel', style: 'cancel' },
-                  { 
-                    text: 'Import', 
-                    onPress: () => {
-                      // TODO: Implement file import
-                      Alert.alert('Info', 'Import feature coming soon');
-                    }
-                  }
-                ]
-              );
-            }}
+            onPress={() => setShowImport(true)}
           >
             <Text style={[styles.settingLabel, { color: colors.text }]}>Import Passwords</Text>
             <FiChevronRight size={16} color={colors.textSecondary} />
           </TouchableOpacity>
         </View>
       </ScrollView>
+    </View>
+  );
+
+  const renderChangePassword = () => (
+    <View style={[styles.formContainer, { backgroundColor: colors.surface }]}>
+      <Text style={[styles.formTitle, { color: colors.text }]}>Change Master Password</Text>
+      
+      <TextInput
+        style={[styles.input, { 
+          backgroundColor: colors.background, 
+          borderColor: colors.border,
+          color: colors.text 
+        }]}
+        placeholder="Current Master Password"
+        placeholderTextColor={colors.textSecondary}
+        value={currentPassword}
+        onChangeText={setCurrentPassword}
+        secureTextEntry
+      />
+      
+      <TextInput
+        style={[styles.input, { 
+          backgroundColor: colors.background, 
+          borderColor: colors.border,
+          color: colors.text 
+        }]}
+        placeholder="New Master Password"
+        placeholderTextColor={colors.textSecondary}
+        value={newPassword}
+        onChangeText={setNewPassword}
+        secureTextEntry
+      />
+      
+      <TextInput
+        style={[styles.input, { 
+          backgroundColor: colors.background, 
+          borderColor: colors.border,
+          color: colors.text 
+        }]}
+        placeholder="Confirm New Master Password"
+        placeholderTextColor={colors.textSecondary}
+        value={confirmPassword}
+        onChangeText={setConfirmPassword}
+        secureTextEntry
+      />
+      
+      <View style={styles.formButtons}>
+        <TouchableOpacity
+          style={[styles.button, styles.cancelButton, { backgroundColor: colors.buttonSecondary }]}
+          onPress={() => {
+            setShowChangePassword(false);
+            setCurrentPassword('');
+            setNewPassword('');
+            setConfirmPassword('');
+          }}
+        >
+          <Text style={[styles.buttonText, { color: colors.buttonSecondaryText }]}>Cancel</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity
+          style={[styles.button, { backgroundColor: colors.buttonPrimary }]}
+          onPress={handleChangeMasterPassword}
+        >
+          <Text style={[styles.buttonText, { color: colors.buttonPrimaryText }]}>Change Password</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  const renderImport = () => (
+    <View style={[styles.formContainer, { backgroundColor: colors.surface }]}>
+      <Text style={[styles.formTitle, { color: colors.text }]}>Import Passwords</Text>
+      
+      <Text style={[styles.importDescription, { color: colors.textSecondary }]}>
+        Import passwords from a previously exported JSON file. The file should contain an array of password entries with title, username, and password fields.
+      </Text>
+      
+      <TouchableOpacity
+        style={[styles.importButton, { backgroundColor: colors.buttonPrimary }]}
+        onPress={handleFileSelect}
+      >
+        <Text style={[styles.importButtonText, { color: colors.buttonPrimaryText }]}>
+          Select JSON File to Import
+        </Text>
+      </TouchableOpacity>
+      
+      <View style={styles.formButtons}>
+        <TouchableOpacity
+          style={[styles.button, styles.cancelButton, { backgroundColor: colors.buttonSecondary }]}
+          onPress={() => setShowImport(false)}
+        >
+          <Text style={[styles.buttonText, { color: colors.buttonSecondaryText }]}>Cancel</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 
@@ -763,6 +942,10 @@ const PasswordManager: React.FC<PasswordManagerProps> = ({ visible, onClose, cur
           renderUnlockScreen()
         ) : showSettings ? (
           renderSettings()
+        ) : showChangePassword ? (
+          renderChangePassword()
+        ) : showImport ? (
+          renderImport()
         ) : showGenerator ? (
           renderGenerator()
         ) : showAddForm ? (
@@ -1040,6 +1223,24 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 2,
     left: 2,
+  },
+  importDescription: {
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 24,
+    textAlign: 'center',
+  },
+  importButton: {
+    height: 48,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    marginBottom: 24,
+  },
+  importButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 
