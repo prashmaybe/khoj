@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, BrowserView } from 'electron';
+import { app, BrowserWindow, ipcMain, BrowserView, Menu } from 'electron';
 import * as path from 'path';
 
 let mainWindow: BrowserWindow | null = null;
@@ -232,6 +232,8 @@ function createWindow(): void {
 }
 
 app.whenReady().then(() => {
+  // Remove the default menu
+  Menu.setApplicationMenu(null);
   createWindow();
   setupIpcHandlers();
 });
