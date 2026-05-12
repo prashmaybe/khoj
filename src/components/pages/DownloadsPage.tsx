@@ -1,82 +1,35 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Image, FlatList } from 'react-native';
 import { KHOJ_LOGO_DEFAULT } from '../../constants/logos';
-
-interface DownloadItem {
-  id: string;
-  filename: string;
-  url: string;
-  size: string;
-  progress: number;
-  status: 'downloading' | 'completed' | 'paused' | 'failed';
-  date: string;
-  filePath: string;
-}
+import { downloadsStorage, DownloadItem } from '../../services/DownloadsStorage';
 
 interface DownloadsPageProps {
   onDownloadAction?: (action: string, downloadId: string) => void;
 }
 
 const DownloadsPage: React.FC<DownloadsPageProps> = ({ onDownloadAction }) => {
-  const [downloads, setDownloads] = useState<DownloadItem[]>([
-    {
-      id: '1',
-      filename: 'react-native-documentation.pdf',
-      url: 'https://reactnative.dev/docs/next/getting-started',
-      size: '2.4 MB',
-      progress: 100,
-      status: 'completed',
-      date: '2026-05-08 14:30',
-      filePath: '/Users/prash/Downloads/react-native-documentation.pdf'
-    },
-    {
-      id: '2',
-      filename: 'khoj-source.zip',
-      url: 'https://github.com/prashmaybe/khoj/archive/main.zip',
-      size: '15.7 MB',
-      progress: 65,
-      status: 'downloading',
-      date: '2026-05-08 15:45',
-      filePath: '/Users/prash/Downloads/khoj-source.zip'
-    },
-    {
-      id: '3',
-      filename: 'typescript-handbook.epub',
-      url: 'https://www.typescriptlang.org/docs/handbook/intro.html',
-      size: '1.2 MB',
-      progress: 30,
-      status: 'paused',
-      date: '2026-05-08 16:20',
-      filePath: '/Users/prash/Downloads/typescript-handbook.epub'
-    },
-    {
-      id: '4',
-      filename: 'electron-api-demo.dmg',
-      url: 'https://github.com/electron/electron-api-demos/releases/latest',
-      size: '45.3 MB',
-      progress: 0,
-      status: 'failed',
-      date: '2026-05-08 13:15',
-      filePath: '/Users/prash/Downloads/electron-api-demo.dmg'
-    }
-  ]);
+  const [downloads, setDownloads] = useState<DownloadItem[]>([]);
+
+  // Load downloads from storage on component mount
+  useEffect(() => {
+    loadDownloads();
+  }, []);
+
+  const loadDownloads = () => {
+    const storedDownloads = downloadsStorage.loadDownloads();
+    setDownloads(storedDownloads);
+  };
 
   const handleDownloadAction = (downloadId: string, action: 'resume' | 'pause' | 'cancel' | 'retry' | 'open' | 'delete') => {
     switch (action) {
       case 'resume':
-        setDownloads(prev => prev.map(download => 
-          download.id === downloadId 
-            ? { ...download, status: 'downloading' as const }
-            : download
-        ));
+        downloadsStorage.resumeDownload(downloadId);
+        loadDownloads();
         onDownloadAction?.('resume', downloadId);
         break;
       case 'pause':
-        setDownloads(prev => prev.map(download => 
-          download.id === downloadId 
-            ? { ...download, status: 'paused' as const }
-            : download
-        ));
+        downloadsStorage.pauseDownload(downloadId);
+        loadDownloads();
         onDownloadAction?.('pause', downloadId);
         break;
       case 'cancel':
@@ -89,7 +42,8 @@ const DownloadsPage: React.FC<DownloadsPageProps> = ({ onDownloadAction }) => {
               text: 'Yes', 
               style: 'destructive',
               onPress: () => {
-                setDownloads(prev => prev.filter(d => d.id !== downloadId));
+                downloadsStorage.removeDownload(downloadId);
+                loadDownloads();
                 onDownloadAction?.('cancel', downloadId);
               }
             }
@@ -97,11 +51,8 @@ const DownloadsPage: React.FC<DownloadsPageProps> = ({ onDownloadAction }) => {
         );
         break;
       case 'retry':
-        setDownloads(prev => prev.map(download => 
-          download.id === downloadId 
-            ? { ...download, status: 'downloading' as const, progress: 0 }
-            : download
-        ));
+        downloadsStorage.retryDownload(downloadId);
+        loadDownloads();
         onDownloadAction?.('retry', downloadId);
         break;
       case 'open':
@@ -117,7 +68,8 @@ const DownloadsPage: React.FC<DownloadsPageProps> = ({ onDownloadAction }) => {
               text: 'Delete', 
               style: 'destructive',
               onPress: () => {
-                setDownloads(prev => prev.filter(d => d.id !== downloadId));
+                downloadsStorage.removeDownload(downloadId);
+                loadDownloads();
                 onDownloadAction?.('delete', downloadId);
               }
             }
@@ -137,7 +89,8 @@ const DownloadsPage: React.FC<DownloadsPageProps> = ({ onDownloadAction }) => {
           text: 'Clear', 
           style: 'destructive',
           onPress: () => {
-            setDownloads(prev => prev.filter(d => d.status !== 'completed'));
+            downloadsStorage.clearCompletedDownloads();
+            loadDownloads();
           }
         }
       ]
@@ -247,8 +200,8 @@ const DownloadsPage: React.FC<DownloadsPageProps> = ({ onDownloadAction }) => {
     </View>
   );
 
-  const completedCount = downloads.filter(d => d.status === 'completed').length;
-  const activeCount = downloads.filter(d => d.status === 'downloading' || d.status === 'paused').length;
+  const completedCount = downloadsStorage.getCompletedDownloads().length;
+  const activeCount = downloadsStorage.getActiveDownloads().length;
 
   return (
     <View style={styles.container}>

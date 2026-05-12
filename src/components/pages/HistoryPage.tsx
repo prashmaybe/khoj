@@ -1,79 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Image, FlatList, TextInput } from 'react-native';
 import { Icon } from '../atoms';
 import { KHOJ_LOGO_DEFAULT } from '../../constants/logos';
-
-interface HistoryItem {
-  id: string;
-  title: string;
-  url: string;
-  icon?: string;
-  visitCount: number;
-  lastVisited: string;
-  timestamp: number;
-}
+import { historyStorage, HistoryItem } from '../../services/HistoryStorage';
 
 interface HistoryPageProps {
   onHistoryAction?: (action: string, historyId: string, data?: any) => void;
 }
 
 const HistoryPage: React.FC<HistoryPageProps> = ({ onHistoryAction }) => {
-  const [history, setHistory] = useState<HistoryItem[]>([
-    {
-      id: '1',
-      title: 'React Native Documentation',
-      url: 'https://reactnative.dev/docs/getting-started',
-      icon: 'globe',
-      visitCount: 12,
-      lastVisited: '2026-05-08 16:45',
-      timestamp: 1715179500000
-    },
-    {
-      id: '2',
-      title: 'GitHub - prashmaybe/khoj',
-      url: 'https://github.com/prashmaybe/khoj',
-      icon: 'globe',
-      visitCount: 8,
-      lastVisited: '2026-05-08 15:30',
-      timestamp: 1715175000000
-    },
-    {
-      id: '3',
-      title: 'TypeScript Handbook',
-      url: 'https://www.typescriptlang.org/docs/handbook/intro.html',
-      icon: 'globe',
-      visitCount: 5,
-      lastVisited: '2026-05-08 14:20',
-      timestamp: 1715170800000
-    },
-    {
-      id: '4',
-      title: 'Electron Documentation',
-      url: 'https://www.electronjs.org/docs/latest',
-      icon: 'globe',
-      visitCount: 3,
-      lastVisited: '2026-05-08 13:15',
-      timestamp: 1715166900000
-    },
-    {
-      id: '5',
-      title: 'Stack Overflow - React Native',
-      url: 'https://stackoverflow.com/questions/tagged/react-native',
-      icon: 'globe',
-      visitCount: 7,
-      lastVisited: '2026-05-08 12:00',
-      timestamp: 1715162400000
-    },
-    {
-      id: '6',
-      title: 'MDN Web Docs',
-      url: 'https://developer.mozilla.org/en-US/',
-      icon: 'globe',
-      visitCount: 15,
-      lastVisited: '2026-05-08 11:30',
-      timestamp: 1715160600000
-    }
-  ]);
+  const [history, setHistory] = useState<HistoryItem[]>([]);
+
+  // Load history from storage on component mount
+  useEffect(() => {
+    loadHistory();
+  }, []);
+
+  const loadHistory = () => {
+    const storedHistory = historyStorage.loadHistory();
+    setHistory(storedHistory);
+  };
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'today' | 'week' | 'month'>('all');
@@ -100,7 +46,8 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ onHistoryAction }) => {
               text: 'Delete', 
               style: 'destructive',
               onPress: () => {
-                setHistory(prev => prev.filter(item => item.id !== historyId));
+                historyStorage.removeHistoryItem(historyId);
+                loadHistory();
                 onHistoryAction?.('delete', historyId);
               }
             }
@@ -120,7 +67,8 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ onHistoryAction }) => {
           text: 'Clear All', 
           style: 'destructive',
           onPress: () => {
-            setHistory([]);
+            historyStorage.clearHistory();
+            loadHistory();
             onHistoryAction?.('clearAll', '');
           }
         }
@@ -137,22 +85,22 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ onHistoryAction }) => {
         { 
           text: 'Last Hour', 
           onPress: () => {
-            const oneHourAgo = Date.now() - (60 * 60 * 1000);
-            setHistory(prev => prev.filter(item => item.timestamp < oneHourAgo));
+            historyStorage.clearHistoryByTimeRange(1);
+            loadHistory();
           }
         },
         { 
           text: 'Last 24 Hours', 
           onPress: () => {
-            const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000);
-            setHistory(prev => prev.filter(item => item.timestamp < oneDayAgo));
+            historyStorage.clearHistoryByTimeRange(24);
+            loadHistory();
           }
         },
         { 
           text: 'Last Week', 
           onPress: () => {
-            const oneWeekAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
-            setHistory(prev => prev.filter(item => item.timestamp < oneWeekAgo));
+            historyStorage.clearHistoryByTimeRange(168);
+            loadHistory();
           }
         }
       ]
@@ -164,10 +112,7 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ onHistoryAction }) => {
 
     // Apply search filter
     if (searchQuery) {
-      filtered = filtered.filter(item => 
-        item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.url.toLowerCase().includes(searchQuery.toLowerCase())
-      );
+      filtered = historyStorage.searchHistory(searchQuery);
     }
 
     // Apply time filter
@@ -178,12 +123,10 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ onHistoryAction }) => {
         filtered = filtered.filter(item => item.timestamp >= today);
         break;
       case 'week':
-        const weekAgo = now - (7 * 24 * 60 * 60 * 1000);
-        filtered = filtered.filter(item => item.timestamp >= weekAgo);
+        filtered = historyStorage.getHistoryByTimeRange(168); // 7 days * 24 hours
         break;
       case 'month':
-        const monthAgo = now - (30 * 24 * 60 * 60 * 1000);
-        filtered = filtered.filter(item => item.timestamp >= monthAgo);
+        filtered = historyStorage.getHistoryByTimeRange(720); // 30 days * 24 hours
         break;
     }
 

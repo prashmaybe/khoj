@@ -373,7 +373,7 @@ const Browser: React.FC<BrowserProps> = React.memo(({
                     }}
                     src={tab.url}
                     style={webviewStyle as any}
-                    allowpopups={true}
+                    allowpopups={true.toString() as any}
                     partition={isIncognito ? 'incognito' : ''}
                     webpreferences={`contextIsolation=true,nodeIntegration=false,enableRemoteModule=false,${isIncognito ? 'incognito=true' : ''}`}
                   />

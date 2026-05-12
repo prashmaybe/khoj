@@ -4,6 +4,7 @@ import * as path from 'path';
 let mainWindow: BrowserWindow | null = null;
 let browserViews: Map<string, BrowserView> = new Map();
 let activeViewId: string | null = null;
+let isDev: boolean = false;
 
 const HOME_ROUTE = 'khoj://home';
 function getHomeDataUrl(): string {
@@ -189,7 +190,7 @@ function updateActiveViewBounds(): void {
 
 function createWindow(): void {
   // `process.cwd()` is not stable (depends on how Electron is launched).
-  // Resolve preload relative to the compiled main process file.
+  // Resolve preload relative to compiled main process file.
   const preloadPath = path.join(__dirname, 'preload.js');
   console.log('Preload script path:', preloadPath);
   console.log('Preload script exists:', require('fs').existsSync(preloadPath));
@@ -207,10 +208,24 @@ function createWindow(): void {
     },
   });
 
+  // Prevent context menu
+  mainWindow.webContents.on('context-menu', (event, params) => {
+    event.preventDefault();
+  });
+
+  // Disable developer tools shortcuts in production
+  if (!isDev) {
+    mainWindow.webContents.on('before-input-event', (event, input) => {
+      if (input.key === 'F12' || (input.control && input.shift && input.key === 'I')) {
+        event.preventDefault();
+      }
+    });
+  }
+
   console.log('NODE_ENV:', process.env.NODE_ENV);
   console.log('app.isPackaged:', app.isPackaged);
   
-  const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
+  isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
   
   if (isDev) {
     console.log('Running in development mode, loading from webpack dev server');
@@ -249,6 +264,20 @@ function setupIpcHandlers() {
         sandbox: true,
       }
     });
+    
+    // Prevent context menu for BrowserView
+    view.webContents.on('context-menu', (event, params) => {
+      event.preventDefault();
+    });
+    
+    // Disable developer tools in production
+    if (!isDev) {
+      view.webContents.on('before-input-event', (event, input) => {
+        if (input.key === 'F12' || (input.control && input.shift && input.key === 'I')) {
+          event.preventDefault();
+        }
+      });
+    }
     
     browserViews.set(tabId, view);
     
@@ -351,6 +380,9 @@ function setupIpcHandlers() {
   });
 
   ipcMain.handle('toggle-devtools', () => {
+    // Only allow devtools in development mode
+    if (!isDev) return;
+    
     const activeView = activeViewId ? browserViews.get(activeViewId) : null;
 
     if (activeView) {
