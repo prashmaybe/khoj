@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useMolecules } from '../../hooks';
 import { useTheme } from '../../contexts/ThemeContext';
+import { Tooltip } from '../atoms';
 import Menu, { MenuItem } from '../molecules/Menu';
 
 interface BrowserToolbarProps {
@@ -118,16 +119,20 @@ const BrowserToolbar: React.FC<BrowserToolbarProps> = React.memo(({
         onBookmarkToggle={onBookmarkToggle}
       />
       {onPasswordManager && (
-        <PasswordManagerButton
-          currentUrl={url}
-          onPress={onPasswordManager}
-          style={styles.passwordManagerButton}
-        />
+        <Tooltip text="Password Manager">
+          <PasswordManagerButton
+            currentUrl={url}
+            onPress={onPasswordManager}
+            style={styles.passwordManagerButton}
+          />
+        </Tooltip>
       )}
-      <MenuButton
-        onPress={() => setShowMenu(true)}
-        style={styles.menuButton}
-      />
+      <Tooltip text="Menu">
+        <MenuButton
+          onPress={() => setShowMenu(true)}
+          style={styles.menuButton}
+        />
+      </Tooltip>
       <Menu
         visible={showMenu}
         onClose={() => setShowMenu(false)}

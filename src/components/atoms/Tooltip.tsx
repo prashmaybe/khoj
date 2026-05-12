@@ -29,31 +29,31 @@ const Tooltip: React.FC<TooltipProps> = React.memo(({
       case 'top':
         return {
           bottom: 8,
-          left: '50%',
+          left: 0,
           transform: [{ translateX: -50 }],
         };
       case 'bottom':
         return {
           top: 8,
-          left: '50%',
+          left: 0,
           transform: [{ translateX: -50 }],
         };
       case 'left':
         return {
           right: 8,
-          top: '50%',
+          top: 0,
           transform: [{ translateY: -12 }],
         };
       case 'right':
         return {
           left: 8,
-          top: '50%',
+          top: 0,
           transform: [{ translateY: -12 }],
         };
       default:
         return {
           bottom: 8,
-          left: '50%',
+          left: 0,
           transform: [{ translateX: -50 }],
         };
     }
@@ -68,10 +68,10 @@ const Tooltip: React.FC<TooltipProps> = React.memo(({
         <View
           style={[
             styles.tooltip,
+            getPositionStyle(),
             {
               backgroundColor: colors.surface,
               borderColor: colors.border,
-              ...getPositionStyle(),
             },
           ]}
         >

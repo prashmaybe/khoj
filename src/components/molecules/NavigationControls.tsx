@@ -2,6 +2,7 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useAtoms } from '../../hooks';
 import { useTheme } from '../../contexts/ThemeContext';
+import { Tooltip } from '../atoms';
 
 interface NavigationControlsProps {
   onBack: () => void;
@@ -23,52 +24,64 @@ const NavigationControls: React.FC<NavigationControlsProps> = React.memo(({
   return (
     <>
       <View style={styles.navigationControls}>
-        <Button
-          onPress={onBack}
-          variant="nav"
-          size="medium"
-          disabled={disabled}
-        >
-          <Icon name="arrow-back" />
-        </Button>
-        <Button
-          onPress={onForward}
-          variant="nav"
-          size="medium"
-          disabled={disabled}
-        >
-          <Icon name="arrow-forward" />
-        </Button>
-        <Button
-          onPress={onReload}
-          variant="nav"
-          size="medium"
-          disabled={disabled}
-        >
-          <Icon name="refresh" />
-        </Button>
+        <Tooltip text="Back">
+          <Button
+            onPress={onBack}
+            variant="nav"
+            size="medium"
+            disabled={disabled}
+          >
+            <Icon name="arrow-back" />
+          </Button>
+        </Tooltip>
+        <Tooltip text="Forward">
+          <Button
+            onPress={onForward}
+            variant="nav"
+            size="medium"
+            disabled={disabled}
+          >
+            <Icon name="arrow-forward" />
+          </Button>
+        </Tooltip>
+        <Tooltip text="Reload">
+          <Button
+            onPress={onReload}
+            variant="nav"
+            size="medium"
+            disabled={disabled}
+          >
+            <Icon name="refresh" />
+          </Button>
+        </Tooltip>
       </View>
-      <Button
-        onPress={onHome}
-        variant="nav"
-        size="medium"
-        disabled={disabled}
-        style={styles.homeButton}
-      >
-        <Icon name="home" />
-      </Button>
-      <Button
-        onPress={() => setIncognito(!isIncognito)}
-        variant="nav"
-        size="medium"
-        style={{
-          marginLeft: -4,
-          backgroundColor: isIncognito ? colors.buttonPrimary : undefined
-        }}
-      >
-        <Icon name="incognito" />
-      </Button>
-      <ThemeToggle style={styles.themeToggle} />
+      <Tooltip text="Home">
+        <Button
+          onPress={onHome}
+          variant="nav"
+          size="medium"
+          disabled={disabled}
+          style={styles.homeButton}
+        >
+          <Icon name="home" />
+        </Button>
+      </Tooltip>
+      <Tooltip text={isIncognito ? "Exit Incognito" : "Incognito Mode"}>
+        <Button
+          onPress={() => setIncognito(!isIncognito)}
+          variant="nav"
+          size="medium"
+          style={{
+            marginLeft: -4,
+            backgroundColor: isIncognito ? colors.buttonPrimary : undefined
+          }}
+        >
+          <Icon name="incognito" />
+        </Button>
+      </Tooltip>
+      <Tooltip text="Toggle Theme">
+        <ThemeToggle style={styles.themeToggle} />
+      </Tooltip>
     </>
   );
 });
