@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useMolecules } from '../../hooks';
 import { useTheme } from '../../contexts/ThemeContext';
+import Menu, { MenuItem } from '../molecules/Menu';
 
 interface BrowserToolbarProps {
   url: string;
@@ -18,6 +19,10 @@ interface BrowserToolbarProps {
   isBookmarked?: boolean;
   onBookmarkToggle?: () => void;
   onPasswordManager?: () => void;
+  onNewTab?: () => void;
+  onNewWindow?: () => void;
+  onExit?: () => void;
+  onNavigateToPage?: (page: string) => void;
 }
 
 const BrowserToolbar: React.FC<BrowserToolbarProps> = React.memo(({
@@ -35,9 +40,62 @@ const BrowserToolbar: React.FC<BrowserToolbarProps> = React.memo(({
   isBookmarked = false,
   onBookmarkToggle,
   onPasswordManager,
+  onNewTab,
+  onNewWindow,
+  onExit,
+  onNavigateToPage,
 }) => {
   const { colors } = useTheme();
-  const { NavigationControls, SearchBar, PasswordManagerButton } = useMolecules();
+  const { NavigationControls, SearchBar, PasswordManagerButton, MenuButton } = useMolecules();
+  const [showMenu, setShowMenu] = useState(false);
+  const menuButtonRef = useRef<View>(null);
+
+  const getMenuItems = (): MenuItem[] => [
+    {
+      id: 'home',
+      label: 'Home',
+      icon: 'home',
+      onPress: () => onNavigateToPage?.('khoj://'),
+    },
+    {
+      id: 'downloads',
+      label: 'Downloads',
+      icon: 'folder',
+      onPress: () => onNavigateToPage?.('khoj://downloads'),
+    },
+    {
+      id: 'history',
+      label: 'History',
+      icon: 'reader',
+      onPress: () => onNavigateToPage?.('khoj://history'),
+    },
+    {
+      id: 'bookmarks',
+      label: 'Bookmarks',
+      icon: 'bookmark',
+      onPress: () => onNavigateToPage?.('khoj://bookmarks'),
+    },
+    { id: 'separator1', separator: true },
+    {
+      id: 'new-tab',
+      label: 'New Tab',
+      icon: 'add',
+      onPress: () => onNewTab?.(),
+    },
+    {
+      id: 'new-window',
+      label: 'New Window',
+      icon: 'open',
+      onPress: () => onNewWindow?.(),
+    },
+    { id: 'separator2', separator: true },
+    {
+      id: 'exit',
+      label: 'Exit',
+      icon: 'close',
+      onPress: () => onExit?.(),
+    },
+  ];
 
   return (
     <View style={[styles.browserToolbar, { backgroundColor: colors.toolbar, borderBottomColor: colors.border }]}>
@@ -66,6 +124,16 @@ const BrowserToolbar: React.FC<BrowserToolbarProps> = React.memo(({
           style={styles.passwordManagerButton}
         />
       )}
+      <MenuButton
+        onPress={() => setShowMenu(true)}
+        style={styles.menuButton}
+      />
+      <Menu
+        visible={showMenu}
+        onClose={() => setShowMenu(false)}
+        items={getMenuItems()}
+        anchorPosition={{ x: 8, y: 50 }}
+      />
     </View>
   );
 });
@@ -79,6 +147,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   passwordManagerButton: {
+    marginLeft: 8,
+  },
+  menuButton: {
     marginLeft: 8,
   },
 });

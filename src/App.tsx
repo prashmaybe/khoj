@@ -623,6 +623,7 @@ const AppContent: React.FC = React.memo(() => {
         onTabClick={switchTab}
         onTabClose={closeTab}
         onNewTab={addNewTab}
+        onNewTabWithUrl={(url: string) => createTab(undefined, url)}
         onBack={goBack}
         onForward={goForward}
         onReload={reload}

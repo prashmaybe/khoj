@@ -35,6 +35,7 @@ interface BrowserProps {
   onTabClick: (tabId: string) => void;
   onTabClose: (tabId: string) => void;
   onNewTab: () => void;
+  onNewTabWithUrl?: (url: string) => void;
   onBack: () => void;
   onForward: () => void;
   onReload: () => void;
@@ -52,6 +53,9 @@ interface BrowserProps {
   isBookmarked?: boolean;
   onBookmarkToggle?: () => void;
   isIncognito?: boolean;
+  onNewWindow?: () => void;
+  onExit?: () => void;
+  onNavigateToPage?: (url: string) => void;
 }
 
 const Browser: React.FC<BrowserProps> = React.memo(({
@@ -65,6 +69,7 @@ const Browser: React.FC<BrowserProps> = React.memo(({
   onTabClick,
   onTabClose,
   onNewTab,
+  onNewTabWithUrl,
   onBack,
   onForward,
   onReload,
@@ -82,6 +87,9 @@ const Browser: React.FC<BrowserProps> = React.memo(({
   isBookmarked = false,
   onBookmarkToggle,
   isIncognito = false,
+  onNewWindow,
+  onExit,
+  onNavigateToPage,
 }) => {
   const { colors } = useTheme();
   const { TabBar, BrowserToolbar, BookmarksBar, PasswordManager } = useOrganisms();
@@ -139,12 +147,39 @@ const Browser: React.FC<BrowserProps> = React.memo(({
     const tab = tabs.find(t => t.id === tabId);
     if (tab && !isIncognito && tab.url && !tab.url.startsWith('khoj://')) {
       try {
+        // Get the actual page title from the webview/iframe
+        const webview = webviewRefs.current.get(tabId);
+        let pageTitle = tab.title || tab.url;
+        
+        if (webview) {
+          if (isElectronRuntime) {
+            // For Electron webview, try to get the title
+            try {
+              pageTitle = (webview as any).getTitle() || tab.title || tab.url;
+            } catch (e) {
+              console.log('Could not get webview title:', e);
+            }
+          } else {
+            // For iframe, try to get the title from the document
+            try {
+              const iframeDoc = (webview as HTMLIFrameElement).contentDocument;
+              if (iframeDoc && iframeDoc.title) {
+                pageTitle = iframeDoc.title;
+              }
+            } catch (e) {
+              console.log('Could not get iframe title:', e);
+            }
+          }
+        }
+        
         historyStorage.addHistoryItem({
-          title: tab.title || tab.url,
+          title: pageTitle,
           url: tab.url,
           icon: 'globe',
           lastVisited: new Date().toLocaleString()
         });
+        
+        console.log('Added to history:', { title: pageTitle, url: tab.url });
       } catch (error) {
         console.error('Error saving to history:', error);
       }
@@ -318,11 +353,25 @@ const Browser: React.FC<BrowserProps> = React.memo(({
       }
     };
 
+    const handleOpenLinkInNewTab = (event: MessageEvent) => {
+      if (event.data.type === 'OPEN_LINK_IN_NEW_TAB' && event.data.data?.url) {
+        if (onNewTabWithUrl) {
+          onNewTabWithUrl(event.data.data.url);
+        } else if (onNewTab) {
+          onNewTab();
+          // If no specific URL handler, we'll need to handle this differently
+          console.log('Middle-clicked link:', event.data.data.url);
+        }
+      }
+    };
+
     window.addEventListener(NAV_EVENT_NAME, handleNavCommand as EventListener);
+    window.addEventListener('message', handleOpenLinkInNewTab);
     return () => {
       window.removeEventListener(NAV_EVENT_NAME, handleNavCommand as EventListener);
+      window.removeEventListener('message', handleOpenLinkInNewTab);
     };
-  }, [activeTabId, isElectronRuntime]);
+  }, [activeTabId, isElectronRuntime, onNewTabWithUrl, onNewTab]);
 
   return (
     <View style={styles.browser}>
@@ -363,6 +412,10 @@ const Browser: React.FC<BrowserProps> = React.memo(({
         isBookmarked={isBookmarked}
         onBookmarkToggle={onBookmarkToggle}
         onPasswordManager={() => setShowPasswordManager(true)}
+        onNewTab={onNewTab}
+        onNewWindow={onNewWindow}
+        onExit={onExit}
+        onNavigateToPage={onNavigateToPage}
       />
       
       <View style={styles.browserContent}>
@@ -452,10 +505,45 @@ const Browser: React.FC<BrowserProps> = React.memo(({
                           handleWebviewLoad(tab.id);
                           handleFaviconUpdate(tab.id, tab.url);
                         });
+                        el.addEventListener('did-navigate', (event: any) => {
+                          // Also record history on navigation within the same webview
+                          const updatedTab = tabs.find(t => t.id === tab.id);
+                          if (updatedTab && !isIncognito && event.url && !event.url.startsWith('khoj://')) {
+                            try {
+                              historyStorage.addHistoryItem({
+                                title: event.title || updatedTab.title || event.url,
+                                url: event.url,
+                                icon: 'globe',
+                                lastVisited: new Date().toLocaleString()
+                              });
+                              console.log('Added to history (navigation):', { url: event.url, title: event.title });
+                            } catch (error) {
+                              console.error('Error saving navigation to history:', error);
+                            }
+                          }
+                        });
                         el.addEventListener('dom-ready', () => {
                           webviewReadyStates.current.set(tab.id, true);
                           // Password autofill will be available via password manager UI
                           // For full autofill functionality, this would need proper webview integration
+                          
+                          // Handle middle-click events on links to open in new tabs
+                          (el as any).executeJavaScript(`
+                            document.addEventListener('auxclick', function(event) {
+                              if (event.button === 1 && event.target.tagName === 'A') {
+                                event.preventDefault();
+                                event.stopPropagation();
+                                const href = event.target.href;
+                                if (href) {
+                                  // Send message to main process to open in new tab
+                                  window.postMessage({
+                                    type: 'OPEN_LINK_IN_NEW_TAB',
+                                    data: { url: href }
+                                  }, '*');
+                                }
+                              }
+                            });
+                          `);
                         });
                         // Add download event listener for Electron webview
                         el.addEventListener('will-navigate', (event: any) => {
@@ -487,6 +575,51 @@ const Browser: React.FC<BrowserProps> = React.memo(({
                         el.addEventListener('load', () => {
                           handleWebviewLoad(tab.id);
                           handleFaviconUpdate(tab.id, tab.url);
+                          
+                          // Add middle-click handling for iframe links
+                          const iframeDoc = el.contentDocument;
+                          if (iframeDoc) {
+                            iframeDoc.addEventListener('auxclick', (event: any) => {
+                              if (event.button === 1 && event.target.tagName === 'A') {
+                                event.preventDefault();
+                                event.stopPropagation();
+                                const href = event.target.href;
+                                if (href) {
+                                  if (onNewTabWithUrl) {
+                                    onNewTabWithUrl(href);
+                                  } else if (onNewTab) {
+                                    onNewTab();
+                                    console.log('Middle-clicked link:', href);
+                                  }
+                                }
+                              }
+                            });
+                            
+                            // Also monitor for navigation changes in iframe
+                            const monitorNavigation = () => {
+                              const currentUrl = (el as HTMLIFrameElement).contentWindow?.location.href;
+                              const currentTitle = (el as HTMLIFrameElement).contentDocument?.title;
+                              const currentTab = tabs.find(t => t.id === tab.id);
+                              
+                              if (currentTab && !isIncognito && currentUrl && currentUrl !== 'about:blank' && !currentUrl.startsWith('khoj://')) {
+                                try {
+                                  historyStorage.addHistoryItem({
+                                    title: currentTitle || currentTab.title || currentUrl,
+                                    url: currentUrl,
+                                    icon: 'globe',
+                                    lastVisited: new Date().toLocaleString()
+                                  });
+                                  console.log('Added to history (iframe):', { url: currentUrl, title: currentTitle });
+                                } catch (error) {
+                                  console.error('Error saving iframe navigation to history:', error);
+                                }
+                              }
+                            };
+                            
+                            // Set up a MutationObserver to detect URL changes
+                            const observer = new MutationObserver(monitorNavigation);
+                            observer.observe(iframeDoc, { childList: true, subtree: true });
+                          }
                         });
                         // Add download event listener for iframe
                         el.addEventListener('beforeunload', (event: any) => {

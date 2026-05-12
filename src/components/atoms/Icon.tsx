@@ -11,6 +11,7 @@ import {
   IoChevronDown,
   IoClose,
   IoEllipsisHorizontal,
+  IoEllipsisVertical,
   IoFolderOpenOutline,
   IoGlobeOutline,
   IoHomeOutline,
@@ -66,6 +67,8 @@ const Icon: React.FC<IconProps> = React.memo(({ name, size = 'medium', style }) 
         return <IoClose style={webIconStyle} />;
       case 'ellipsis':
         return <IoEllipsisHorizontal style={webIconStyle} />;
+      case 'ellipsis-vertical':
+        return <IoEllipsisVertical style={webIconStyle} />;
       case 'folder':
         return <IoFolderOpenOutline style={webIconStyle} />;
       case 'globe':
