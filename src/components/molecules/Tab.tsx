@@ -12,6 +12,10 @@ interface TabProps {
   onClick: () => void;
   onClose?: () => void;
   showCloseButton?: boolean;
+  customWidth?: {
+    minWidth: number;
+    maxWidth: number;
+  };
 }
 
 const Tab: React.FC<TabProps> = React.memo(({
@@ -23,6 +27,7 @@ const Tab: React.FC<TabProps> = React.memo(({
   onClick,
   onClose,
   showCloseButton = true,
+  customWidth,
 }) => {
   const { colors } = useTheme();
   const { Icon } = useAtoms();
@@ -46,6 +51,9 @@ const Tab: React.FC<TabProps> = React.memo(({
       backgroundColor: isActive ? colors.activeTab : colors.inactiveTab,
       borderColor: colors.borderSecondary,
       shadowColor: colors.shadow,
+      minWidth: customWidth?.minWidth || 140,
+      maxWidth: customWidth?.maxWidth || 240,
+      flex: isActive ? 1 : 0,
     }
   ];
 
@@ -101,8 +109,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 8,
     borderWidth: 0,
-    minWidth: 140,
-    maxWidth: 240,
     borderRadius: 12,
     borderTopLeftRadius: 12,
     borderTopRightRadius: 12,

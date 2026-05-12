@@ -3,6 +3,8 @@ import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useOrganisms, useMolecules, usePages } from '../../hooks';
 import { passwordAutofill } from '../../services/PasswordAutofill';
+import { historyStorage } from '../../services/HistoryStorage';
+import { downloadsStorage } from '../../services/DownloadsStorage';
 
 const NAV_EVENT_NAME = 'khoj-nav-command';
 
@@ -132,6 +134,92 @@ const Browser: React.FC<BrowserProps> = React.memo(({
     if (onUpdateTabError) {
       onUpdateTabError(tabId, false);
     }
+    
+    // Add to history when page loads successfully
+    const tab = tabs.find(t => t.id === tabId);
+    if (tab && !isIncognito && tab.url && !tab.url.startsWith('khoj://')) {
+      try {
+        historyStorage.addHistoryItem({
+          title: tab.title || tab.url,
+          url: tab.url,
+          icon: 'globe',
+          lastVisited: new Date().toLocaleString()
+        });
+      } catch (error) {
+        console.error('Error saving to history:', error);
+      }
+    }
+  };
+
+  const handleDownloadStart = (url: string, filename?: string) => {
+    if (!isIncognito) {
+      try {
+        const downloadId = downloadsStorage.addDownload({
+          url,
+          filename: filename || getFilenameFromUrl(url),
+          size: 'Unknown',
+          status: 'downloading',
+          filePath: ''
+        });
+        
+        // Simulate download progress (in a real app, this would be handled by actual download logic)
+        simulateDownloadProgress(downloadId);
+        
+        console.log('Download started:', url, 'ID:', downloadId);
+      } catch (error) {
+        console.error('Error starting download:', error);
+      }
+    }
+  };
+
+  const getFilenameFromUrl = (url: string): string => {
+    try {
+      const urlObj = new URL(url);
+      const pathname = urlObj.pathname;
+      const filename = pathname.split('/').pop();
+      return filename || 'download';
+    } catch (error) {
+      return 'download';
+    }
+  };
+
+  const isDownloadableFile = (url: string): boolean => {
+    try {
+      const urlObj = new URL(url);
+      const pathname = urlObj.pathname.toLowerCase();
+      
+      // Common file extensions that trigger downloads
+      const downloadableExtensions = [
+        '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx',
+        '.zip', '.rar', '.7z', '.tar', '.gz',
+        '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.svg',
+        '.mp3', '.mp4', '.avi', '.mov', '.wmv',
+        '.exe', '.dmg', '.pkg', '.deb', '.rpm',
+        '.txt', '.csv', '.json', '.xml'
+      ];
+      
+      return downloadableExtensions.some(ext => pathname.endsWith(ext));
+    } catch (error) {
+      return false;
+    }
+  };
+
+  const simulateDownloadProgress = (downloadId: string) => {
+    let progress = 0;
+    const interval = setInterval(() => {
+      progress += Math.random() * 20;
+      if (progress >= 100) {
+        progress = 100;
+        downloadsStorage.updateDownload(downloadId, {
+          progress: 100,
+          status: 'completed'
+        });
+        clearInterval(interval);
+        console.log('Download completed:', downloadId);
+      } else {
+        downloadsStorage.updateDownloadProgress(downloadId, Math.floor(progress));
+      }
+    }, 500);
   };
 
   const extractFaviconUrl = (url: string): string | null => {
@@ -366,8 +454,15 @@ const Browser: React.FC<BrowserProps> = React.memo(({
                         });
                         el.addEventListener('dom-ready', () => {
                           webviewReadyStates.current.set(tab.id, true);
-                          // Password autofill will be available via the password manager UI
+                          // Password autofill will be available via password manager UI
                           // For full autofill functionality, this would need proper webview integration
+                        });
+                        // Add download event listener for Electron webview
+                        el.addEventListener('will-navigate', (event: any) => {
+                          // Check if navigation is to a downloadable file
+                          if (event.url && isDownloadableFile(event.url)) {
+                            handleDownloadStart(event.url);
+                          }
                         });
                       }
                     }}
@@ -392,6 +487,22 @@ const Browser: React.FC<BrowserProps> = React.memo(({
                         el.addEventListener('load', () => {
                           handleWebviewLoad(tab.id);
                           handleFaviconUpdate(tab.id, tab.url);
+                        });
+                        // Add download event listener for iframe
+                        el.addEventListener('beforeunload', (event: any) => {
+                          // Check for download links or file URLs
+                          const links = el.contentDocument?.querySelectorAll('a[href]');
+                          if (links) {
+                            links.forEach((link: any) => {
+                              link.addEventListener('click', (clickEvent: any) => {
+                                const href = link.getAttribute('href');
+                                if (href && (isDownloadableFile(href) || href.startsWith('blob:'))) {
+                                  clickEvent.preventDefault();
+                                  handleDownloadStart(href, link.textContent || 'download');
+                                }
+                              });
+                            });
+                          }
                         });
                       }
                     }}
