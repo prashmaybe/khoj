@@ -82,60 +82,63 @@ const Menu: React.FC<MenuProps> = React.memo(({ visible, onClose, items, anchorP
       position: 'absolute' as const,
       right: anchorPosition?.x || 0,
       top: anchorPosition?.y || 0,
-      zIndex: 100000,
+      zIndex: 999999,
+      elevation: 25,
     },
   ];
 
   return (
-    <View style={[styles.overlay, { 
-      position: 'absolute' as const, 
-      zIndex: 99999,
-      backgroundColor: 'transparent'
-    }]}>
-      <Animated.View style={[menuStyle, { 
-        zIndex: 100000,
-        elevation: 20
-      }]} ref={menuRef}>
-        {items.map((item, index) => {
-          if (item.separator) {
-            return (
-              <View
-                key={`separator-${index}`}
-                style={[styles.separator, { backgroundColor: colors.border }]}
-              />
-            );
-          }
+    <>
+      <View style={[styles.overlay, { 
+        position: 'absolute' as const, 
+        zIndex: 99999,
+        backgroundColor: 'transparent'
+      }]}>
+        <Animated.View style={[menuStyle, { 
+          zIndex: 100000,
+          elevation: 20
+        }]} ref={menuRef}>
+          {items.map((item, index) => {
+            if (item.separator) {
+              return (
+                <View
+                  key={`separator-${index}`}
+                  style={[styles.separator, { backgroundColor: colors.border }]}
+                />
+              );
+            }
 
-          return (
-            <TouchableOpacity
-              key={item.id}
-              style={[styles.menuItem, { backgroundColor: 'transparent' }]}
-              onPress={() => {
-                item.onPress?.();
-                onClose();
-              }}
-              activeOpacity={0.7}
-            >
-              {item.icon && (
-                <Icon name={item.icon} size="small" style={styles.menuItemIcon} />
-              )}
-              <Text
-                style={[
-                  styles.menuItemText,
-                  {
-                    color: colors.text,
-                    fontSize: colors.fontSize.sm,
-                    fontFamily: colors.fontFamily,
-                  },
-                ]}
+            return (
+              <TouchableOpacity
+                key={item.id}
+                style={[styles.menuItem, { backgroundColor: 'transparent' }]}
+                onPress={() => {
+                  item.onPress?.();
+                  onClose();
+                }}
+                activeOpacity={0.7}
               >
-                {item.label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </Animated.View>
-    </View>
+                {item.icon && (
+                  <Icon name={item.icon} size="small" style={styles.menuItemIcon} />
+                )}
+                <Text
+                  style={[
+                    styles.menuItemText,
+                    {
+                      color: colors.text,
+                      fontSize: colors.fontSize.sm,
+                      fontFamily: colors.fontFamily,
+                    },
+                  ]}
+                >
+                  {item.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </Animated.View>
+      </View>
+    </>
   );
 });
 
@@ -146,11 +149,11 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    zIndex: 9999,
+    zIndex: 999999,
     pointerEvents: 'none' as const,
   },
   menu: {
-    position: 'absolute',
+    position: 'absolute' as const,
     minWidth: 200,
     maxWidth: 300,
     borderRadius: 8,
@@ -160,7 +163,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 8,
     pointerEvents: 'auto',
-    zIndex: 10000,
+    zIndex: 9999999,
   },
   menuItem: {
     flexDirection: 'row',

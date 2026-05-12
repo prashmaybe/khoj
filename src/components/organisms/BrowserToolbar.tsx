@@ -132,7 +132,7 @@ const BrowserToolbar: React.FC<BrowserToolbarProps> = React.memo(({
         visible={showMenu}
         onClose={() => setShowMenu(false)}
         items={getMenuItems()}
-        anchorPosition={{ x: 8, y: 50 }}
+        anchorPosition={{ x: 8, y: 60 }}
       />
     </View>
   );
