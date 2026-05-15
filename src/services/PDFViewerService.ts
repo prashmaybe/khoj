@@ -63,9 +63,12 @@ class PDFViewerService {
         arrayBuffer = await file.arrayBuffer();
       }
 
-      // Estimate page count based on file size (rough approximation)
-      // Real PDF parsing would require PDF.js library
-      const estimatedPageCount = Math.max(1, Math.floor(arrayBuffer.byteLength / (50 * 1024))); // ~50KB per page average
+      // Use PDF.js to get actual page count
+      const pdfjsLib = await import('pdfjs-dist/build/pdf');
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'pdfjs-dist/build/pdf.worker.min.js';
+      
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      const actualPageCount = pdf.numPages;
       
       const pdfDocument: PDFDocument = {
         id: Date.now().toString(),
@@ -73,7 +76,7 @@ class PDFViewerService {
         url: URL.createObjectURL(new Blob([arrayBuffer], { type: 'application/pdf' })),
         fileSize: arrayBuffer.byteLength,
         lastModified: file instanceof File ? new Date(file.lastModified).toISOString() : new Date().toISOString(),
-        pageCount: Math.min(estimatedPageCount, 1000), // Cap at 1000 pages to prevent unreasonable estimates
+        pageCount: actualPageCount,
         currentPage: 1,
         zoom: 1.0,
         annotations: [],

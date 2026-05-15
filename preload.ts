@@ -1,57 +1,56 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
-console.log('Preload script is loading...');
+export interface DownloadEventPayload {
+  id: string;
+  filename: string;
+  url?: string;
+  filePath?: string;
+  path?: string;
+  progress?: number;
+  receivedBytes?: number;
+  totalBytes?: number;
+  state?: string;
+}
+
+export interface OpenPdfFileResult {
+  filePath: string;
+  fileUrl: string;
+  name: string;
+}
+
+export interface ClearBrowsingDataOptions {
+  browsingHistory?: boolean;
+  cookies?: boolean;
+  cache?: boolean;
+  localStorage?: boolean;
+  sessionStorage?: boolean;
+  passwords?: boolean;
+  autofillData?: boolean;
+  timeRange?: string;
+}
 
 contextBridge.exposeInMainWorld('electronAPI', {
-  createTab: (tabId: string, url: string) => ipcRenderer.invoke('create-tab', tabId, url),
-  navigateTab: (tabId: string, url: string) => ipcRenderer.invoke('navigate-tab', tabId, url),
-  switchTab: (tabId: string) => ipcRenderer.invoke('switch-tab', tabId),
-  closeTab: (tabId: string) => ipcRenderer.invoke('close-tab', tabId),
-  goBack: (tabId: string) => ipcRenderer.invoke('go-back', tabId),
-  goForward: (tabId: string) => ipcRenderer.invoke('go-forward', tabId),
-  reload: (tabId: string) => ipcRenderer.invoke('reload', tabId),
-  toggleDevTools: () => ipcRenderer.invoke('toggle-devtools'),
-  
-  onTabLoading: (callback: (tabId: string) => void) => {
-    ipcRenderer.on('tab-loading', (_, tabId) => callback(tabId));
+  createWindow: () => ipcRenderer.invoke('create-window'),
+  createIncognitoWindow: () => ipcRenderer.invoke('create-incognito-window'),
+  closeWindow: () => ipcRenderer.invoke('close-window'),
+  openPdfFile: (): Promise<OpenPdfFileResult | null> => ipcRenderer.invoke('open-pdf-file'),
+  clearBrowsingData: (options: ClearBrowsingDataOptions) =>
+    ipcRenderer.invoke('clear-browsing-data', options),
+
+  onDownloadStarted: (callback: (data: DownloadEventPayload) => void) => {
+    ipcRenderer.on('download-started', (_event, data) => callback(data));
   },
-  onTabLoaded: (callback: (tabId: string, url: string) => void) => {
-    ipcRenderer.on('tab-loaded', (_, tabId, url) => callback(tabId, url));
+  onDownloadProgress: (callback: (data: DownloadEventPayload) => void) => {
+    ipcRenderer.on('download-progress', (_event, data) => callback(data));
   },
-  onTabFailed: (callback: (tabId: string, errorCode: number, errorDescription: string) => void) => {
-    ipcRenderer.on('tab-failed', (_, tabId, errorCode, errorDescription) => callback(tabId, errorCode, errorDescription));
+  onDownloadCompleted: (callback: (data: DownloadEventPayload) => void) => {
+    ipcRenderer.on('download-completed', (_event, data) => callback(data));
   },
-  onTabTitleUpdated: (callback: (tabId: string, title: string) => void) => {
-    ipcRenderer.on('tab-title-updated', (_, tabId, title) => callback(tabId, title));
+  onDownloadFailed: (callback: (data: DownloadEventPayload) => void) => {
+    ipcRenderer.on('download-failed', (_event, data) => callback(data));
   },
-  onTabFaviconUpdated: (callback: (tabId: string, faviconUrl: string | null) => void) => {
-    ipcRenderer.on('tab-favicon-updated', (_, tabId, faviconUrl) => callback(tabId, faviconUrl));
-  },
-  
+
   removeAllListeners: (channel: string) => {
     ipcRenderer.removeAllListeners(channel);
-  }
+  },
 });
-
-declare global {
-  interface Window {
-    electronAPI: {
-      createTab: (tabId: string, url: string) => Promise<string | null>;
-      navigateTab: (tabId: string, url: string) => Promise<void>;
-      switchTab: (tabId: string) => Promise<void>;
-      closeTab: (tabId: string) => Promise<void>;
-      goBack: (tabId: string) => Promise<void>;
-      goForward: (tabId: string) => Promise<void>;
-      reload: (tabId: string) => Promise<void>;
-      toggleDevTools: () => Promise<void>;
-      
-      onTabLoading: (callback: (tabId: string) => void) => void;
-      onTabLoaded: (callback: (tabId: string, url: string) => void) => void;
-      onTabFailed: (callback: (tabId: string, errorCode: number, errorDescription: string) => void) => void;
-      onTabTitleUpdated: (callback: (tabId: string, title: string) => void) => void;
-      onTabFaviconUpdated: (callback: (tabId: string, faviconUrl: string | null) => void) => void;
-      
-      removeAllListeners: (channel: string) => void;
-    };
-  }
-}

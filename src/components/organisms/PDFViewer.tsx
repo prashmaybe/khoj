@@ -8,10 +8,22 @@ import {
   Modal,
   Alert,
   Dimensions,
+  Image,
 } from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import { pdfViewerService, PDFDocument, Annotation, AnnotationTool } from '../../services/PDFViewerService';
 import { FiZoomIn, FiZoomOut, FiChevronLeft, FiChevronRight, FiEdit3, FiType, FiDownload, FiUpload, FiSettings } from 'react-icons/fi';
+
+// Dynamically import pdfjs-dist to avoid SSR issues
+let pdfjsLib: any = null;
+if (typeof window !== 'undefined') {
+  import('pdfjs-dist/build/pdf').then((module) => {
+    pdfjsLib = module;
+    if (typeof window !== 'undefined') {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'pdfjs-dist/build/pdf.worker.min.js';
+    }
+  });
+}
 
 interface PDFViewerProps {
   visible: boolean;
@@ -33,6 +45,9 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ visible, documentId, onClose }) =
   const [annotationText, setAnnotationText] = useState('');
   const [showAnnotationModal, setShowAnnotationModal] = useState(false);
   const [windowWidth, setWindowWidth] = useState(Dimensions.get('window').width);
+  const [pdfData, setPdfData] = useState<string | null>(null);
+  const [pdfScale, setPdfScale] = useState(1.0);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     const updateDimensions = () => setWindowWidth(Dimensions.get('window').width);
@@ -40,36 +55,122 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ visible, documentId, onClose }) =
     return () => subscription?.remove();
   }, []);
 
+  // Function to render PDF page
+  const renderPDFPage = async (pdfUrl: string, pageNum: number) => {
+    if (!pdfjsLib) return;
+    
+    try {
+      const loadingTask = pdfjsLib.getDocument(pdfUrl);
+      const pdf = await loadingTask.promise;
+      const page = await pdf.getPage(pageNum);
+      
+      const viewport = page.getViewport({ scale: pdfScale });
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+      
+      if (!context) return;
+      
+      canvas.height = viewport.height;
+      canvas.width = viewport.width;
+      
+      const renderContext = {
+        canvasContext: context,
+        viewport: viewport
+      };
+      
+      await page.render(renderContext).promise;
+      
+      // Convert canvas to data URL for display
+      const dataUrl = canvas.toDataURL('image/png');
+      setPdfData(dataUrl);
+    } catch (error) {
+      console.error('Error rendering PDF page:', error);
+    }
+  };
+
   useEffect(() => {
     if (visible && documentId) {
-      // Simple document loading simulation
-      const mockDocument: PDFDocument = {
-        id: documentId,
-        title: 'Sample PDF Document',
-        url: '',
-        fileSize: 1024 * 1024,
-        lastModified: new Date().toISOString(),
-        pageCount: 10,
-        currentPage: 1,
-        zoom: 1.0,
-        annotations: [],
-        createdAt: new Date().toISOString(),
-        lastAccessed: new Date().toISOString(),
-      };
-      setDocument(mockDocument);
-      setCurrentPage(1);
-      setZoom(1.0);
+      // Load document from service
+      const documents = pdfViewerService.loadPDFDocuments();
+      const loadedDocument = documents.find(doc => doc.id === documentId);
+      
+      if (loadedDocument) {
+        setDocument(loadedDocument);
+        setCurrentPage(loadedDocument.currentPage);
+        setZoom(loadedDocument.zoom);
+        
+        // Render the PDF page if URL is available
+        if (loadedDocument.url) {
+          renderPDFPage(loadedDocument.url, loadedDocument.currentPage);
+        }
+      } else {
+        // Show file picker to load a new PDF
+        setDocument(null);
+      }
     }
   }, [visible, documentId]);
+
+  // Update PDF rendering when current page or zoom changes
+  useEffect(() => {
+    if (document && document.url) {
+      renderPDFPage(document.url, currentPage);
+      // Save current page to document in service
+      pdfViewerService.goToPage(document.id, currentPage);
+    }
+  }, [currentPage, document, pdfScale]);
+
+  // Function to handle file loading (would be connected to file picker)
+  const handleLoadPDF = async (file: File) => {
+    try {
+      // Validate PDF file
+      if (!pdfViewerService.validatePDFFile(file)) {
+        Alert.alert('Invalid File', 'Please select a valid PDF file (max 50MB)');
+        return;
+      }
+
+      // Load PDF document using service
+      const pdfDocument = await pdfViewerService.loadPDFDocument(file);
+      
+      if (pdfDocument) {
+        setDocument(pdfDocument);
+        setCurrentPage(1);
+        setZoom(1.0);
+        setPdfScale(1.0);
+        
+        // Save to service for persistence
+        const documents = pdfViewerService.loadPDFDocuments();
+        documents.push(pdfDocument);
+        pdfViewerService.savePDFDocuments(documents);
+        
+        // Render the first page
+        renderPDFPage(pdfDocument.url, 1);
+      } else {
+        Alert.alert('Error', 'Failed to load PDF document');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to load PDF file');
+      console.error('Error loading PDF:', error);
+    }
+  };
 
   const handleZoomIn = () => {
     const newZoom = Math.min(zoom + 0.25, 5.0);
     setZoom(newZoom);
+    setPdfScale(newZoom);
+    // Save zoom level to document in service
+    if (document) {
+      pdfViewerService.setZoom(document.id, newZoom);
+    }
   };
 
   const handleZoomOut = () => {
     const newZoom = Math.max(zoom - 0.25, 0.5);
     setZoom(newZoom);
+    setPdfScale(newZoom);
+    // Save zoom level to document in service
+    if (document) {
+      pdfViewerService.setZoom(document.id, newZoom);
+    }
   };
 
   const handleNextPage = () => {
@@ -275,19 +376,31 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ visible, documentId, onClose }) =
 
         {/* PDF Canvas */}
         <View style={styles.canvasContainer}>
-          <View
-            style={[
-              styles.pdfCanvas,
-              { backgroundColor: colors.background }
-            ]}
-          >
-            <Text style={[styles.canvasText, { color: colors.text }]}>
-              PDF Page {currentPage}
-            </Text>
-            <Text style={[styles.canvasSubtext, { color: colors.textSecondary }]}>
-              Zoom: {Math.round(zoom * 100)}%
-            </Text>
-          </View>
+          {pdfData ? (
+            <Image
+              source={{ uri: pdfData }}
+              style={[
+                styles.pdfCanvas,
+                { 
+                  backgroundColor: colors.background,
+                  width: '100%',
+                  height: 600,
+                }
+              ]}
+              resizeMode="contain"
+            />
+          ) : (
+            <View
+              style={[
+                styles.pdfCanvas,
+                { backgroundColor: colors.background }
+              ]}
+            >
+              <Text style={[styles.canvasText, { color: colors.text }]}>
+                Loading PDF...
+              </Text>
+            </View>
+          )}
         </View>
 
         {/* Page Info */}
@@ -386,8 +499,23 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ visible, documentId, onClose }) =
             </Text>
             <TouchableOpacity
               style={[styles.loadButton, { backgroundColor: colors.buttonPrimary }]}
-              onPress={() => {
-                Alert.alert('Info', 'File picker would open here to load PDF files');
+              onPress={async () => {
+                try {
+                  // In a complete implementation, this would open a file picker
+                  // For now, we'll show an alert with instructions
+                  Alert.alert(
+                    'Load PDF', 
+                    'In a complete implementation, this would open a file picker to select a PDF file. The file would then be processed and displayed using PDF.js.\n\n' +
+                    'The file loading would work as follows:\n' +
+                    '1. User selects a PDF file\n' +
+                    '2. File is validated and loaded via FileReader\n' +
+                    '3. PDF.js processes the file and renders pages\n' +
+                    '4. Document is saved to local storage for persistence'
+                  );
+                } catch (error) {
+                  Alert.alert('Error', 'Failed to load PDF file');
+                  console.error('Error loading PDF:', error);
+                }
               }}
             >
               <Text style={[styles.loadButtonText, { color: colors.buttonPrimaryText }]}>Load PDF</Text>

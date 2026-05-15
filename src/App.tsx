@@ -6,6 +6,8 @@ import { useOrganisms, ComponentsProvider } from './hooks';
 import { preferencesStorage, BookmarkItem } from './services/PreferencesStorage';
 import { securityService } from './services/SecurityService';
 import { searchEngineService } from './services/SearchEngineService';
+import { downloadsStorage } from './services/DownloadsStorage';
+import type { DownloadEventPayload } from './electron.d';
 
 interface Tab {
   id: string;
@@ -44,6 +46,7 @@ const AppContent: React.FC = React.memo(() => {
   const [showTabManager, setShowTabManager] = useState(false);
   const [showLazyLoadingManager, setShowLazyLoadingManager] = useState(false);
   const searchBarRef = useRef<any>(null);
+  const electronDownloadIds = useRef<Map<string, string>>(new Map());
 
   const activeTab = tabs.find(tab => tab.id === activeTabId);
 
@@ -81,6 +84,73 @@ const AppContent: React.FC = React.memo(() => {
     const loadedBookmarks = preferencesStorage.loadBookmarks();
     setBookmarks(loadedBookmarks);
   }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.electronAPI) return;
+
+    const mapElectronId = (electronId: string, storageId: string) => {
+      electronDownloadIds.current.set(electronId, storageId);
+    };
+
+    const getStorageId = (electronId: string) => electronDownloadIds.current.get(electronId);
+
+    const onStarted = (data: DownloadEventPayload) => {
+      if (isIncognito) return;
+      const storageId = downloadsStorage.addDownload({
+        url: data.url || '',
+        filename: data.filename,
+        size: 'Unknown',
+        status: 'downloading',
+        filePath: data.filePath || '',
+      });
+      mapElectronId(data.id, storageId);
+    };
+
+    const onProgress = (data: DownloadEventPayload) => {
+      const storageId = getStorageId(data.id);
+      if (!storageId) return;
+      const size =
+        data.totalBytes && data.totalBytes > 0
+          ? downloadsStorage.formatBytes(data.totalBytes)
+          : undefined;
+      downloadsStorage.updateDownload(storageId, {
+        progress: data.progress ?? 0,
+        ...(size && { size }),
+        downloadedBytes: data.receivedBytes,
+        totalBytes: data.totalBytes,
+      });
+    };
+
+    const onCompleted = (data: DownloadEventPayload) => {
+      const storageId = getStorageId(data.id);
+      if (!storageId) return;
+      downloadsStorage.updateDownload(storageId, {
+        status: 'completed',
+        progress: 100,
+        filePath: data.path || '',
+      });
+      electronDownloadIds.current.delete(data.id);
+    };
+
+    const onFailed = (data: DownloadEventPayload) => {
+      const storageId = getStorageId(data.id);
+      if (!storageId) return;
+      downloadsStorage.setDownloadStatus(storageId, 'failed', data.state);
+      electronDownloadIds.current.delete(data.id);
+    };
+
+    window.electronAPI.onDownloadStarted(onStarted);
+    window.electronAPI.onDownloadProgress(onProgress);
+    window.electronAPI.onDownloadCompleted(onCompleted);
+    window.electronAPI.onDownloadFailed(onFailed);
+
+    return () => {
+      window.electronAPI?.removeAllListeners('download-started');
+      window.electronAPI?.removeAllListeners('download-progress');
+      window.electronAPI?.removeAllListeners('download-completed');
+      window.electronAPI?.removeAllListeners('download-failed');
+    };
+  }, [isIncognito]);
 
   useEffect(() => {
     // Initialize keyboard shortcuts
@@ -146,7 +216,7 @@ const AppContent: React.FC = React.memo(() => {
         reload();
       },
       onBookmarkPage: () => {
-        openInternalTab(BOOKMARKS_URL, 'Bookmarks');
+        handleBookmarkToggle();
       },
       onToggleBookmarksBar: () => {
         setShowBookmarksBar(prev => {
@@ -170,8 +240,8 @@ const AppContent: React.FC = React.memo(() => {
         }
       },
       onOpenDevTools: () => {
-        if (typeof window !== 'undefined' && window.electronAPI) {
-          window.electronAPI.toggleDevTools();
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('khoj-toggle-devtools'));
         }
       },
       
@@ -243,24 +313,22 @@ const AppContent: React.FC = React.memo(() => {
       
       // Window Management (Electron-specific)
       onNewWindow: () => {
-        if (typeof window !== 'undefined' && window.electronAPI && 'createWindow' in window.electronAPI) {
-          (window.electronAPI as any).createWindow();
+        if (typeof window !== 'undefined' && window.electronAPI) {
+          window.electronAPI.createWindow();
         } else {
-          // Fallback for web version - open in new tab
-          createTab(undefined, 'about:blank', 'New Tab');
+          createTab(undefined, HOME_URL, 'New Tab');
         }
       },
       onNewIncognitoWindow: () => {
-        if (typeof window !== 'undefined' && window.electronAPI && 'createIncognitoWindow' in window.electronAPI) {
-          (window.electronAPI as any).createIncognitoWindow();
+        if (typeof window !== 'undefined' && window.electronAPI) {
+          window.electronAPI.createIncognitoWindow();
         } else {
-          // Fallback for web version - create new tab
-          createTab(undefined, 'about:blank', 'New Tab');
+          createTab(undefined, HOME_URL, 'New Tab');
         }
       },
       onCloseWindow: () => {
-        if (typeof window !== 'undefined' && window.electronAPI && 'closeWindow' in window.electronAPI) {
-          (window.electronAPI as any).closeWindow();
+        if (typeof window !== 'undefined' && window.electronAPI) {
+          window.electronAPI.closeWindow();
         } else {
           // Fallback for web version - close current tab
           if (tabs.length > 1) {
@@ -309,7 +377,7 @@ const AppContent: React.FC = React.memo(() => {
   const createTab = async (tabId?: string, initialUrl?: string, initialTitle?: string) => {
     const newTabId = tabId || Date.now().toString();
     const targetUrl = initialUrl || HOME_URL;
-    
+
     const newTab: Tab = {
       id: newTabId,
       title: initialTitle || (targetUrl === HOME_URL ? 'New Tab' : targetUrl),
@@ -428,7 +496,7 @@ const AppContent: React.FC = React.memo(() => {
 
   const closeTab = async (tabId: string) => {
     if (tabs.length === 1) return;
-    
+
     const tabToClose = tabs.find(tab => tab.id === tabId);
     if (tabToClose) {
       // Save closed tab to storage (limit to 10 closed tabs)
@@ -579,6 +647,26 @@ const AppContent: React.FC = React.memo(() => {
     );
   };
 
+  const handleTabNavigate = (tabId: string, newUrl: string, title?: string) => {
+    const reportedUrl = newUrl.startsWith('data:text/html') ? HOME_URL : newUrl;
+    setTabs(prevTabs =>
+      prevTabs.map(tab =>
+        tab.id === tabId
+          ? { ...tab, url: reportedUrl, title: title || tab.title }
+          : tab
+      )
+    );
+    if (tabId === activeTabId) {
+      setUrl(reportedUrl);
+    }
+  };
+
+  const handleTabTitleUpdate = (tabId: string, title: string) => {
+    setTabs(prevTabs =>
+      prevTabs.map(tab => (tab.id === tabId ? { ...tab, title } : tab))
+    );
+  };
+
   const handleBookmarkToggle = () => {
     if (isIncognito || !activeTab || !activeTab.url || activeTab.url.startsWith('khoj://')) {
       return;
@@ -638,6 +726,8 @@ const AppContent: React.FC = React.memo(() => {
         onBookmarkAction={handleBookmarkAction}
         onUpdateTabError={handleUpdateTabError}
         onUpdateTabFavicon={handleUpdateTabFavicon}
+        onTabNavigate={handleTabNavigate}
+        onTabTitleUpdate={handleTabTitleUpdate}
         isBookmarked={isCurrentPageBookmarked()}
         onBookmarkToggle={handleBookmarkToggle}
         isIncognito={isIncognito}

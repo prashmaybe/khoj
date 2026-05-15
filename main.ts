@@ -1,201 +1,30 @@
-import { app, BrowserWindow, ipcMain, BrowserView, Menu } from 'electron';
+import { app, BrowserWindow, ipcMain, Menu, session, dialog } from 'electron';
 import * as path from 'path';
+import * as fs from 'fs';
 
 let mainWindow: BrowserWindow | null = null;
-let browserViews: Map<string, BrowserView> = new Map();
-let activeViewId: string | null = null;
-let isDev: boolean = false;
+let isDev = false;
 
-const HOME_ROUTE = 'khoj://home';
-function getHomeDataUrl(): string {
-  const html = `<!doctype html>
-  <html>
-    <head>
-      <meta charset="utf-8" />
-      <meta name="viewport" content="width=device-width, initial-scale=1" />
-      <title>New Tab</title>
-      <style>
-        :root { color-scheme: light; }
-        html, body { height: 100%; margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; background: #ffffff; }
-        .wrap { height: 100%; display: grid; place-items: center; }
-        .card { width: min(720px, calc(100vw - 48px)); text-align: center; }
-        .logo { font-size: 44px; font-weight: 700; letter-spacing: -0.02em; color: rgba(0,0,0,.82); margin-bottom: 18px; }
-        .sub { color: rgba(0,0,0,.6); font-size: 14px; margin-bottom: 32px; }
-        .hint { color: rgba(0,0,0,.45); font-size: 12px; margin-top: 14px; }
-        .pill { display: inline-flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 999px; border: 1px solid rgba(0,0,0,.12); background: #f8f9fa; margin-bottom: 32px; }
-        .dot { width: 10px; height: 10px; border-radius: 50%; background: #1a73e8; opacity: .9; }
-        
-        .search-container { width: 100%; max-width: 584px; margin: 0 auto 32px; }
-        .search-box {
-          width: 100%;
-          height: 44px;
-          border: 1px solid #dfe1e5;
-          border-radius: 24px;
-          padding: 0 16px 0 44px;
-          font-size: 16px;
-          outline: none;
-          background: #fff;
-          box-shadow: 0 1px 6px rgba(32,33,36,.28);
-          transition: box-shadow 0.2s ease;
-        }
-        .search-box:hover, .search-box:focus {
-          box-shadow: 0 1px 6px rgba(32,33,36,.38);
-          border-color: rgba(223,225,229,0);
-        }
-        .search-box:focus {
-          box-shadow: 0 1px 6px rgba(32,33,36,.48);
-        }
-        .search-wrapper { position: relative; }
-        .search-icon {
-          position: absolute;
-          left: 16px;
-          top: 50%;
-          transform: translateY(-50%);
-          width: 20px;
-          height: 20px;
-          opacity: 0.5;
-          pointer-events: none;
-        }
-        .search-icon::before {
-          content: "🔍";
-          font-size: 16px;
-        }
-      </style>
-    </head>
-    <body>
-      <div class="wrap">
-        <div class="card">
-          <div class="logo">Khoj</div>
-          <div class="sub">Search the web or enter a URL</div>
-          
-          <div class="search-container">
-            <div class="search-wrapper">
-              <span class="search-icon"></span>
-              <input 
-                type="text" 
-                class="search-box" 
-                id="searchInput"
-                placeholder="Search Google or type a URL"
-                autocomplete="off"
-                autofocus
-              />
-            </div>
-          </div>
-          
-          <div class="pill"><span class="dot"></span><span>New Tab</span></div>
-          <div class="hint">Tip: Click the Home button anytime to come back here.</div>
-        </div>
-      </div>
-      
-      <script>
-        const searchInput = document.getElementById('searchInput');
-        
-        function isSearchQuery(input) {
-          const trimmed = input.trim();
-          
-          // If it starts with http:// or https://, it's a URL
-          if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
-            return false;
-          }
-          
-          // If it contains spaces, it's likely a search query
-          if (trimmed.includes(' ')) {
-            return true;
-          }
-          
-          // Check if it's a valid domain format (has at least one dot and no spaces)
-          const domainRegex = /^[a-zA-Z0-9-]+\\.[a-zA-Z]{2,}$/;
-          if (domainRegex.test(trimmed)) {
-            return false;
-          }
-          
-          // If it doesn't have a dot, it's likely a search query
-          if (!trimmed.includes('.')) {
-            return true;
-          }
-          
-          // Default to treating as search query for safety
-          return true;
-        }
-        
-        function createGoogleSearchUrl(query) {
-          const encodedQuery = encodeURIComponent(query.trim());
-          return \`https://www.google.com/search?q=\${encodedQuery}\`;
-        }
-        
-        function formatUrl(input) {
-          let formattedUrl = input.trim();
-          if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
-            formattedUrl = 'https://' + formattedUrl;
-          }
-          return formattedUrl;
-        }
-        
-        function handleSearch() {
-          const query = searchInput.value.trim();
-          if (!query) return;
-          
-          let targetUrl;
-          if (isSearchQuery(query)) {
-            targetUrl = createGoogleSearchUrl(query);
-          } else {
-            targetUrl = formatUrl(query);
-          }
-          
-          // Send message to parent window to navigate
-          if (window.parent && window.parent.postMessage) {
-            window.parent.postMessage({
-              type: 'navigate',
-              url: targetUrl
-            }, '*');
-          }
-        }
-        
-        searchInput.addEventListener('keypress', function(e) {
-          if (e.key === 'Enter') {
-            handleSearch();
-          }
-        });
-        
-        // Focus the search input when page loads
-        searchInput.focus();
-      </script>
-    </body>
-  </html>`;
-  return `data:text/html;charset=utf-8,${encodeURIComponent(html)}`;
+function getPreloadPath(): string {
+  return path.join(__dirname, 'preload.js');
 }
 
-function toLoadableUrl(url: string): string {
-  return url === HOME_ROUTE ? getHomeDataUrl() : url;
+function loadRenderer(win: BrowserWindow, incognito = false): void {
+  if (isDev) {
+    win.loadURL(incognito ? 'http://localhost:8080#incognito' : 'http://localhost:8080');
+    return;
+  }
+  const indexPath = path.join(__dirname, 'public', 'index.html');
+  if (incognito) {
+    win.loadFile(indexPath, { hash: 'incognito' });
+  } else {
+    win.loadFile(indexPath);
+  }
 }
 
-function toReportedUrl(url: string): string {
-  return url.startsWith('data:text/html') ? HOME_ROUTE : url;
-}
-
-function updateActiveViewBounds(): void {
-  if (!mainWindow || !activeViewId) return;
-  const view = browserViews.get(activeViewId);
-  if (!view) return;
-
-  const { width, height } = mainWindow.getContentBounds();
-  const topBarHeight = 100;
-  view.setBounds({
-    x: 0,
-    y: topBarHeight,
-    width,
-    height: Math.max(0, height - topBarHeight),
-  });
-}
-
-function createWindow(): void {
-  // `process.cwd()` is not stable (depends on how Electron is launched).
-  // Resolve preload relative to compiled main process file.
-  const preloadPath = path.join(__dirname, 'preload.js');
-  console.log('Preload script path:', preloadPath);
-  console.log('Preload script exists:', require('fs').existsSync(preloadPath));
-  
-  mainWindow = new BrowserWindow({
+function createBrowserWindow(incognito = false): BrowserWindow {
+  const preloadPath = getPreloadPath();
+  const win = new BrowserWindow({
     height: 800,
     width: 1200,
     webPreferences: {
@@ -208,193 +37,184 @@ function createWindow(): void {
     },
   });
 
-  // Prevent context menu
-  mainWindow.webContents.on('context-menu', (event, params) => {
+  win.webContents.on('context-menu', (event) => {
     event.preventDefault();
   });
 
-  // Disable developer tools shortcuts in production
   if (!isDev) {
-    mainWindow.webContents.on('before-input-event', (event, input) => {
+    win.webContents.on('before-input-event', (event, input) => {
       if (input.key === 'F12' || (input.control && input.shift && input.key === 'I')) {
         event.preventDefault();
       }
     });
   }
 
-  console.log('NODE_ENV:', process.env.NODE_ENV);
-  console.log('app.isPackaged:', app.isPackaged);
-  
-  isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
-  
-  if (isDev) {
-    console.log('Running in development mode, loading from webpack dev server');
-    mainWindow.loadURL('http://localhost:8080');
-    mainWindow.webContents.openDevTools();
-  } else {
-    console.log('Running in production mode, loading from dist folder');
-    mainWindow.loadFile(path.join(__dirname, 'dist/index.html'));
+  loadRenderer(win, incognito);
+
+  if (isDev && !incognito) {
+    win.webContents.openDevTools({ mode: 'detach' });
   }
 
-  mainWindow.on('closed', () => {
-    mainWindow = null;
+  win.on('closed', () => {
+    if (win === mainWindow) {
+      mainWindow = null;
+    }
   });
 
-  // Keep BrowserView in sync with window size.
-  mainWindow.on('resize', () => {
-    updateActiveViewBounds();
+  return win;
+}
+
+function setupDownloadHandler(electronSession: Electron.Session): void {
+  electronSession.on('will-download', (_event, item) => {
+    const downloadId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+    const filename = item.getFilename();
+    const downloadsDir = app.getPath('downloads');
+    const savePath = path.join(downloadsDir, filename);
+
+    let finalPath = savePath;
+    if (fs.existsSync(finalPath)) {
+      const ext = path.extname(filename);
+      const base = path.basename(filename, ext);
+      finalPath = path.join(downloadsDir, `${base} (${Date.now()})${ext}`);
+    }
+
+    item.setSavePath(finalPath);
+
+    mainWindow?.webContents.send('download-started', {
+      id: downloadId,
+      filename,
+      url: item.getURL(),
+      filePath: finalPath,
+    });
+
+    item.on('updated', (_evt, state) => {
+      if (state !== 'progressing') return;
+      const totalBytes = item.getTotalBytes();
+      const receivedBytes = item.getReceivedBytes();
+      const progress = totalBytes > 0 ? Math.round((receivedBytes / totalBytes) * 100) : 0;
+      mainWindow?.webContents.send('download-progress', {
+        id: downloadId,
+        filename,
+        progress,
+        receivedBytes,
+        totalBytes,
+        state: 'progressing',
+      });
+    });
+
+    item.once('done', (_evt, state) => {
+      if (state === 'completed') {
+        mainWindow?.webContents.send('download-completed', {
+          id: downloadId,
+          filename,
+          path: item.getSavePath(),
+          state: 'completed',
+        });
+        return;
+      }
+      mainWindow?.webContents.send('download-failed', {
+        id: downloadId,
+        filename,
+        state,
+      });
+    });
+  });
+}
+
+function setupIpcHandlers(): void {
+  ipcMain.handle('create-window', () => {
+    createBrowserWindow(false);
+  });
+
+  ipcMain.handle('create-incognito-window', () => {
+    createBrowserWindow(true);
+  });
+
+  ipcMain.handle('close-window', (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    win?.close();
+  });
+
+  ipcMain.handle('open-pdf-file', async () => {
+    const win = BrowserWindow.getFocusedWindow() ?? mainWindow;
+    if (!win) return null;
+
+    const result = await dialog.showOpenDialog(win, {
+      properties: ['openFile'],
+      filters: [{ name: 'PDF', extensions: ['pdf'] }],
+    });
+
+    if (result.canceled || result.filePaths.length === 0) {
+      return null;
+    }
+
+    const filePath = result.filePaths[0];
+    return {
+      filePath,
+      fileUrl: `file://${filePath.replace(/\\/g, '/')}`,
+      name: path.basename(filePath),
+    };
+  });
+
+  ipcMain.handle('clear-browsing-data', async (_event, options: {
+    browsingHistory?: boolean;
+    cookies?: boolean;
+    cache?: boolean;
+    localStorage?: boolean;
+    sessionStorage?: boolean;
+    passwords?: boolean;
+    timeRange?: string;
+  }) => {
+    const storages: string[] = [];
+    if (options.cookies) storages.push('cookies');
+    if (options.cache) storages.push('cachestorage', 'shadercache', 'serviceworkers');
+    if (options.localStorage || options.sessionStorage) {
+      storages.push('localstorage', 'indexdb', 'websql');
+    }
+    if (options.passwords) storages.push('passwords');
+
+    const removalOptions: Electron.ClearStorageDataOptions = {
+      storages: storages.length > 0 ? (storages as Electron.ClearStorageDataOptions['storages']) : ['cookies', 'cachestorage'],
+    };
+
+    if (options.timeRange && options.timeRange !== 'allTime') {
+      const now = Date.now();
+      const ranges: Record<string, number> = {
+        lastHour: 60 * 60 * 1000,
+        lastDay: 24 * 60 * 60 * 1000,
+        lastWeek: 7 * 24 * 60 * 60 * 1000,
+        lastMonth: 30 * 24 * 60 * 60 * 1000,
+      };
+      const delta = ranges[options.timeRange];
+      if (delta) {
+        removalOptions.origin = undefined;
+        removalOptions.quotas = ['temporary', 'persistent', 'syncable'];
+        // Electron uses since timestamp for clearStorageData in newer versions
+        (removalOptions as { since?: number }).since = now - delta;
+      }
+    }
+
+    await session.defaultSession.clearStorageData(removalOptions);
+    try {
+      await session.fromPartition('incognito').clearStorageData(removalOptions);
+    } catch {
+      // incognito partition may not exist yet
+    }
+
+    if (options.browsingHistory) {
+      await session.defaultSession.clearStorageData({ storages: ['indexdb', 'localstorage'] });
+    }
   });
 }
 
 app.whenReady().then(() => {
-  // Remove the default menu
+  isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
   Menu.setApplicationMenu(null);
-  createWindow();
+  setupDownloadHandler(session.defaultSession);
+  setupDownloadHandler(session.fromPartition('incognito'));
   setupIpcHandlers();
+  mainWindow = createBrowserWindow(false);
 });
-
-function setupIpcHandlers() {
-  ipcMain.handle('create-tab', async (_, tabId: string, url: string) => {
-    if (!mainWindow) return null;
-    
-    const view = new BrowserView({
-      webPreferences: {
-        nodeIntegration: false,
-        contextIsolation: true,
-        sandbox: true,
-      }
-    });
-    
-    // Prevent context menu for BrowserView
-    view.webContents.on('context-menu', (event, params) => {
-      event.preventDefault();
-    });
-    
-    // Disable developer tools in production
-    if (!isDev) {
-      view.webContents.on('before-input-event', (event, input) => {
-        if (input.key === 'F12' || (input.control && input.shift && input.key === 'I')) {
-          event.preventDefault();
-        }
-      });
-    }
-    
-    browserViews.set(tabId, view);
-    
-    // Keep renderer tab strip (title + favicon) in sync with the page.
-    view.webContents.on('page-title-updated', (_event, title) => {
-      mainWindow?.webContents.send('tab-title-updated', tabId, title);
-    });
-    view.webContents.on('page-favicon-updated', (_event, favicons) => {
-      const favicon = Array.isArray(favicons) && favicons.length > 0 ? favicons[0] : null;
-      mainWindow?.webContents.send('tab-favicon-updated', tabId, favicon);
-    });
-
-    view.webContents.on('did-start-loading', () => {
-      mainWindow?.webContents.send('tab-loading', tabId);
-    });
-    
-    view.webContents.on('did-finish-load', () => {
-      mainWindow?.webContents.send('tab-loaded', tabId, toReportedUrl(view.webContents.getURL()));
-    });
-    
-    view.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
-      mainWindow?.webContents.send('tab-failed', tabId, errorCode, errorDescription);
-    });
-    
-    await view.webContents.loadURL(toLoadableUrl(url));
-    
-    if (!activeViewId) {
-      activeViewId = tabId;
-      mainWindow.addBrowserView(view);
-      updateActiveViewBounds();
-    }
-    
-    return tabId;
-  });
-  
-  ipcMain.handle('navigate-tab', async (_, tabId: string, url: string) => {
-    const view = browserViews.get(tabId);
-    if (view) {
-      await view.webContents.loadURL(toLoadableUrl(url));
-    }
-  });
-  
-  ipcMain.handle('switch-tab', (_, tabId: string) => {
-    if (!mainWindow) return;
-    
-    const currentView = browserViews.get(activeViewId!);
-    if (currentView) {
-      mainWindow.removeBrowserView(currentView);
-    }
-    
-    const newView = browserViews.get(tabId);
-    if (newView) {
-      activeViewId = tabId;
-      mainWindow.addBrowserView(newView);
-      updateActiveViewBounds();
-    }
-  });
-  
-  ipcMain.handle('close-tab', (_, tabId: string) => {
-    const view = browserViews.get(tabId);
-    if (view) {
-      view.webContents.close();
-      browserViews.delete(tabId);
-      
-      if (activeViewId === tabId) {
-        activeViewId = null;
-        const remainingTabs = Array.from(browserViews.keys());
-        if (remainingTabs.length > 0) {
-          const newActiveTab = remainingTabs[0];
-          const newView = browserViews.get(newActiveTab);
-          if (newView && mainWindow) {
-            activeViewId = newActiveTab;
-            mainWindow.addBrowserView(newView);
-            updateActiveViewBounds();
-          }
-        }
-      }
-    }
-  });
-  
-  ipcMain.handle('go-back', (_, tabId: string) => {
-    const view = browserViews.get(tabId);
-    if (view && view.webContents.canGoBack()) {
-      view.webContents.goBack();
-    }
-  });
-  
-  ipcMain.handle('go-forward', (_, tabId: string) => {
-    const view = browserViews.get(tabId);
-    if (view && view.webContents.canGoForward()) {
-      view.webContents.goForward();
-    }
-  });
-  
-  ipcMain.handle('reload', (_, tabId: string) => {
-    const view = browserViews.get(tabId);
-    if (view) {
-      view.webContents.reload();
-    }
-  });
-
-  ipcMain.handle('toggle-devtools', () => {
-    // Only allow devtools in development mode
-    if (!isDev) return;
-    
-    const activeView = activeViewId ? browserViews.get(activeViewId) : null;
-
-    if (activeView) {
-      activeView.webContents.toggleDevTools();
-      return;
-    }
-
-    if (mainWindow) {
-      mainWindow.webContents.toggleDevTools();
-    }
-  });
-}
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
@@ -404,6 +224,6 @@ app.on('window-all-closed', () => {
 
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow();
+    mainWindow = createBrowserWindow(false);
   }
 });

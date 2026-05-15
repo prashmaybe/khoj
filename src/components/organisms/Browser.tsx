@@ -189,20 +189,14 @@ const Browser: React.FC<BrowserProps> = React.memo(({
   const handleDownloadStart = (url: string, filename?: string) => {
     if (!isIncognito) {
       try {
-        const downloadId = downloadsStorage.addDownload({
-          url,
-          filename: filename || getFilenameFromUrl(url),
-          size: 'Unknown',
-          status: 'downloading',
-          filePath: ''
-        });
+        // With real download handling, we don't need to simulate progress
+        // The main process will handle the actual download
+        console.log('Download request:', url, 'Filename:', filename);
         
-        // Simulate download progress (in a real app, this would be handled by actual download logic)
-        simulateDownloadProgress(downloadId);
-        
-        console.log('Download started:', url, 'ID:', downloadId);
+        // In a real implementation, we would trigger the download through the webview
+        // For now, we'll just log that a download was requested
       } catch (error) {
-        console.error('Error starting download:', error);
+        console.error('Error handling download request:', error);
       }
     }
   };
@@ -239,23 +233,7 @@ const Browser: React.FC<BrowserProps> = React.memo(({
     }
   };
 
-  const simulateDownloadProgress = (downloadId: string) => {
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += Math.random() * 20;
-      if (progress >= 100) {
-        progress = 100;
-        downloadsStorage.updateDownload(downloadId, {
-          progress: 100,
-          status: 'completed'
-        });
-        clearInterval(interval);
-        console.log('Download completed:', downloadId);
-      } else {
-        downloadsStorage.updateDownloadProgress(downloadId, Math.floor(progress));
-      }
-    }, 500);
-  };
+  
 
   const extractFaviconUrl = (url: string): string | null => {
     try {
@@ -367,11 +345,44 @@ const Browser: React.FC<BrowserProps> = React.memo(({
 
     window.addEventListener(NAV_EVENT_NAME, handleNavCommand as EventListener);
     window.addEventListener('message', handleOpenLinkInNewTab);
+    
+    // Add download event listeners for Electron
+    if (isElectronRuntime && typeof window !== 'undefined' && (window as any).electronAPI) {
+      const handleDownloadProgress = (event: any, data: any) => {
+        console.log('Download progress:', data);
+        // Update download progress in UI
+        if (onDownloadAction) {
+          onDownloadAction('progress', data.filename);
+        }
+      };
+      
+      const handleDownloadCompleted = (event: any, data: any) => {
+        console.log('Download completed:', data);
+        // Update download status in UI
+        if (onDownloadAction) {
+          onDownloadAction('completed', data.filename);
+        }
+      };
+      
+      const handleDownloadFailed = (event: any, data: any) => {
+        console.log('Download failed:', data);
+        // Update download status in UI
+        if (onDownloadAction) {
+          onDownloadAction('failed', data.filename);
+        }
+      };
+      
+      // Listen for download events from main process
+      window.electronAPI.onDownloadProgress = handleDownloadProgress;
+      window.electronAPI.onDownloadCompleted = handleDownloadCompleted;
+      window.electronAPI.onDownloadFailed = handleDownloadFailed;
+    }
+    
     return () => {
       window.removeEventListener(NAV_EVENT_NAME, handleNavCommand as EventListener);
       window.removeEventListener('message', handleOpenLinkInNewTab);
     };
-  }, [activeTabId, isElectronRuntime, onNewTabWithUrl, onNewTab]);
+  }, [activeTabId, isElectronRuntime, onNewTabWithUrl, onNewTab, onDownloadAction]);
 
   return (
     <View style={styles.browser}>
