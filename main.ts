@@ -187,10 +187,7 @@ function setupIpcHandlers(): void {
       };
       const delta = ranges[options.timeRange];
       if (delta) {
-        removalOptions.origin = undefined;
-        removalOptions.quotas = ['temporary', 'persistent', 'syncable'];
-        // Electron uses since timestamp for clearStorageData in newer versions
-        (removalOptions as { since?: number }).since = now - delta;
+        (removalOptions as Electron.ClearStorageDataOptions & { since?: number }).since = now - delta;
       }
     }
 

@@ -143,6 +143,67 @@ class PasswordAutofill {
     }
   }
 
+  /** Script injected into Electron `<webview>` guests for password suggestions. */
+  buildWebviewInjectionScript(
+    passwords: Array<{ title: string; username: string; password: string; url: string }>
+  ): string {
+    const payload = JSON.stringify(passwords);
+    return `(function(){
+      if (window.__khojAutofillInstalled) return;
+      window.__khojAutofillInstalled = true;
+      const passwords = ${payload};
+      let activeDropdown = null;
+      function removeDropdown(){ if(activeDropdown){ activeDropdown.remove(); activeDropdown=null; } }
+      function isPasswordInput(el){
+        if(!el || el.tagName!=='INPUT') return false;
+        const t=(el.type||'').toLowerCase();
+        const n=(el.name||'').toLowerCase();
+        return t==='password'||n.includes('password')||n.includes('pass');
+      }
+      function isUsernameInput(el){
+        if(!el || el.tagName!=='INPUT') return false;
+        const t=(el.type||'').toLowerCase();
+        const n=(el.name||'').toLowerCase();
+        return t==='email'||n.includes('email')||n.includes('user')||n.includes('login');
+      }
+      function showSuggestions(target, list){
+        removeDropdown();
+        if(!list.length) return;
+        const dropdown=document.createElement('div');
+        dropdown.style.cssText='position:absolute;background:#fff;border:1px solid #ccc;border-radius:4px;box-shadow:0 2px 10px rgba(0,0,0,.1);z-index:2147483647;max-height:220px;overflow-y:auto;font:14px system-ui,sans-serif';
+        list.forEach(function(entry){
+          const item=document.createElement('div');
+          item.style.cssText='padding:8px 12px;cursor:pointer;border-bottom:1px solid #eee';
+          item.textContent=entry.title+' — '+entry.username;
+          item.addEventListener('click',function(){
+            const form=target.closest('form');
+            const user=form?form.querySelector('input[type=email],input[type=text]'):null;
+            const pass=form?form.querySelector('input[type=password]'):null;
+            if(user){ user.value=entry.username; user.dispatchEvent(new Event('input',{bubbles:true})); }
+            if(pass){ pass.value=entry.password; pass.dispatchEvent(new Event('input',{bubbles:true})); }
+            removeDropdown();
+          });
+          dropdown.appendChild(item);
+        });
+        const rect=target.getBoundingClientRect();
+        dropdown.style.top=(rect.bottom+window.scrollY)+'px';
+        dropdown.style.left=(rect.left+window.scrollX)+'px';
+        dropdown.style.minWidth=rect.width+'px';
+        document.body.appendChild(dropdown);
+        activeDropdown=dropdown;
+      }
+      document.addEventListener('focusin',function(e){
+        const el=e.target;
+        if(isPasswordInput(el)||isUsernameInput(el)){
+          showSuggestions(el,passwords);
+        }
+      },true);
+      document.addEventListener('click',function(e){
+        if(activeDropdown && !activeDropdown.contains(e.target)) removeDropdown();
+      });
+    })();`;
+  }
+
   fillFormFields(form: DetectedForm, passwordEntry: PasswordEntry): void {
     if (!this.isClient()) return;
 

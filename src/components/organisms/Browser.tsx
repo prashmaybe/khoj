@@ -4,7 +4,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useOrganisms, useMolecules, usePages } from '../../hooks';
 import { passwordAutofill } from '../../services/PasswordAutofill';
 import { historyStorage } from '../../services/HistoryStorage';
-import { downloadsStorage } from '../../services/DownloadsStorage';
+import { toWebviewSrc, isInternalRoute } from '../../utils/loadableUrl';
 
 const NAV_EVENT_NAME = 'khoj-nav-command';
 
@@ -50,6 +50,8 @@ interface BrowserProps {
   onBookmarkAction?: (action: string, bookmarkId: string, data?: any) => void;
   onUpdateTabError?: (tabId: string, hasError: boolean, errorCode?: number, errorDescription?: string) => void;
   onUpdateTabFavicon?: (tabId: string, faviconUrl: string | null) => void;
+  onTabNavigate?: (tabId: string, url: string, title?: string) => void;
+  onTabTitleUpdate?: (tabId: string, title: string) => void;
   isBookmarked?: boolean;
   onBookmarkToggle?: () => void;
   isIncognito?: boolean;
@@ -84,6 +86,8 @@ const Browser: React.FC<BrowserProps> = React.memo(({
   onBookmarkAction,
   onUpdateTabError,
   onUpdateTabFavicon,
+  onTabNavigate,
+  onTabTitleUpdate,
   isBookmarked = false,
   onBookmarkToggle,
   isIncognito = false,
@@ -186,54 +190,24 @@ const Browser: React.FC<BrowserProps> = React.memo(({
     }
   };
 
-  const handleDownloadStart = (url: string, filename?: string) => {
-    if (!isIncognito) {
-      try {
-        // With real download handling, we don't need to simulate progress
-        // The main process will handle the actual download
-        console.log('Download request:', url, 'Filename:', filename);
-        
-        // In a real implementation, we would trigger the download through the webview
-        // For now, we'll just log that a download was requested
-      } catch (error) {
-        console.error('Error handling download request:', error);
-      }
-    }
-  };
-
-  const getFilenameFromUrl = (url: string): string => {
+  const injectPasswordAutofill = async (webview: HTMLElement, pageUrl: string) => {
+    if (isIncognito || !pageUrl || isInternalRoute(pageUrl)) return;
     try {
-      const urlObj = new URL(url);
-      const pathname = urlObj.pathname;
-      const filename = pathname.split('/').pop();
-      return filename || 'download';
+      const passwords = await passwordAutofill.getPasswordSuggestionsForUrl(pageUrl);
+      if (passwords.length === 0) return;
+      const script = passwordAutofill.buildWebviewInjectionScript(
+        passwords.map(p => ({
+          title: p.title,
+          username: p.username,
+          password: p.password,
+          url: p.url,
+        }))
+      );
+      await (webview as any).executeJavaScript(script);
     } catch (error) {
-      return 'download';
+      console.warn('Password autofill injection failed:', error);
     }
   };
-
-  const isDownloadableFile = (url: string): boolean => {
-    try {
-      const urlObj = new URL(url);
-      const pathname = urlObj.pathname.toLowerCase();
-      
-      // Common file extensions that trigger downloads
-      const downloadableExtensions = [
-        '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx',
-        '.zip', '.rar', '.7z', '.tar', '.gz',
-        '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.svg',
-        '.mp3', '.mp4', '.avi', '.mov', '.wmv',
-        '.exe', '.dmg', '.pkg', '.deb', '.rpm',
-        '.txt', '.csv', '.json', '.xml'
-      ];
-      
-      return downloadableExtensions.some(ext => pathname.endsWith(ext));
-    } catch (error) {
-      return false;
-    }
-  };
-
-  
 
   const extractFaviconUrl = (url: string): string | null => {
     try {
@@ -294,7 +268,20 @@ const Browser: React.FC<BrowserProps> = React.memo(({
   }, [activeTabId, isElectronRuntime]);
 
   useEffect(() => {
-    if (!isElectronRuntime || typeof window === 'undefined') return;
+    if (typeof window === 'undefined') return;
+
+    const toggleDevTools = () => {
+      if (!activeTabId || !isElectronRuntime) return;
+      const webview = webviewRefs.current.get(activeTabId);
+      if (webview && typeof (webview as any).openDevTools === 'function') {
+        (webview as any).openDevTools();
+      }
+    };
+    window.addEventListener('khoj-toggle-devtools', toggleDevTools);
+
+    if (!isElectronRuntime) {
+      return () => window.removeEventListener('khoj-toggle-devtools', toggleDevTools);
+    }
 
     const handleNavCommand = (event: Event) => {
       const customEvent = event as CustomEvent<BrowserNavCommandDetail>;
@@ -331,58 +318,25 @@ const Browser: React.FC<BrowserProps> = React.memo(({
       }
     };
 
-    const handleOpenLinkInNewTab = (event: MessageEvent) => {
-      if (event.data.type === 'OPEN_LINK_IN_NEW_TAB' && event.data.data?.url) {
-        if (onNewTabWithUrl) {
-          onNewTabWithUrl(event.data.data.url);
-        } else if (onNewTab) {
-          onNewTab();
-          // If no specific URL handler, we'll need to handle this differently
-          console.log('Middle-clicked link:', event.data.data.url);
-        }
+    const handleWindowMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'OPEN_LINK_IN_NEW_TAB' && event.data.data?.url) {
+        onNewTabWithUrl?.(event.data.data.url);
+        return;
+      }
+      if (event.data?.type === 'navigate' && event.data.url && activeTabId) {
+        onTabNavigate?.(activeTabId, event.data.url);
       }
     };
 
     window.addEventListener(NAV_EVENT_NAME, handleNavCommand as EventListener);
-    window.addEventListener('message', handleOpenLinkInNewTab);
-    
-    // Add download event listeners for Electron
-    if (isElectronRuntime && typeof window !== 'undefined' && (window as any).electronAPI) {
-      const handleDownloadProgress = (event: any, data: any) => {
-        console.log('Download progress:', data);
-        // Update download progress in UI
-        if (onDownloadAction) {
-          onDownloadAction('progress', data.filename);
-        }
-      };
-      
-      const handleDownloadCompleted = (event: any, data: any) => {
-        console.log('Download completed:', data);
-        // Update download status in UI
-        if (onDownloadAction) {
-          onDownloadAction('completed', data.filename);
-        }
-      };
-      
-      const handleDownloadFailed = (event: any, data: any) => {
-        console.log('Download failed:', data);
-        // Update download status in UI
-        if (onDownloadAction) {
-          onDownloadAction('failed', data.filename);
-        }
-      };
-      
-      // Listen for download events from main process
-      window.electronAPI.onDownloadProgress = handleDownloadProgress;
-      window.electronAPI.onDownloadCompleted = handleDownloadCompleted;
-      window.electronAPI.onDownloadFailed = handleDownloadFailed;
-    }
-    
+    window.addEventListener('message', handleWindowMessage);
+
     return () => {
+      window.removeEventListener('khoj-toggle-devtools', toggleDevTools);
       window.removeEventListener(NAV_EVENT_NAME, handleNavCommand as EventListener);
-      window.removeEventListener('message', handleOpenLinkInNewTab);
+      window.removeEventListener('message', handleWindowMessage);
     };
-  }, [activeTabId, isElectronRuntime, onNewTabWithUrl, onNewTab, onDownloadAction]);
+  }, [activeTabId, isElectronRuntime, onNewTabWithUrl, onTabNavigate]);
 
   return (
     <View style={styles.browser}>
@@ -517,9 +471,11 @@ const Browser: React.FC<BrowserProps> = React.memo(({
                           handleFaviconUpdate(tab.id, tab.url);
                         });
                         el.addEventListener('did-navigate', (event: any) => {
-                          // Also record history on navigation within the same webview
+                          if (event.url && onTabNavigate) {
+                            onTabNavigate(tab.id, event.url, event.title);
+                          }
                           const updatedTab = tabs.find(t => t.id === tab.id);
-                          if (updatedTab && !isIncognito && event.url && !event.url.startsWith('khoj://')) {
+                          if (updatedTab && !isIncognito && event.url && !event.url.startsWith('khoj://') && !event.url.startsWith('data:')) {
                             try {
                               historyStorage.addHistoryItem({
                                 title: event.title || updatedTab.title || event.url,
@@ -527,18 +483,20 @@ const Browser: React.FC<BrowserProps> = React.memo(({
                                 icon: 'globe',
                                 lastVisited: new Date().toLocaleString()
                               });
-                              console.log('Added to history (navigation):', { url: event.url, title: event.title });
                             } catch (error) {
                               console.error('Error saving navigation to history:', error);
                             }
                           }
                         });
+                        el.addEventListener('page-title-updated', (event: any) => {
+                          if (event.title && onTabTitleUpdate) {
+                            onTabTitleUpdate(tab.id, event.title);
+                          }
+                        });
                         el.addEventListener('dom-ready', () => {
                           webviewReadyStates.current.set(tab.id, true);
-                          // Password autofill will be available via password manager UI
-                          // For full autofill functionality, this would need proper webview integration
-                          
-                          // Handle middle-click events on links to open in new tabs
+                          const pageUrl = (el as any).getURL?.() || tab.url;
+                          void injectPasswordAutofill(el, pageUrl);
                           (el as any).executeJavaScript(`
                             document.addEventListener('auxclick', function(event) {
                               if (event.button === 1 && event.target.tagName === 'A') {
@@ -546,8 +504,7 @@ const Browser: React.FC<BrowserProps> = React.memo(({
                                 event.stopPropagation();
                                 const href = event.target.href;
                                 if (href) {
-                                  // Send message to main process to open in new tab
-                                  window.postMessage({
+                                  window.parent.postMessage({
                                     type: 'OPEN_LINK_IN_NEW_TAB',
                                     data: { url: href }
                                   }, '*');
@@ -556,16 +513,9 @@ const Browser: React.FC<BrowserProps> = React.memo(({
                             });
                           `);
                         });
-                        // Add download event listener for Electron webview
-                        el.addEventListener('will-navigate', (event: any) => {
-                          // Check if navigation is to a downloadable file
-                          if (event.url && isDownloadableFile(event.url)) {
-                            handleDownloadStart(event.url);
-                          }
-                        });
                       }
                     }}
-                    src={tab.url}
+                    src={toWebviewSrc(tab.url)}
                     style={webviewStyle as any}
                     allowpopups={true.toString() as any}
                     partition={isIncognito ? 'incognito' : ''}
@@ -633,21 +583,6 @@ const Browser: React.FC<BrowserProps> = React.memo(({
                           }
                         });
                         // Add download event listener for iframe
-                        el.addEventListener('beforeunload', (event: any) => {
-                          // Check for download links or file URLs
-                          const links = el.contentDocument?.querySelectorAll('a[href]');
-                          if (links) {
-                            links.forEach((link: any) => {
-                              link.addEventListener('click', (clickEvent: any) => {
-                                const href = link.getAttribute('href');
-                                if (href && (isDownloadableFile(href) || href.startsWith('blob:'))) {
-                                  clickEvent.preventDefault();
-                                  handleDownloadStart(href, link.textContent || 'download');
-                                }
-                              });
-                            });
-                          }
-                        });
                       }
                     }}
                     title={tab.title || tab.url}

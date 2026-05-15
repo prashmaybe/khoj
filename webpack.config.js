@@ -1,7 +1,7 @@
 const path = require('path');
 
-module.exports = {
-  mode: 'development',
+module.exports = (env, argv) => ({
+  mode: argv.mode || 'development',
   entry: './src/web-index.tsx',
   output: {
     path: path.resolve(__dirname, 'public'),
@@ -18,7 +18,12 @@ module.exports = {
     rules: [
       {
         test: /\.tsx?$/,
-        use: 'ts-loader',
+        use: {
+          loader: 'ts-loader',
+          options: {
+            configFile: path.join(__dirname, 'tsconfig.json'),
+          },
+        },
         exclude: /node_modules/,
       },
       {
@@ -51,4 +56,4 @@ module.exports = {
       directory: path.join(__dirname, 'public'),
     },
   },
-};
+});

@@ -60,6 +60,13 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = React.memo(({ childre
   );
 
   useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.hash === '#incognito') {
+      setIsIncognito(true);
+      preferencesStorage.saveIncognitoMode(true);
+    }
+  }, []);
+
+  useEffect(() => {
     const subscription = Appearance.addChangeListener(({ colorScheme }) => {
       const newTheme = colorScheme === 'dark' || colorScheme === 'light' ? colorScheme : 'light';
       setSystemTheme(newTheme);

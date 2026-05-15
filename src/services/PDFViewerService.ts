@@ -64,8 +64,8 @@ class PDFViewerService {
       }
 
       // Use PDF.js to get actual page count
-      const pdfjsLib = await import('pdfjs-dist/build/pdf');
-      pdfjsLib.GlobalWorkerOptions.workerSrc = 'pdfjs-dist/build/pdf.worker.min.js';
+      const pdfjsLib = await import('pdfjs-dist/build/pdf.mjs');
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs';
       
       const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
       const actualPageCount = pdf.numPages;
@@ -167,7 +167,7 @@ class PDFViewerService {
   }
 
   // PDF Document Management
-  private loadPDFDocuments(): PDFDocument[] {
+  loadPDFDocuments(): PDFDocument[] {
     if (!this.isClient()) return [];
 
     try {
@@ -179,7 +179,7 @@ class PDFViewerService {
     }
   }
 
-  private savePDFDocuments(documents: PDFDocument[]): void {
+  savePDFDocuments(documents: PDFDocument[]): void {
     if (!this.isClient()) return;
 
     try {

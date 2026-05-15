@@ -17,11 +17,9 @@ import { FiZoomIn, FiZoomOut, FiChevronLeft, FiChevronRight, FiEdit3, FiType, Fi
 // Dynamically import pdfjs-dist to avoid SSR issues
 let pdfjsLib: any = null;
 if (typeof window !== 'undefined') {
-  import('pdfjs-dist/build/pdf').then((module) => {
+  import('pdfjs-dist/build/pdf.mjs').then((module) => {
     pdfjsLib = module;
-    if (typeof window !== 'undefined') {
-      pdfjsLib.GlobalWorkerOptions.workerSrc = 'pdfjs-dist/build/pdf.worker.min.js';
-    }
+    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
   });
 }
 
@@ -33,7 +31,7 @@ interface PDFViewerProps {
 
 const PDFViewer: React.FC<PDFViewerProps> = ({ visible, documentId, onClose }) => {
   const { colors } = useTheme();
-  const [document, setDocument] = useState<PDFDocument | null>(null);
+  const [pdfDocument, setPdfDocument] = useState<PDFDocument | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [zoom, setZoom] = useState(1.0);
   const [selectedTool, setSelectedTool] = useState<AnnotationTool>({ type: 'select' });
@@ -95,7 +93,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ visible, documentId, onClose }) =
       const loadedDocument = documents.find(doc => doc.id === documentId);
       
       if (loadedDocument) {
-        setDocument(loadedDocument);
+        setPdfDocument(loadedDocument);
         setCurrentPage(loadedDocument.currentPage);
         setZoom(loadedDocument.zoom);
         
@@ -105,19 +103,18 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ visible, documentId, onClose }) =
         }
       } else {
         // Show file picker to load a new PDF
-        setDocument(null);
+        setPdfDocument(null);
       }
     }
   }, [visible, documentId]);
 
   // Update PDF rendering when current page or zoom changes
   useEffect(() => {
-    if (document && document.url) {
-      renderPDFPage(document.url, currentPage);
-      // Save current page to document in service
-      pdfViewerService.goToPage(document.id, currentPage);
+    if (pdfDocument && pdfDocument.url) {
+      renderPDFPage(pdfDocument.url, currentPage);
+      pdfViewerService.goToPage(pdfDocument.id, currentPage);
     }
-  }, [currentPage, document, pdfScale]);
+  }, [currentPage, pdfDocument, pdfScale]);
 
   // Function to handle file loading (would be connected to file picker)
   const handleLoadPDF = async (file: File) => {
@@ -129,21 +126,19 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ visible, documentId, onClose }) =
       }
 
       // Load PDF document using service
-      const pdfDocument = await pdfViewerService.loadPDFDocument(file);
+      const loadedDoc = await pdfViewerService.loadPDFDocument(file);
       
-      if (pdfDocument) {
-        setDocument(pdfDocument);
+      if (loadedDoc) {
+        setPdfDocument(loadedDoc);
         setCurrentPage(1);
         setZoom(1.0);
         setPdfScale(1.0);
         
-        // Save to service for persistence
         const documents = pdfViewerService.loadPDFDocuments();
-        documents.push(pdfDocument);
+        documents.push(loadedDoc);
         pdfViewerService.savePDFDocuments(documents);
         
-        // Render the first page
-        renderPDFPage(pdfDocument.url, 1);
+        renderPDFPage(loadedDoc.url, 1);
       } else {
         Alert.alert('Error', 'Failed to load PDF document');
       }
@@ -158,8 +153,8 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ visible, documentId, onClose }) =
     setZoom(newZoom);
     setPdfScale(newZoom);
     // Save zoom level to document in service
-    if (document) {
-      pdfViewerService.setZoom(document.id, newZoom);
+    if (pdfDocument) {
+      pdfViewerService.setZoom(pdfDocument.id, newZoom);
     }
   };
 
@@ -167,20 +162,19 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ visible, documentId, onClose }) =
     const newZoom = Math.max(zoom - 0.25, 0.5);
     setZoom(newZoom);
     setPdfScale(newZoom);
-    // Save zoom level to document in service
-    if (document) {
-      pdfViewerService.setZoom(document.id, newZoom);
+    if (pdfDocument) {
+      pdfViewerService.setZoom(pdfDocument.id, newZoom);
     }
   };
 
   const handleNextPage = () => {
-    if (!document) return;
-    const newPage = Math.min(currentPage + 1, document.pageCount || 1);
+    if (!pdfDocument) return;
+    const newPage = Math.min(currentPage + 1, pdfDocument.pageCount || 1);
     setCurrentPage(newPage);
   };
 
   const handlePreviousPage = () => {
-    if (!document) return;
+    if (!pdfDocument) return;
     const newPage = Math.max(currentPage - 1, 1);
     setCurrentPage(newPage);
   };
@@ -191,7 +185,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ visible, documentId, onClose }) =
   };
 
   const handleAddAnnotation = () => {
-    if (!document || !annotationText.trim()) return;
+    if (!pdfDocument || !annotationText.trim()) return;
 
     const annotation: Annotation = {
       id: Date.now().toString(),
@@ -210,14 +204,14 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ visible, documentId, onClose }) =
   };
 
   const handleSearch = () => {
-    if (!document) return;
+    if (!pdfDocument) return;
     
     Alert.alert('Search', `Searching for: ${searchQuery}`);
     setShowSearchResults(false);
   };
 
   const handleExport = () => {
-    if (!document) return;
+    if (!pdfDocument) return;
 
     Alert.alert(
       'Export Annotations',
@@ -235,7 +229,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ visible, documentId, onClose }) =
   };
 
   const renderPDFCanvas = () => {
-    if (!document) return null;
+    if (!pdfDocument) return null;
 
     return (
       <View style={[styles.pdfContainer, { backgroundColor: colors.background }]}>
@@ -253,13 +247,13 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ visible, documentId, onClose }) =
               </TouchableOpacity>
               
               <Text style={[styles.pageInfo, { color: colors.text }]}>
-                Page {currentPage} / {document.pageCount || 1}
+                Page {currentPage} / {pdfDocument.pageCount || 1}
               </Text>
               
               <TouchableOpacity
                 style={[styles.toolbarButton, { backgroundColor: colors.buttonSecondary }]}
                 onPress={handleNextPage}
-                disabled={currentPage >= (document.pageCount || 1)}
+                disabled={currentPage >= (pdfDocument.pageCount || 1)}
               >
                 <FiChevronRight size={20} color={colors.buttonSecondaryText} />
               </TouchableOpacity>
@@ -406,10 +400,10 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ visible, documentId, onClose }) =
         {/* Page Info */}
         <View style={[styles.pageInfoBar, { backgroundColor: colors.surface }]}>
           <Text style={[styles.pageTitle, { color: colors.text }]}>
-            {document.title}
+            {pdfDocument.title}
           </Text>
           <Text style={[styles.pageInfo, { color: colors.textSecondary }]}>
-            {document.fileSize ? `${(document.fileSize / 1024 / 1024).toFixed(2)} MB` : ''}
+            {pdfDocument.fileSize ? `${(pdfDocument.fileSize / 1024 / 1024).toFixed(2)} MB` : ''}
           </Text>
         </View>
       </View>
@@ -491,7 +485,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ visible, documentId, onClose }) =
           </TouchableOpacity>
         </View>
 
-        {document ? renderPDFCanvas() : (
+        {pdfDocument ? renderPDFCanvas() : (
           <View style={[styles.emptyContainer, { backgroundColor: colors.background }]}>
             <FiUpload size={48} color={colors.textSecondary} />
             <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
@@ -501,17 +495,24 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ visible, documentId, onClose }) =
               style={[styles.loadButton, { backgroundColor: colors.buttonPrimary }]}
               onPress={async () => {
                 try {
-                  // In a complete implementation, this would open a file picker
-                  // For now, we'll show an alert with instructions
-                  Alert.alert(
-                    'Load PDF', 
-                    'In a complete implementation, this would open a file picker to select a PDF file. The file would then be processed and displayed using PDF.js.\n\n' +
-                    'The file loading would work as follows:\n' +
-                    '1. User selects a PDF file\n' +
-                    '2. File is validated and loaded via FileReader\n' +
-                    '3. PDF.js processes the file and renders pages\n' +
-                    '4. Document is saved to local storage for persistence'
-                  );
+                  if (typeof window !== 'undefined' && window.electronAPI?.openPdfFile) {
+                    const picked = await window.electronAPI.openPdfFile();
+                    if (!picked) return;
+                    const response = await fetch(picked.fileUrl);
+                    const blob = await response.blob();
+                    const file = new File([blob], picked.name, { type: 'application/pdf' });
+                    await handleLoadPDF(file);
+                    return;
+                  }
+
+                  const input = document.createElement('input');
+                  input.type = 'file';
+                  input.accept = 'application/pdf,.pdf';
+                  input.onchange = async () => {
+                    const file = input.files?.[0];
+                    if (file) await handleLoadPDF(file);
+                  };
+                  input.click();
                 } catch (error) {
                   Alert.alert('Error', 'Failed to load PDF file');
                   console.error('Error loading PDF:', error);

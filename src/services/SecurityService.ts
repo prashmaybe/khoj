@@ -117,6 +117,19 @@ class SecurityService {
   async clearBrowsingData(options: ClearDataOptions): Promise<void> {
     if (!this.isClient()) return;
 
+    if (window.electronAPI?.clearBrowsingData) {
+      await window.electronAPI.clearBrowsingData({
+        browsingHistory: options.browsingHistory,
+        cookies: options.cookies,
+        cache: options.cache,
+        localStorage: options.localStorage,
+        sessionStorage: options.sessionStorage,
+        passwords: options.passwords,
+        autofillData: options.autofillData,
+        timeRange: options.timeRange,
+      });
+    }
+
     const now = Date.now();
     let cutoffTime = 0;
 
@@ -139,16 +152,22 @@ class SecurityService {
         break;
     }
 
-    // Clear browsing history (simplified implementation)
+    // Clear browsing history (local app storage)
     if (options.browsingHistory && this.isClient()) {
-      // Store browsing history in localStorage for this implementation
-      const historyKey = 'khoj_browsing_history';
-      const history = JSON.parse(localStorage.getItem(historyKey) || '[]');
-      const filteredHistory = history.filter((item: any) => {
-        if (options.timeRange === 'allTime') return false;
-        return item.timestamp && item.timestamp >= cutoffTime;
-      });
-      localStorage.setItem(historyKey, JSON.stringify(filteredHistory));
+      if (options.timeRange === 'allTime') {
+        localStorage.removeItem('khoj_browser_history');
+        localStorage.removeItem('khoj_browsing_history');
+      } else {
+        const historyKey = 'khoj_browser_history';
+        const history = JSON.parse(localStorage.getItem(historyKey) || '[]');
+        const filteredHistory = history.filter((item: any) => {
+          const ts = item.timestamp || item.lastVisited;
+          if (!ts) return true;
+          const parsed = typeof ts === 'number' ? ts : Date.parse(ts);
+          return !Number.isNaN(parsed) && parsed >= cutoffTime;
+        });
+        localStorage.setItem(historyKey, JSON.stringify(filteredHistory));
+      }
     }
 
     // Clear cookies (simplified implementation)
