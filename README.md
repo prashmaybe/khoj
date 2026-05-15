@@ -200,20 +200,170 @@ build-scripts\build-all.bat
 
 ### CI/CD Pipeline
 
-#### GitHub Actions
-- **File**: `.github/workflows/ci-build.yml`
-- **Triggers**: Push to main, pull requests, releases
-- **Platforms**: All supported platforms
+#### GitHub Actions (Cloud)
+- **File**: `.github/workflows/ci.yml`
+- **Triggers**: 
+  - Push to `main` and `develop` branches
+  - Pull requests to `main`
+  - Release creation
+- **Jobs**: 
+  - `test` - Run tests and compile
+  - `build-windows` - Build Windows installer
+  - `build-macos` - Build macOS packages
+  - `build-linux` - Build Linux packages
+  - `release` - Publish release assets
+- **Node.js Version**: 22.x
 - **Artifacts**: Uploaded to GitHub releases
+- **Concurrency**: Cancels in-progress runs
 
-#### Local CI/CD Setup
-```bash
-# Copy CI configuration
-cp build-scripts/ci-build.yml .github/workflows/
+#### Local CI/CD Setup (Using act)
 
-# Install GitHub CLI for local testing
-gh workflow run
+**What is act?**
+`act` allows you to run GitHub Actions workflows locally on your machine without pushing to GitHub.
+
+**Installation:**
+
+**Windows (using winget):**
+```powershell
+winget install act
 ```
+
+**Windows (using scoop):**
+```powershell
+scoop bucket add extras
+scoop install act
+```
+
+**macOS/Linux:**
+```bash
+brew install act
+# or
+curl https://raw.githubusercontent.com/nektos/act/master/install.sh | bash
+```
+
+**Configuration:**
+The project includes `.actrc` configuration file for local testing.
+
+**Usage:**
+
+```bash
+# List all available workflows
+act -l
+
+# Run all workflows locally
+act
+
+# Run on specific event
+act push                    # Run on push
+act pull_request           # Run on PR
+act release                # Run on release
+
+# Run specific job
+act -j test                # Run test job
+act -j build-windows       # Run Windows build
+act -j build-macos         # Run macOS build
+act -j build-linux         # Run Linux build
+
+# Dry run (shows what would run without executing)
+act -n
+
+# Run with specific branch
+act -b main
+
+# View logs in real-time
+act -v
+```
+
+**Local Build Commands (Direct):**
+
+For quick local builds without CI/CD:
+
+```bash
+# Install dependencies
+npm install
+
+# Run tests
+npm test
+
+# Build webpack bundle
+npm run build:webpack
+
+# Compile Electron main process
+npm run build:main
+
+# Build all platforms
+npm run dist-all           # All desktop platforms
+npm run build-windows      # Windows only
+npm run build-macos        # macOS only
+npm run build-linux        # Linux only
+```
+
+**CI/CD Workflow Details:**
+
+**GitHub Actions Workflow (.github/workflows/ci.yml):**
+
+```yaml
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  release:
+    types: [published]
+```
+
+**Jobs:**
+1. **test** (Ubuntu)
+   - Node.js 22 setup
+   - Install dependencies
+   - Run unit tests
+   - Build webpack bundle
+   - Compile Electron main process
+
+2. **build-windows** (Windows)
+   - Node.js 22 setup
+   - Install dependencies
+   - Build Windows installer (NSIS + portable)
+   - Upload artifacts
+
+3. **build-macos** (macOS)
+   - Node.js 22 setup
+   - Install dependencies
+   - Build macOS packages (DMG + ZIP)
+   - Upload artifacts
+
+4. **build-linux** (Ubuntu)
+   - Node.js 22 setup
+   - Install dependencies
+   - Build Linux packages (AppImage + DEB + RPM)
+   - Upload artifacts
+
+5. **release** (Ubuntu)
+   - Download all artifacts
+   - Upload to GitHub Release
+
+**Node.js Version Requirements:**
+- **Minimum**: Node.js 22.x
+- **Reason**: Dependencies require Node.js >=22.12.0
+- **Electron**: v42.0.0
+- **React Native**: v0.85.3
+
+**Build Outputs:**
+
+| Platform | Output Location | Files |
+|----------|----------------|-------|
+| Windows | `dist/` | `.exe`, `.exe.blockmap`, `latest.yml` |
+| macOS | `dist/` | `.dmg`, `.zip` |
+| Linux | `dist/` | `.AppImage`, `.deb`, `.rpm` |
+
+**Artifact Naming:**
+- Windows: `windows-${{ github.sha }}`
+- macOS: `macos-${{ github.sha }}`
+- Linux: `linux-${{ github.sha }}`
+
+**Release Publishing:**
+- Automatically publishes to GitHub Releases when a tag is pushed
+- Requires `GITHUB_TOKEN` (automatically provided by GitHub)
 
 ### Build Requirements
 
