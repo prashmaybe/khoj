@@ -2,7 +2,10 @@
   "name": "khoj",
   "version": "0.1.0",
   "description": "A modern cross-platform browser built with React Native and Electron",
-  "author": "Prashant Kapoor",
+  "author": {
+    "name": "Prashant Kapoor",
+    "email": "prashmaybe@gmail.com"
+  },
   "productName": "Khoj",
   "main": "main.js",
   "scripts": {
