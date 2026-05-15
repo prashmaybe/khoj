@@ -215,6 +215,18 @@ electron_1.app.whenReady().then(() => {
     setupDownloadHandler(electron_1.session.defaultSession);
     setupDownloadHandler(electron_1.session.fromPartition('incognito'));
     setupIpcHandlers();
+    if (process.platform === 'win32') {
+        electron_1.app.setAsDefaultProtocolClient('khoj');
+    }
+    if (!isDev && process.argv.length > 1) {
+        const firstArg = process.argv[1];
+        if (firstArg.startsWith('khoj://')) {
+            const url = firstArg;
+            if (mainWindow) {
+                mainWindow.loadURL(url);
+            }
+        }
+    }
     mainWindow = createBrowserWindow(false);
 });
 electron_1.app.on('window-all-closed', () => {

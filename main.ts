@@ -210,6 +210,21 @@ app.whenReady().then(() => {
   setupDownloadHandler(session.defaultSession);
   setupDownloadHandler(session.fromPartition('incognito'));
   setupIpcHandlers();
+  
+  if (process.platform === 'win32') {
+    app.setAsDefaultProtocolClient('khoj');
+  }
+  
+  if (!isDev && process.argv.length > 1) {
+    const firstArg = process.argv[1];
+    if (firstArg.startsWith('khoj://')) {
+      const url = firstArg;
+      if (mainWindow) {
+        mainWindow.loadURL(url);
+      }
+    }
+  }
+  
   mainWindow = createBrowserWindow(false);
 });
 

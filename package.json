@@ -151,7 +151,8 @@
       "allowElevation": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Khoj"
+      "shortcutName": "Khoj",
+      "include": "build/installer.nsh"
     },
     "mac": {
       "target": [
