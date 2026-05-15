@@ -1,19 +1,13 @@
+const { FusesPlugin } = require('@electron-forge/plugin-fuses');
+
 module.exports = {
   packagerConfig: {
     name: 'Khoj',
     executableName: 'khoj',
-    icon: 'assets/khoj_platform_assets/windows/khoj',
-    extraResource: [
-      'assets'
-    ],
+    icon: 'assets/icon',
+    extraResource: ['assets'],
     asar: true,
-    ignore: [
-      /src/,
-      /\.git/,
-      /node_modules\/\.bin/,
-      /out/,
-      /dist/
-    ]
+    ignore: [/src/, /\.git/, /node_modules\/\.bin/, /out/, /dist/],
   },
   rebuildConfig: {},
   makers: [
@@ -23,36 +17,38 @@ module.exports = {
         name: 'khoj',
         authors: 'Prashant Kapoor',
         description: 'Cross-platform browser application',
-        iconUrl: 'https://raw.githubusercontent.com/prashmaybe/khoj/main/assets/khoj_platform_assets/windows/khoj.ico'
-      }
+        setupIcon: 'assets/khoj_platform_assets/windows/khoj.ico',
+      },
     },
     {
       name: '@electron-forge/maker-zip',
-      platforms: ['darwin']
+      platforms: ['darwin'],
     },
     {
       name: '@electron-forge/maker-deb',
       config: {
         options: {
           maintainer: 'Prashant Kapoor',
-          homepage: 'https://github.com/prashmaybe/khoj'
-        }
-      }
+          homepage: 'https://github.com/prashmaybe/khoj',
+          icon: 'assets/icon.png',
+        },
+      },
     },
     {
       name: '@electron-forge/maker-rpm',
       config: {
         options: {
           maintainer: 'Prashant Kapoor',
-          homepage: 'https://github.com/prashmaybe/khoj'
-        }
-      }
-    }
+          homepage: 'https://github.com/prashmaybe/khoj',
+          icon: 'assets/icon.png',
+        },
+      },
+    },
   ],
   plugins: [
     {
       name: '@electron-forge/plugin-auto-unpack-natives',
-      config: {}
+      config: {},
     },
     {
       name: '@electron-forge/plugin-fuses',
@@ -64,7 +60,7 @@ module.exports = {
         [FusesPlugin.FUSES.enableNodeCliInspectArguments]: false,
         [FusesPlugin.FUSES.enableEmbeddedAsarIntegrityValidation]: true,
         [FusesPlugin.FUSES.onlyLoadAppFromAsar]: true,
-      }
-    }
-  ]
+      },
+    },
+  ],
 };

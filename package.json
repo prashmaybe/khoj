@@ -1,8 +1,9 @@
 {
   "name": "khoj",
   "version": "0.1.0",
-  "description": "A modern browser built with React Native and Electron",
-  "author": "",
+  "description": "A modern cross-platform browser built with React Native and Electron",
+  "author": "Prashant Kapoor",
+  "productName": "Khoj",
   "main": "main.js",
   "scripts": {
     "start": "react-native start",
@@ -34,7 +35,17 @@
     "type": "git",
     "url": "git+https://github.com/prashmaybe/khoj.git"
   },
-  "keywords": [],
+  "keywords": [
+    "browser",
+    "electron",
+    "react-native",
+    "cross-platform",
+    "desktop",
+    "khoj"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
   "license": "ISC",
   "type": "commonjs",
   "bugs": {
@@ -127,7 +138,7 @@
           ]
         }
       ],
-      "icon": "assets/khoj_platform_assets/windows/khoj.ico",
+      "icon": "assets/icon.ico",
       "requestedExecutionLevel": "asInvoker",
       "publisherName": "Khoj"
     },
