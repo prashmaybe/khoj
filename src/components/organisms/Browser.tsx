@@ -406,7 +406,7 @@ const Browser: React.FC<BrowserProps> = React.memo(({
             errorDescription={activeTab.errorDescription || 'Unknown error'}
             url={activeTab.url}
             onRetry={() => {
-              if (onUpdateTabError) {
+              if (onUpdateTabError && activeTabId) {
                 onUpdateTabError(activeTabId, false);
               }
               onReload();
