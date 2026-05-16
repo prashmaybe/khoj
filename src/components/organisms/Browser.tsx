@@ -210,6 +210,16 @@ const Browser: React.FC<BrowserProps> = React.memo(({
   };
 
   const extractFaviconUrl = (url: string): string | null => {
+    // Check if the URL is an internal route or invalid for favicon service
+    if (url.startsWith('khoj://') || !url) {
+      console.log('Skipping favicon extraction for internal or empty URL:', url);
+      return null;
+    }
+    // Check if the URL is an internal route or invalid for favicon service
+    if (url.startsWith('khoj://') || !url) {
+      console.log('Skipping favicon extraction for internal or empty URL:', url);
+      return null;
+    }
     try {
       const urlObj = new URL(url);
       // Use Google's favicon service directly - it's reliable and avoids CORS issues
@@ -237,32 +247,38 @@ const Browser: React.FC<BrowserProps> = React.memo(({
       const embed = activeTabId ? webviewRefs.current.get(activeTabId) as HTMLElement | null : null;
       if (!container || !embed) return;
 
-      const rect = container.getBoundingClientRect();
-      const height = Math.max(0, Math.floor(rect.height));
-      if (height === 0) return;
+      // Use requestAnimationFrame for better timing control on layout changes
+      window.requestAnimationFrame(() => {
+        const rect = container.getBoundingClientRect();
+        const height = Math.max(0, Math.floor(rect.height));
+        if (height === 0) return;
 
-      embed.style.setProperty('height', `${height}px`, 'important');
-      embed.style.setProperty('min-height', `${height}px`, 'important');
-      embed.style.setProperty('max-height', `${height}px`, 'important');
-      embed.style.setProperty('width', '100%', 'important');
-      embed.style.setProperty('display', 'block', 'important');
+        embed.style.setProperty('height', `${height}px`, 'important');
+        embed.style.setProperty('min-height', `${height}px`, 'important');
+        embed.style.setProperty('max-height', `${height}px`, 'important');
+        embed.style.setProperty('width', '100%', 'important');
+        embed.style.setProperty('display', 'block', 'important');
 
-      // Best-effort fix: when available, force the internal guest iframe to fill host height.
-      const shadowRoot = (embed as any).shadowRoot as ShadowRoot | null;
-      const guestFrame = shadowRoot?.querySelector('iframe') as HTMLIFrameElement | null;
-      if (guestFrame) {
-        guestFrame.style.setProperty('height', '100%', 'important');
-        guestFrame.style.setProperty('min-height', '100%', 'important');
-        guestFrame.style.setProperty('width', '100%', 'important');
-        guestFrame.style.setProperty('display', 'block', 'important');
-      }
+        // Best-effort fix: when available, force the internal guest iframe to fill host height.
+        const shadowRoot = (embed as any).shadowRoot as ShadowRoot | null;
+        const guestFrame = shadowRoot?.querySelector('iframe') as HTMLIFrameElement | null;
+        if (guestFrame) {
+          guestFrame.style.setProperty('height', '100%', 'important');
+          guestFrame.style.setProperty('min-height', '100%', 'important');
+          guestFrame.style.setProperty('width', '100%', 'important');
+          guestFrame.style.setProperty('display', 'block', 'important');
+        }
+      });
     };
 
+    // Run immediately on mount and whenever activeTabId changes
     applyEmbedSize();
-    const delayed = window.setTimeout(applyEmbedSize, 100);
+    
+    // Add resize listener for dynamic changes
     window.addEventListener('resize', applyEmbedSize);
+    
+    // Cleanup function
     return () => {
-      window.clearTimeout(delayed);
       window.removeEventListener('resize', applyEmbedSize);
     };
   }, [activeTabId, isElectronRuntime]);
@@ -389,7 +405,12 @@ const Browser: React.FC<BrowserProps> = React.memo(({
             errorCode={activeTab.errorCode || -1}
             errorDescription={activeTab.errorDescription || 'Unknown error'}
             url={activeTab.url}
-            onRetry={onRetryLoad}
+            onRetry={() => {
+              if (onUpdateTabError) {
+                onUpdateTabError(activeTabId, false);
+              }
+              onReload();
+            }}
           />
         ) : !activeTab ? (
           <View style={[styles.contentPlaceholder, { backgroundColor: colors.background }]}>
